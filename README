@@ -1,0 +1,4 @@
+You need the following ruby gems in order for BOAST to work:
+narray
+rake
+systemu
