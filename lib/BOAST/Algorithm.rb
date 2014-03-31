@@ -19,6 +19,8 @@ end
 
 module BOAST
 
+  extend TypeTransition
+  
   FORTRAN = 1
   C = 2
   CL = 3
@@ -35,7 +37,6 @@ module BOAST
   @@chain_code = false
 
   @@env = Hash.new{|h, k| h[k] = []}
-
 
   def BOAST::push_env(vars = {})
     vars.each { |key,value|
@@ -267,21 +268,52 @@ module BOAST
     def -@
       return Expression::new("-",nil,self)
     end
-   
+
+    def to_var
+      op1 = nil
+      op1 = Variable::to_var(@operand1) if @operand1
+      op2 = nil
+      op2 = Variable::to_var(@operand2) if @operand2
+      if op1 and op2 then
+        r_t, oper = BOAST::transition(op1, op2, @operator)
+        return r_t.copy("#{self}", :const => nil, :constant => nil)
+      elsif op1
+        return op1.copy("#{self}", :const => nil, :constant => nil)
+      elsif op2
+        return op2.copy("#{self}", :const => nil, :constant => nil)
+      else
+        STDERR.puts "#{@operand1} #{@operand2}"
+        raise "Expression on no operand!"
+      end
+    end
+ 
     def to_str
+      op1 = nil
+      op1 = Variable::to_var(@operand1) if @operand1
+      op2 = nil
+      op2 = Variable::to_var(@operand2) if @operand2
+      if op1 and op2 then
+        r_t, oper = BOAST::transition(op1, op2, @operator)
+      else
+        oper = @operator
+      end
+
+      op1 = @operand1 if not op1
+      op2 = @operand2 if not op2
+     
       s = ""
-      if @operand1 then
-        s += "(" if (@operator == "*" or @operator == "/") 
-        s += @operand1.to_s
-        s += ")" if (@operator == "*" or @operator == "/") 
+      if op1 then
+        s += "(" if (oper == "*" or oper == "/") 
+        s += op1.to_s
+        s += ")" if (oper == "*" or oper == "/") 
       end        
-      s += " " unless @operator.to_s == "++" or @operator.to_s == "."
-      s += @operator.to_s 
-      s += " " unless @operator.to_s == "." or @operator.to_s == "&" or ( @operator.to_s == "*" and @operand1.nil? )
-      if @operand2 then
-        s += "(" if (@operator == "*" or @operator == "/" or @operator == "-") 
-        s += @operand2.to_s
-        s += ")" if (@operator == "*" or @operator == "/" or @operator == "-") 
+      s += " " unless oper == "++" or oper == "."
+      s += oper 
+      s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
+      if op2 then
+        s += "(" if (oper == "*" or oper == "/" or oper == "-") 
+        s += op2.to_s
+        s += ")" if (oper == "*" or oper == "/" or oper == "-") 
       end
       return s
     end
@@ -320,6 +352,11 @@ module BOAST
       @source = source
       @indexes = indexes
     end
+
+    def to_var
+      return @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil)
+    end
+
     def to_s
       self.to_str
     end
@@ -532,7 +569,7 @@ module BOAST
     attr_reader :local
     attr_reader :texture
     attr_reader :sampler
-    attr_reader :replace_constant
+    attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
     def initialize(name,type,hash={})
@@ -558,8 +595,12 @@ module BOAST
       @hash = hash
     end
 
-    def copy(name=@name)
-      return Variable::new(name, @type.class, @hash)
+    def copy(name=@name,options={})
+      hash = @hash.clone
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Variable::new(name, @type.class, hash)
     end
   
     def to_s
@@ -573,6 +614,27 @@ module BOAST
         return s
       end
       return @name.to_str
+    end
+
+    def self.to_var(x)
+      case x
+      when Variable
+        return x
+      when Expression
+        return x.to_var
+      when FuncCall
+        return x.to_var
+      when Integer
+        if x < 0 then
+          return Variable::new("#{x}", Int, :signed => true, :constant => x )
+        else
+          return Variable::new("#{x}", Int, :signed => false, :constant => x )
+        end
+      when Float
+        return Variable::new("#{x}", Real, :constant => x )
+      else
+        return nil
+      end
     end
 
     def ===(x)
@@ -1055,7 +1117,7 @@ module BOAST
       end
     end
     def decl
-      return "integer(kind=#{BOAST::get_default_int_signed})" if BOAST::get_lang == FORTRAN
+      return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::get_lang == FORTRAN
       if not @signed then
         return "size_t" if [C, CL, CUDA].include?( BOAST::get_lang )
       else
@@ -1213,6 +1275,8 @@ module BOAST
   end
  
   class FuncCall
+    @return_type
+    @options
     def self.parens(*args,&block)
       return self::new(*args,&block)
     end
@@ -1223,7 +1287,24 @@ module BOAST
 
     def initialize(func_name, *args)
       @func_name = func_name
-      @args = args
+      if args.last.kind_of?(Hash) then
+        @options = args.last
+        @args = args[0..-2]
+      else
+        @args = args
+      end
+      @return_type = @options[:returns] if @options
+    end
+
+    def to_var
+      if @return_type then
+        if @return_type.kind_of?(Variable)
+          return @return_type.copy("#{self}")
+        else
+          return Variable::new("#{self}", @return_type)
+        end
+      end
+      return nil
     end
       
     def to_s
@@ -1755,5 +1836,14 @@ module BOAST
   Var = Variable
   Dim = Dimension
   Call = FuncCall
+
+  set_transition(Int, Int, :default, Int)
+  set_transition(Real, Int, :default, Real)
+  set_transition(Int, Real, :default, Real)
+  set_transition(Real, Real, :default, Real)
+  set_transition(Sizet, Sizet, :default, Sizet)
+  set_transition(Sizet, Int, :default, Sizet)
+  set_transition(Int, Sizet, :default, Sizet)
+  
 end
 ConvolutionGenerator = BOAST

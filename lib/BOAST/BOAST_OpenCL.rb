@@ -1,6 +1,11 @@
 module BOAST
   @@ocl_cuda_dim_assoc = { 0 => "x", 1 => "y", 2 => "z" }
 
+  @@cuda_threadIdx = CStruct("threadIdx",:type_name => "cuda_trheadIdx", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
+  @@cuda_blockIdx = CStruct("blockIdx",:type_name => "cuda_blockIdx", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
+  @@cuda_blockDim = CStruct("blockDim",:type_name => "cuda_blockDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
+  @@cuda_gridDim = CStruct("gridDim",:type_name => "cuda_gridDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
+
   def BOAST::barrier(*locality)
     if @@lang == CL then
       loc=""
@@ -23,7 +28,7 @@ module BOAST
 
   def BOAST::get_work_dim
     if @@lang == CL then
-      return FuncCall::new("get_work_dim")
+      return FuncCall::new("get_work_dim", :returns => Int("wd", :signed => false))
     else
       raise "Unsupported language!"
     end
@@ -31,11 +36,11 @@ module BOAST
   
   def BOAST::get_global_size(dim)
     if @@lang == CL then
-      return FuncCall::new("get_global_size",dim)
+      return FuncCall::new("get_global_size", dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "gridDim", d)*Expression::new(".", "blockDim", d)
+      return eval "@@cuda_gridDim.#{d}*@@cuda_blockDim.#{d}"
     else
       raise "Unsupported language!"
     end
@@ -43,11 +48,11 @@ module BOAST
 
   def BOAST::get_global_id(dim)
     if @@lang == CL then
-      return FuncCall::new("get_global_id",dim)
+      return FuncCall::new("get_global_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "threadIdx", d)+Expression::new(".", "blockIdx", d)*Expression::new(".", "blockDim", d)
+      return eval "@@cuda_threadIdx.#{d}+@@cuda_blockIdx.#{d}*@@cuda_blockDim.#{d}"
     else
       raise "Unsupported language!"
     end
@@ -55,11 +60,11 @@ module BOAST
 
   def BOAST::get_local_size(dim)
     if @@lang == CL then
-      return FuncCall::new("get_local_size",dim)
+      return FuncCall::new("get_local_size",dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "blockDim", d)
+      return eval "@@cuda_blockDim.#{d}"
     else
       raise "Unsupported language!"
     end
@@ -67,11 +72,11 @@ module BOAST
 
   def BOAST::get_local_id(dim)
     if @@lang == CL then
-      return FuncCall::new("get_local_id",dim)
+      return FuncCall::new("get_local_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "threadIdx", d)
+      return eval "@@cuda_threadIdx.#{d}"
     else
       raise "Unsupported language!"
     end
@@ -79,11 +84,11 @@ module BOAST
   
   def BOAST::get_num_groups(dim)
     if @@lang == CL then
-      return FuncCall::new("get_num_groups",dim)
+      return FuncCall::new("get_num_groups",dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "gridDim", d)
+      return eval "@@cuda_gridDim.#{d}"
     else
       raise "Unsupported language!"
     end
@@ -91,11 +96,11 @@ module BOAST
 
   def BOAST::get_group_id(dim)
     if @@lang == CL then
-      return FuncCall::new("get_group_id",dim)
+      return FuncCall::new("get_group_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
       d = @@ocl_cuda_dim_assoc[dim]
       raise "Unsupported dimension!" if not d
-      return Expression::new(".", "blockIdx", d)
+      return eval "@@cuda_blockIdx.#{d}"
     else
       raise "Unsupported language!"
     end
