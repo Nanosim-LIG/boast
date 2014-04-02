@@ -271,16 +271,17 @@ module BOAST
 
     def to_var
       op1 = nil
-      op1 = Variable::to_var(@operand1) if @operand1
+      op1 = @operand1.to_var if @operand1 and @operand1.respond_to?(:to_var)
       op2 = nil
-      op2 = Variable::to_var(@operand2) if @operand2
+      op2 = @operand2.to_var if @operand2 and @operand2.respond_to?(:to_var)
+      res_exp = Expression::new(@operator, op1.nil? ? @operand1 : op1, op2.nil? ? @operand2 : op2)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
-        return r_t.copy("#{self}", :const => nil, :constant => nil)
+        return r_t.copy("#{res_exp}", :const => nil, :constant => nil)
       elsif op1
-        return op1.copy("#{self}", :const => nil, :constant => nil)
+        return op1.copy("#{res_exp}", :const => nil, :constant => nil)
       elsif op2
-        return op2.copy("#{self}", :const => nil, :constant => nil)
+        return op2.copy("#{res_exp}", :const => nil, :constant => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
         raise "Expression on no operand!"
@@ -289,9 +290,9 @@ module BOAST
  
     def to_str
       op1 = nil
-      op1 = Variable::to_var(@operand1) if @operand1
+      op1 = @operand1.to_var if @operand1 and @operand1.respond_to?(:to_var)
       op2 = nil
-      op2 = Variable::to_var(@operand2) if @operand2
+      op2 = @operand2.to_var if @operand2 and @operand2.respond_to?(:to_var)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
       else
@@ -317,6 +318,7 @@ module BOAST
       end
       return s
     end
+
     def print(final=true)
       s=""
       s += " "*BOAST::get_indent_level if final
@@ -616,25 +618,8 @@ module BOAST
       return @name.to_str
     end
 
-    def self.to_var(x)
-      case x
-      when Variable
-        return x
-      when Expression
-        return x.to_var
-      when FuncCall
-        return x.to_var
-      when Integer
-        if x < 0 then
-          return Variable::new("#{x}", Int, :signed => true, :constant => x )
-        else
-          return Variable::new("#{x}", Int, :signed => false, :constant => x )
-        end
-      when Float
-        return Variable::new("#{x}", Real, :constant => x )
-      else
-        return nil
-      end
+    def to_var
+      return self
     end
 
     def ===(x)
@@ -1846,4 +1831,22 @@ module BOAST
   set_transition(Int, Sizet, :default, Sizet)
   
 end
+
 ConvolutionGenerator = BOAST
+
+class Integer
+  def to_var
+    if self < 0 then
+       return BOAST::Variable::new("#{self}", BOAST::Int, :signed => true, :constant => self )
+     else
+       return BOAST::Variable::new("#{self}", BOAST::Int, :signed => false, :constant => self )
+    end
+  end
+end
+
+class Float
+  def to_var
+    return BOAST::Variable::new("#{self}", BOAST::Real, :constant => self )
+  end
+end
+
