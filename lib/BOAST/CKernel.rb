@@ -88,6 +88,7 @@ module BOAST
 
       includes = "-I#{RbConfig::CONFIG["archdir"]}"
       includes += " -I#{RbConfig::CONFIG["rubyhdrdir"]} -I#{RbConfig::CONFIG["rubyhdrdir"]}/#{RbConfig::CONFIG["arch"]}"
+      includes += " -I#{RbConfig::CONFIG["rubyarchhdrdir"]}" if RbConfig::CONFIG["rubyarchhdrdir"]
       ld_flags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
       ld_flags += " -lcudart" if @lang == BOAST::CUDA
       narray_path = nil
