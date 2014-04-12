@@ -282,11 +282,11 @@ EOF
         kernel.binary.rewind
         kernel_file.write( kernel.binary.read )
         kernel_file.close
-        kernel_files.push(kernel_file.path)
+        kernel_files.push(kernel_file)
       }
       file module_final => [module_target, target] do
         #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-        sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+        sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
       end
       Rake::Task[module_final].invoke
       require(module_final)
@@ -300,7 +300,7 @@ EOF
       File.unlink(module_file_name)
       File.unlink(module_final)
       kernel_files.each { |f|
-        File.unlink(f)
+        f.unlink
       }
       return self
     end
