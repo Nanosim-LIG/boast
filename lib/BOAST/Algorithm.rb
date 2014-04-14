@@ -250,19 +250,39 @@ module BOAST
       return Expression::new("-",nil,self)
     end
 
+    def Expression.to_str_base(op1, op2, oper)
+      s = ""
+      if op1 then
+        s += "(" if (oper == "*" or oper == "/") 
+        s += op1.to_s
+        s += ")" if (oper == "*" or oper == "/") 
+      end        
+      s += " " unless oper == "++" or oper == "."
+      s += oper 
+      s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
+      if op2 then
+        s += "(" if (oper == "*" or oper == "/" or oper == "-") 
+        s += op2.to_s
+        s += ")" if (oper == "*" or oper == "/" or oper == "-") 
+      end
+      return s
+    end
+      
     def to_var
       op1 = nil
       op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
       op2 = nil
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
-      res_exp = Expression::new(@operator, op1.nil? ? @operand1 : op1, op2.nil? ? @operand2 : op2)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
-        return r_t.copy("#{res_exp}", :const => nil, :constant => nil)
-      elsif op1
-        return op1.copy("#{res_exp}", :const => nil, :constant => nil)
+        res_exp = BOAST::Expression::to_str_base(op1, op2, oper)
+        return r_t.copy(res_exp, :const => nil, :constant => nil)
       elsif op2
-        return op2.copy("#{res_exp}", :const => nil, :constant => nil)
+        res_exp = BOAST::Expression::to_str_base(@operand1, op2, @operator)
+        return op2.copy(res_exp, :const => nil, :constant => nil)
+      elsif op1
+        res_exp = BOAST::Expression::to_str_base(op1, @operand2, @operator)
+        return op1.copy(res_exp, :const => nil, :constant => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
         raise "Expression on no operand!"
@@ -282,22 +302,8 @@ module BOAST
 
       op1 = @operand1 if not op1
       op2 = @operand2 if not op2
-     
-      s = ""
-      if op1 then
-        s += "(" if (oper == "*" or oper == "/") 
-        s += op1.to_s
-        s += ")" if (oper == "*" or oper == "/") 
-      end        
-      s += " " unless oper == "++" or oper == "."
-      s += oper 
-      s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
-      if op2 then
-        s += "(" if (oper == "*" or oper == "/" or oper == "-") 
-        s += op2.to_s
-        s += ")" if (oper == "*" or oper == "/" or oper == "-") 
-      end
-      return s
+
+      return BOAST::Expression::to_str_base(op1, op2, oper)
     end
 
     def print(final=true)
