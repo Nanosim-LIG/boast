@@ -252,9 +252,9 @@ module BOAST
 
     def to_var
       op1 = nil
-      op1 = @operand1.to_var if @operand1 and @operand1.respond_to?(:to_var)
+      op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
       op2 = nil
-      op2 = @operand2.to_var if @operand2 and @operand2.respond_to?(:to_var)
+      op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       res_exp = Expression::new(@operator, op1.nil? ? @operand1 : op1, op2.nil? ? @operand2 : op2)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
@@ -271,9 +271,9 @@ module BOAST
  
     def to_str
       op1 = nil
-      op1 = @operand1.to_var if @operand1 and @operand1.respond_to?(:to_var)
+      op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
       op2 = nil
-      op2 = @operand2.to_var if @operand2 and @operand2.respond_to?(:to_var)
+      op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
       else
