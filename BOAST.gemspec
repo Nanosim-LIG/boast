@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://forge.imag.fr/projects/boast/"
   s.summary = "BOAST is a computing kernel metaprogramming tool."
   s.description = "BOAST aims at providing a framework to metaprogram, benchmark and validate computing kernels"
-  s.files = %w( BOAST.gemspec LICENSE lib/BOAST.rb lib/BOAST/Algorithm.rb lib/BOAST/CKernel.rb lib/BOAST/BOAST_OpenCL.rb lib/BOAST/Transitions.rb lib/BOAST/Parens.rb)
+  s.files = %w( BOAST.gemspec LICENSE lib/BOAST.rb lib/BOAST/Algorithm.rb lib/BOAST/CKernel.rb lib/BOAST/BOAST_OpenCL.rb lib/BOAST/Transitions.rb lib/BOAST/Parens.rb lib/BOAST/Operators.rb )
   s.has_rdoc = true
   s.license = 'BSD'
   s.required_ruby_version = '>= 1.9.3'

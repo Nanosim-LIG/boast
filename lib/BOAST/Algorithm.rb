@@ -199,7 +199,7 @@ module BOAST
     end
 
     def ===(x)
-      return Expression::new("=",self,x)
+      return Expression::new(BOAST::Affectation,self,x)
     end
 
     def ==(x)
@@ -207,7 +207,7 @@ module BOAST
     end
  
     def +(x)
-      return Expression::new("+",self,x)
+      return Expression::new(BOAST::Addition,self,x)
     end
  
     def >(x)
@@ -223,11 +223,11 @@ module BOAST
     end
  
     def *(x)
-      return Expression::new("*",self,x)
+      return Expression::new(BOAST::Multiplication,self,x)
     end
 
     def /(x)
-      return Expression::new("/",self,x)
+      return Expression::new(BOAST::Division,self,x)
     end
  
     def dereference
@@ -239,18 +239,19 @@ module BOAST
     end
  
     def -(x)
-      return Expression::new("-",self,x)
+      return Expression::new(BOAST::Substraction,self,x)
     end
 
     def !
-      return Expression::new("!",nil,self)
+      return Expression::new(BOAST::Not,nil,self)
     end
  
     def -@
-      return Expression::new("-",nil,self)
+      return Expression::new(BOAST::Minus,nil,self)
     end
 
     def Expression.to_str_base(op1, op2, oper)
+      return oper.to_s(op1,op2) if not oper.kind_of?(String)
       s = ""
       if op1 then
         s += "(" if (oper == "*" or oper == "/") 
@@ -313,24 +314,6 @@ module BOAST
       s += ";" if final and [C, CL, CUDA].include?( BOAST::get_lang ) 
       BOAST::get_output.puts s if final
       return s
-    end
-  end
-
-  class Mult < Expression
-    def initialize(operand1, operand2)
-      super("*", operand1, operand2)
-    end
-  end
-
-  class Add < Expression
-    def initialize(operand1, operand2)
-      super("+", operand1, operand2)
-    end
-  end
-
-  class Affect < Expression
-    def initialize(operand1, operand2)
-      super("=", operand1, operand2)
     end
   end
 
@@ -610,7 +593,7 @@ module BOAST
     end
 
     def ===(x)
-      return Expression::new("=",self,x)
+      return Expression::new(BOAST::Affectation,self,x)
     end
  
     def ==(x)
@@ -630,27 +613,27 @@ module BOAST
     end
  
     def +(x)
-      return Expression::new("+",self,x)
+      return Expression::new(BOAST::Addition,self,x)
     end
  
     def *(x)
-      return Expression::new("*",self,x)
+      return Expression::new(BOAST::Multiplication,self,x)
     end
  
     def /(x)
-      return Expression::new("/",self,x)
+      return Expression::new(BOAST::Division,self,x)
     end
  
     def -(x)
-      return Expression::new("-",self,x)
+      return Expression::new(BOAST::Substraction,self,x)
     end
 
     def !
-      return Expression::new("!",nil,self)
+      return Expression::new(BOAST::Not,nil,self)
     end
  
     def -@
-      return Expression::new("-",nil,self)
+      return Expression::new(BOAST::Minus,nil,self)
     end
 
     def address
