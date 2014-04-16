@@ -10,7 +10,11 @@ module BOAST
 
   class Multiplication < Operator
     def Multiplication.to_s(arg1, arg2)
-      return "(#{arg1}) * (#{arg2})"
+      #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
+      if BOAST::get_lang == C and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+      else
+        return "(#{arg1}) * (#{arg2})"
+      end
     end
   end
 

@@ -6,6 +6,8 @@ module BOAST
   C = 2
   CL = 3
   CUDA = 4
+  X86 = 1
+  ARM = 2
   @@output = STDOUT
   @@lang = FORTRAN
   @@replace_constants = true
@@ -16,6 +18,7 @@ module BOAST
   @@indent_increment = 2
   @@array_start = 1
   @@chain_code = false
+  @@architecture = X86
 
   @@env = Hash.new{|h, k| h[k] = []}
 
@@ -53,6 +56,14 @@ module BOAST
 
   def BOAST::close(a)
     a.close
+  end
+
+  def BOAST::set_architecture(arch)
+    @@architecture = arch
+  end
+
+  def BOAST::get_architecture
+    return @@architecture
   end
 
   def BOAST::set_indent_level(level)
@@ -301,8 +312,8 @@ module BOAST
         oper = @operator
       end
 
-      op1 = @operand1 if not op1
-      op2 = @operand2 if not op2
+      op1 = @operand1 if op1.nil?
+      op2 = @operand2 if op2.nil?
 
       return BOAST::Expression::to_str_base(op1, op2, oper)
     end
@@ -946,27 +957,7 @@ module BOAST
     end
   end
 
-  class Sizet
-    def self.parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
-    end
 
-    attr_reader :signed
-    def initialize(hash={})
-      if hash[:signed] != nil then
-        @signed = hash[:signed]
-      end
-    end
-    def decl
-      return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::get_lang == FORTRAN
-      if not @signed then
-        return "size_t" if [C, CL, CUDA].include?( BOAST::get_lang )
-      else
-        return "ptrdiff_t" if [C, CL, CUDA].include?( BOAST::get_lang )
-      end
-    end
-  end
- 
   class ConstArray < Array
     def initialize(array,type = nil)
       super(array)
