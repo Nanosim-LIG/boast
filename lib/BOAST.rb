@@ -1,5 +1,6 @@
 require 'BOAST/Transitions.rb'
 require 'BOAST/Operators.rb'
+require 'BOAST/DataTypes.rb'
 require 'BOAST/Algorithm.rb'
 require 'BOAST/CKernel.rb'
 require 'BOAST/Parens.rb'
