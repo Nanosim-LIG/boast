@@ -261,8 +261,8 @@ module BOAST
       return Expression::new(BOAST::Minus,nil,self)
     end
 
-    def Expression.to_str_base(op1, op2, oper)
-      return oper.to_s(op1,op2) if not oper.kind_of?(String)
+    def Expression.to_str_base(op1, op2, oper, return_type = nil)
+      return oper.to_s(op1,op2, return_type) if not oper.kind_of?(String)
       s = ""
       if op1 then
         s += "(" if (oper == "*" or oper == "/") 
@@ -287,7 +287,7 @@ module BOAST
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
-        res_exp = BOAST::Expression::to_str_base(op1, op2, oper)
+        res_exp = BOAST::Expression::to_str_base(op1, op2, oper, r_t)
         return r_t.copy(res_exp, :const => nil, :constant => nil)
       elsif op2
         res_exp = BOAST::Expression::to_str_base(@operand1, op2, @operator)
@@ -306,6 +306,7 @@ module BOAST
       op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
       op2 = nil
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
+      r_t = nil
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
       else
@@ -315,7 +316,7 @@ module BOAST
       op1 = @operand1 if op1.nil?
       op2 = @operand2 if op2.nil?
 
-      return BOAST::Expression::to_str_base(op1, op2, oper)
+      return BOAST::Expression::to_str_base(op1, op2, oper, r_t)
     end
 
     def print(final=true)

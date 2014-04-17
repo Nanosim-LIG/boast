@@ -34,6 +34,12 @@ module BOAST
     attr_reader :signed
     attr_reader :vector_length
     attr_reader :total_size
+
+    def ==(t)
+      return true if t.class == self.class and t.size == self.size and t.vector_length == self.vector_length
+      return false
+    end
+
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
@@ -76,6 +82,12 @@ module BOAST
     attr_reader :signed
     attr_reader :vector_length
     attr_reader :total_size
+
+    def ==(t)
+      return true if t.class == self.class and t.signed == self.signed and t.size == self.size and t.vector_length == self.vector_length
+      return false
+    end
+
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
