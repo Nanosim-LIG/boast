@@ -107,13 +107,22 @@ module BOAST
           elsif arg2.type.vector_length == 1 then
             case BOAST::get_architecture
             when X86
-              intr_name = "_mm"
               size = arg1.type.total_size*8
+              if arg1.type.class == Int and size == 64 then
+                a2 = "#{arg2}"
+                if a2[0] != "*" then
+                  a2 = "&" + a2
+                else
+                  a2 = a2[1..-1]
+                end
+                return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )"
+              end
+              intr_name = "_mm"
               if size > 128 then
                 intr_name += "#{size}"
               end
               intr_name += "_load_"
-              if arg2.type.class == Int then
+              if arg1.type.class == Int then
                 intr_name += "si#{size}"
               else
                 intr_name += "#{get_vector_name(arg1.type)}"
@@ -134,8 +143,17 @@ module BOAST
         elsif arg2.class == Variable and arg2.type.vector_length > 1 then
           case BOAST::get_architecture
           when X86
-            intr_name = "_mm"
             size = arg2.type.total_size*8
+            if arg2.type.class == Int and size == 64 then
+              a1 = "#{arg1}"
+              if a1[0] != "*" then
+                a1 = "&" + a1
+              else
+                a1 = a1[1..-1]
+              end
+              return " *((int64_t * ) #{a1}) = _m_to_int64( #{arg2} )"
+            end
+            intr_name = "_mm"
             if size > 128 then
               intr_name += "#{size}"
             end

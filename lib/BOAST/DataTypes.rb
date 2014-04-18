@@ -115,7 +115,8 @@ module BOAST
           return "int#{8*@size}_t"
         elsif @vector_length > 1 then
           if BOAST::get_architecture == X86 then
-            return "__m#{@total_size*8}i"
+            return "__m#{@total_size*8}#{@total_size*8>64?"i":""}"
+           
           else
             raise "Unsupported architecture!"
           end
