@@ -38,6 +38,7 @@ module BOAST
         raise "Unsupported architecture!"
       end
     end
+
     def Operator.convert(arg, type)
       case BOAST::get_architecture
       when X86
@@ -58,78 +59,127 @@ module BOAST
     end
   end
 
+  class BasicBinaryOperator < Operator
+
+    def BasicBinaryOperator.to_s(arg1, arg2, return_type)
+      #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
+      if BOAST::get_lang == C and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+        raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}"
+        if arg1.type != return_type.type
+          a1 = convert(arg1, return_type.type)
+        else
+          a1 = "#{arg1}"
+        end
+        if arg2.type != return_type.type
+          a2 = convert(arg2, return_type.type)
+        else
+          a2 = "#{arg2}"
+        end
+	  return_name = get_vector_name(return_type.type)
+        case BOAST::get_architecture
+        when X86
+          intr_name = "_mm"
+          size = return_type.type.total_size * 8
+          if size > 128 then
+            intr_name += "#{size}"
+          end
+          intr_name += "_#{intr_name_X86}_#{return_name}"
+          return "#{intr_name}( #{a1}, #{a2} )"
+        else
+          raise "Unsupported architecture!"
+        end
+      else
+        return basic_usage( arg1, arg2 )
+      end
+    end
+  end
+
   class Affectation < Operator
-    def Affectation.to_s(arg1, arg2)
+    def Affectation.to_s(arg1, arg2, return_type)
       return "#{arg1} = #{arg2}"
     end
   end
 
-  class Multiplication < Operator
+  class Multiplication < BasicBinaryOperator
     class << self
-      def convert(arg, type)
-        
+
+      def symbol
+        return "*"
+      end
+
+      def intr_name_X86
+        return "mul"
+      end
+
+      def basic_usage(arg1, arg2)
+        return "(#{arg1}) * (#{arg2})" 
       end
   
-      def to_s(arg1, arg2, return_type)
-        #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
-        if BOAST::get_lang == C and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
-          raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}"
-          if arg1.type != return_type.type
-            a1 = convert(arg1, return_type.type)
-          else
-            a1 = "#{arg1}"
-          end
-          if arg2.type != return_type.type
-            a2 = convert(arg2, return_type.type)
-          else
-            a2 = "#{arg2}"
-          end
-  	  return_name = get_vector_name(return_type.type)
-          case BOAST::get_architecture
-          when X86
-            intr_name = "_mm"
-            size = return_type.type.total_size * 8
-            if size > 128 then
-              intr_name += "#{size}"
-            end
-            intr_name += "_mul_#{return_name}"
-            return "#{intr_name}( #{a1}, #{a2} )"
-          else
-            raise "Unsupported architecture!"
-          end
-        else
-          return "(#{arg1}) * (#{arg2})"
-        end
+    end
+  end
+
+  class Addition < BasicBinaryOperator
+    class << self
+
+      def symbol
+        return "+"
       end
+
+      def intr_name_X86
+        return "add"
+      end
+  
+      def basic_usage(arg1, arg2)
+        return "#{arg1} + #{arg2}" 
+      end
+  
     end
   end
 
-  class Addition < Operator
-    def Addition.to_s(arg1, arg2)
-      return "#{arg1} + #{arg2}"
+  class Substraction < BasicBinaryOperator
+    class << self
+
+      def symbol
+        return "-"
+      end
+
+      def intr_name_X86
+        return "sub"
+      end
+  
+      def basic_usage(arg1, arg2)
+        return "#{arg1} - (#{arg2})" 
+      end
+  
     end
   end
 
-  class Substraction < Operator
-    def Substraction.to_s(arg1, arg2)
-      return "#{arg1} - (#{arg2})"
-    end
-  end
+  class Division < BasicBinaryOperator
+    class << self
 
-  class Division < Operator
-    def Division.to_s(arg1, arg2)
-      return "(#{arg1}) / (#{arg2})"
+      def symbol
+        return "/"
+      end
+
+      def intr_name_X86
+        return "div"
+      end
+  
+      def basic_usage(arg1, arg2)
+        return "(#{arg1}) / (#{arg2})" 
+      end
+  
     end
   end
 
   class Minus < Operator
-    def Minus.to_s(arg1, arg2)
+    def Minus.to_s(arg1, arg2, return_type)
       return " -(#{arg2})"
     end
   end
 
   class Not < Operator
-    def Not.to_s(arg1, arg2)
+    def Not.to_s(arg1, arg2, return_type)
       return " ! #{arg2}"
     end
   end
