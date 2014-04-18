@@ -24,11 +24,11 @@ module BOAST
        return_type, operator = get_transition(var1.type.class, var2.type.class, operator)
        #STDERR.puts "#{return_type} : #{var1.type.class} #{operator} #{var2.type.class}"
        if var1.type.class == return_type and var2.type.class == return_type then
-         signed = signed or var1.type.signed
-         signed = signed or var2.type.signed
+         signed = (signed or var1.type.signed)
+         signed = (signed or var2.type.signed)
          size = [var1.type.size, var2.type.size].max
          vector_length = [var1.type.vector_length, var2.type.vector_length].max
-         [BOAST::Variable::new("dummy", return_type, :size => size, :signed => signed), operator]
+         [BOAST::Variable::new("dummy", return_type, :size => size, :signed => signed, :vector_length => vector_length), operator]
        elsif var1.type.class == return_type then
          return [var1, operator]
        elsif var2.type.class == return_type then

@@ -4,11 +4,11 @@ module BOAST
     def Operator.get_vector_name(type)
       case BOAST::get_architecture
       when X86
-        case type.class
+        case type
         when Int
           size = "#{type.size*8}"
           name = ""
-          if type.total.size*8 > 64
+          if type.total_size*8 > 64
             name += "e"
           end
           if type.vector_length > 1 then
@@ -63,8 +63,9 @@ module BOAST
 
     def BasicBinaryOperator.to_s(arg1, arg2, return_type)
       #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
-      if BOAST::get_lang == C and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
-        raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}"
+      if BOAST::get_lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+        raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
+        #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
         if arg1.type != return_type.type
           a1 = convert(arg1, return_type.type)
         else
@@ -97,7 +98,8 @@ module BOAST
   class Affectation < Operator
     def Affectation.to_s(arg1, arg2, return_type)
       if BOAST::get_lang == C then
-        if arg1.type.vector_length > 1 then
+        if arg1.class == Variable and arg1.type.vector_length > 1 then
+          #puts "#{arg1.type.vector_length} #{arg2.type.vector_length}"
           if arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
           elsif arg1.type.vector_length == arg2.type.vector_length then
@@ -110,15 +112,20 @@ module BOAST
               if size > 128 then
                 intr_name += "#{size}"
               end
-              intr_name += "_load_#{get_vector_name(arg1.type)}"
-              return "#{arg1} = #{intr_name}( &#{arg2} )"
+              intr_name += "_load_"
+              if arg2.type.class == Int then
+                intr_name += "si#{size}"
+              else
+                intr_name += "#{get_vector_name(arg1.type)}"
+              end
+              return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) &#{arg2} )"
             else
               raise "Unsupported architecture!"
             end
           else
             raise "Unknown convertion between vectors of different length!"
           end
-        elsif arg2.type.vector_length > 1 then
+        elsif arg2.class == Variable and arg2.type.vector_length > 1 then
           case BOAST::get_architecture
           when X86
             intr_name = "_mm"
@@ -126,8 +133,13 @@ module BOAST
             if size > 128 then
               intr_name += "#{size}"
             end
-            intr_name += "_store_#{get_vector_name(arg2.type)}"
-            return "#{intr_name}( #{arg1}, #{arg2} )"
+            intr_name += "_store_"
+            if arg2.type.class == Int then
+              intr_name += "si#{size}"
+            else
+              intr_name += "#{get_vector_name(arg2.type)}"
+            end
+            return "#{intr_name}((#{arg2.type.decl} * ) &#{arg1}, #{arg2} )"
           else
             raise "Unsupported architecture!"
           end

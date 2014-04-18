@@ -54,6 +54,7 @@ module BOAST
       @total_size = @vector_length*@size
       @signed = true
     end
+
     def decl
       return "real(kind=#{@size})" if BOAST::get_lang == FORTRAN
       if [C, CL, CUDA].include?( BOAST::get_lang ) and @vector_length == 1 then
@@ -106,10 +107,20 @@ module BOAST
       end
       @total_size = @vector_length*@size
     end
+
     def decl
       return "integer(kind=#{@size})" if BOAST::get_lang == FORTRAN
-      return "int#{8*@size}_t" if BOAST::get_lang == C
-      if BOAST::get_lang == CL then
+      if BOAST::get_lang == C then
+        if @vector_length == 1 then
+          return "int#{8*@size}_t"
+        elsif @vector_length > 1 then
+          if BOAST::get_architecture == X86 then
+            return "__m#{@total_size*8}i"
+          else
+            raise "Unsupported architecture!"
+          end
+        end
+      elsif BOAST::get_lang == CL then
         #char="cl_"
         char=""
         char += "u" if not @signed
@@ -235,6 +246,8 @@ module BOAST
       @name = hash[:type_name]
       @size = hash[:size]
       @vector_length = hash[:vector_length]
+      @vector_length = 1 if hash[:vector_length].nil?
+      @total_size = @vector_length*@size
     end
     def decl
       return "#{@name}" if [C, CL, CUDA].include?( BOAST::get_lang )
