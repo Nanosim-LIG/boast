@@ -571,7 +571,9 @@ module BOAST
     end
    
     def dereference
-      return Expression::new("*",nil,self)
+      return self.copy("*(#{self.name})", :dimension => false, :dim => false) if [C, CL, CUDA].include?( BOAST::get_lang )
+      return self if BOAST::get_lang == FORTRAN
+      #return Expression::new("*",nil,self)
     end
    
     def struct_reference(x)

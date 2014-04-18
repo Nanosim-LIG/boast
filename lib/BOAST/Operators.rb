@@ -118,7 +118,13 @@ module BOAST
               else
                 intr_name += "#{get_vector_name(arg1.type)}"
               end
-              return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) &#{arg2} )"
+              a2 = "#{arg2}"
+              if a2[0] != "*" then
+                a2 = "&" + a2
+              else
+                a2 = a2[1..-1]
+              end
+              return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) #{a2} )"
             else
               raise "Unsupported architecture!"
             end
@@ -139,7 +145,13 @@ module BOAST
             else
               intr_name += "#{get_vector_name(arg2.type)}"
             end
-            return "#{intr_name}((#{arg2.type.decl} * ) &#{arg1}, #{arg2} )"
+            a1 = "#{arg1}"
+            if a1[0] != "*" then
+              a1 = "&" + a1
+            else
+              a1 = a1[1..-1]
+            end
+            return "#{intr_name}((#{arg2.type.decl} * ) #{a1}, #{arg2} )"
           else
             raise "Unsupported architecture!"
           end

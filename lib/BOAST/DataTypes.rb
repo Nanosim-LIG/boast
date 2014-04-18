@@ -245,8 +245,9 @@ module BOAST
     def initialize(hash={})
       @name = hash[:type_name]
       @size = hash[:size]
+      @size = 0 if @size.nil?
       @vector_length = hash[:vector_length]
-      @vector_length = 1 if hash[:vector_length].nil?
+      @vector_length = 1 if @vector_length.nil?
       @total_size = @vector_length*@size
     end
     def decl
