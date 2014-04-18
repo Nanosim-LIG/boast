@@ -96,6 +96,50 @@ module BOAST
 
   class Affectation < Operator
     def Affectation.to_s(arg1, arg2, return_type)
+      if BOAST::get_lang == C then
+        if arg1.type.vector_length > 1 then
+          if arg1.type == arg2.type then
+            return basic_usage(arg1, arg2)
+          elsif arg1.type.vector_length == arg2.type.vector_length then
+            return "#{arg1} = #{convert(arg2, arg1.type)}"
+          elsif arg2.type.vector_length == 1 then
+            case BOAST::get_architecture
+            when X86
+              intr_name = "_mm"
+              size = arg1.type.total_size*8
+              if size > 128 then
+                intr_name += "#{size}"
+              end
+              intr_name += "_load_#{get_vector_name(arg1.type)}"
+              return "#{arg1} = #{intr_name}( &#{arg2} )"
+            else
+              raise "Unsupported architecture!"
+            end
+          else
+            raise "Unknown convertion between vectors of different length!"
+          end
+        elsif arg2.type.vector_length > 1 then
+          case BOAST::get_architecture
+          when X86
+            intr_name = "_mm"
+            size = arg2.type.total_size*8
+            if size > 128 then
+              intr_name += "#{size}"
+            end
+            intr_name += "_store_#{get_vector_name(arg2.type)}"
+            return "#{intr_name}( #{arg1}, #{arg2} )"
+          else
+            raise "Unsupported architecture!"
+          end
+        else
+          return basic_usage(arg1, arg2)
+        end
+      else
+        return basic_usage(arg1, arg2)
+      end
+    end
+
+    def Affectation.basic_usage(arg1, arg2)
       return "#{arg1} = #{arg2}"
     end
   end
