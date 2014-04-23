@@ -858,7 +858,7 @@ module BOAST
         end
       elsif BOAST::get_lang == CUDA then
         if @properties[:local] then
-          s += "__device__ "
+          s += "static __device__ "
         else
           s += "__global__ "
         end
