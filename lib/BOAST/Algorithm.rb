@@ -504,6 +504,14 @@ module BOAST
       }
       return Variable::new(name, @type.class, hash)
     end
+
+    def Variable.from_type(name, type, options={})
+      hash = type.to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Variable::new(name, type.class, hash)
+    end
   
     def to_s
       self.to_str

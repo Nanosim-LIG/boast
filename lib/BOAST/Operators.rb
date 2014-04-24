@@ -34,6 +34,17 @@ module BOAST
         else
           raise "Undefined vector type!"
         end
+      when ARM
+        case type
+        when Int
+          name = "#{ type.signed ? "s" : "u" }"
+          name += "#{ type.size * 8}"
+          return name
+        when Real
+          return "f#{type.size*8}"
+        else
+          raise "Undefined vector type!"
+        end
       else
         raise "Unsupported architecture!"
       end
@@ -53,6 +64,42 @@ module BOAST
         elsif [s1, s2].max <= 512 then
           return "_mm512_cvt#{n1}_#{n2}( #{arg} )"
         end
+      when ARM
+        if type.class != arg.type.class then
+          if type.size == arg.type.size then
+            s = type.total_size*8
+            n1 = get_vector_name(arg.type)
+            n2 = get_vector_name(type)
+            return "vcvt#{ s == 128 ? "q" : "" }_#{n2}_#{n1}( #{arg} )"
+          elsif type.class == Real then
+            intr = convert(arg, arg.type.copy(:size=>type.size))
+            return convert(arg.copy(intr, :size => type.size ), type)
+          else
+            n1 = get_vector_name(arg.type)
+            s = type.total_size*8
+            t2 = type.copy(:size => arg.type.size)
+            n2 = get_vector_name( t2 )
+            intr = "vcvt#{ s == 128 ? "q" : "" }_#{n2}_#{n1}( #{arg} )"
+            return convert(Variable::from_type(intr, t2), type)
+          end
+        elsif type.class != Real then
+          n = get_vector_name(arg.type)
+          if type.size == arg.type.size then
+            if type.signed == arg.type.signed then
+              return "#{arg}"
+            else
+              n2 = get_vector_name(type)
+              return "vreinterpret_#{n2}_#{n}( #{arg} )"
+            end
+          elsif type.size < arg.type.size then
+            intr = "vmovn_#{n}( #{arg} )"
+            s = arg.type.size/2
+          else
+            intr = "vmovl_#{n}( #{arg} )"
+            s = arg.type.size*2
+          end
+          return convert(arg.copy(intr, :size => s), type)
+        end
       else
         raise "Unsupported architecture!"
       end
@@ -66,26 +113,41 @@ module BOAST
       if BOAST::get_lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
         #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
-        if arg1.type != return_type.type
-          a1 = convert(arg1, return_type.type)
-        else
-          a1 = "#{arg1}"
-        end
-        if arg2.type != return_type.type
-          a2 = convert(arg2, return_type.type)
-        else
-          a2 = "#{arg2}"
-        end
-	  return_name = get_vector_name(return_type.type)
+	return_name = get_vector_name(return_type.type)
+        size = return_type.type.total_size * 8
         case BOAST::get_architecture
         when X86
+          if arg1.type != return_type.type
+            a1 = convert(arg1, return_type.type)
+          else
+            a1 = "#{arg1}"
+          end
+          if arg2.type != return_type.type
+            a2 = convert(arg2, return_type.type)
+          else
+            a2 = "#{arg2}"
+          end
           intr_name = "_mm"
-          size = return_type.type.total_size * 8
           if size > 128 then
             intr_name += "#{size}"
           end
           intr_name += "_#{intr_name_X86}_#{return_name}"
           return "#{intr_name}( #{a1}, #{a2} )"
+        when ARM
+          if arg1.type.class != return_type.type.class then
+            a1 = convert(arg1, return_type.type)
+          else
+            a1 = "#{arg1}"
+          end
+          if arg2.type.class != return_type.type.class then
+            a2 = convert(arg2, return_type.type)
+          else
+            a2 = "#{arg2}"
+          end
+          intr_name = "#{intr_name_ARM}"
+          intr_name += "q" if size == 128
+          intr_name += "_" + return_name + "( #{a1}, #{a2} )"
+          return intr_name
         else
           raise "Unsupported architecture!"
         end
@@ -105,16 +167,20 @@ module BOAST
           elsif arg1.type.vector_length == arg2.type.vector_length then
             return "#{arg1} = #{convert(arg2, arg1.type)}"
           elsif arg2.type.vector_length == 1 then
+            size = arg1.type.total_size*8
+            a2 = "#{arg2}"
+            if a2[0] != "*" then
+              a2 = "&" + a2
+            else
+              a2 = a2[1..-1]
+            end
             case BOAST::get_architecture
+            when ARM
+              intr_name = "vldl"
+              intr_name += "q" if size == 128
+              intr_name += "_#{get_vector_name(arg1.type)}"
             when X86
-              size = arg1.type.total_size*8
               if arg1.type.class == Int and size == 64 then
-                a2 = "#{arg2}"
-                if a2[0] != "*" then
-                  a2 = "&" + a2
-                else
-                  a2 = a2[1..-1]
-                end
                 return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )"
               end
               intr_name = "_mm"
@@ -127,30 +193,28 @@ module BOAST
               else
                 intr_name += "#{get_vector_name(arg1.type)}"
               end
-              a2 = "#{arg2}"
-              if a2[0] != "*" then
-                a2 = "&" + a2
-              else
-                a2 = a2[1..-1]
-              end
-              return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) #{a2} )"
             else
               raise "Unsupported architecture!"
             end
+            return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) #{a2} )"
           else
             raise "Unknown convertion between vectors of different length!"
           end
         elsif arg2.class == Variable and arg2.type.vector_length > 1 then
+          size = arg2.type.total_size*8
+          a1 = "#{arg1}"
+          if a1[0] != "*" then
+            a1 = "&" + a1
+          else
+            a1 = a1[1..-1]
+          end
           case BOAST::get_architecture
+          when ARM
+            intr_name = "vstl"
+            intr_name += "q" if size == 128
+            intr_name += "_#{get_vector_name(arg2.type)}"
           when X86
-            size = arg2.type.total_size*8
             if arg2.type.class == Int and size == 64 then
-              a1 = "#{arg1}"
-              if a1[0] != "*" then
-                a1 = "&" + a1
-              else
-                a1 = a1[1..-1]
-              end
               return " *((int64_t * ) #{a1}) = _m_to_int64( #{arg2} )"
             end
             intr_name = "_mm"
@@ -163,16 +227,10 @@ module BOAST
             else
               intr_name += "#{get_vector_name(arg2.type)}"
             end
-            a1 = "#{arg1}"
-            if a1[0] != "*" then
-              a1 = "&" + a1
-            else
-              a1 = a1[1..-1]
-            end
-            return "#{intr_name}((#{arg2.type.decl} * ) #{a1}, #{arg2} )"
           else
             raise "Unsupported architecture!"
           end
+          return "#{intr_name}((#{arg2.type.decl} * ) #{a1}, #{arg2} )"
         else
           return basic_usage(arg1, arg2)
         end
@@ -197,6 +255,10 @@ module BOAST
         return "mul"
       end
 
+      def intr_name_ARM
+        return "vmul"
+      end
+
       def basic_usage(arg1, arg2)
         return "(#{arg1}) * (#{arg2})" 
       end
@@ -215,6 +277,10 @@ module BOAST
         return "add"
       end
   
+      def intr_name_ARM
+        return "vadd"
+      end
+
       def basic_usage(arg1, arg2)
         return "#{arg1} + #{arg2}" 
       end
@@ -233,6 +299,10 @@ module BOAST
         return "sub"
       end
   
+      def intr_name_ARM
+        return "vsub"
+      end
+
       def basic_usage(arg1, arg2)
         return "#{arg1} - (#{arg2})" 
       end
@@ -251,6 +321,10 @@ module BOAST
         return "div"
       end
   
+      def intr_name_ARM
+        raise "Neon doesn't support division!"
+      end
+
       def basic_usage(arg1, arg2)
         return "(#{arg1}) / (#{arg2})" 
       end

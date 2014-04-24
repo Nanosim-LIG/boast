@@ -15,6 +15,19 @@ module BOAST
       @size = nil
       @vector_length = 1
     end
+
+    def to_hash
+      return { :signed => @signed }
+    end
+
+    def copy(options={})
+      hash = self.to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Sizet::new(hash)
+    end
+
     def decl
       return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::get_lang == FORTRAN
       if not @signed then
@@ -55,15 +68,31 @@ module BOAST
       @signed = true
     end
 
+    def to_hash
+      return { :size => @size, :vector_length => @vector_length }
+    end
+
+    def copy(options={})
+      hash = to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Real::new(hash)
+    end
+
     def decl
       return "real(kind=#{@size})" if BOAST::get_lang == FORTRAN
       if [C, CL, CUDA].include?( BOAST::get_lang ) and @vector_length == 1 then
         return "float" if @size == 4
         return "double" if @size == 8
       elsif BOAST::get_lang == C and @vector_length > 1 then
-        if BOAST::get_architecture == X86 then
+        if BOAST::get_architecture == BOAST::X86 then
           return "__m#{@total_size*8}" if @size == 4
-          return "__m#{@total_size*8}d" if @size == 4
+          return "__m#{@total_size*8}d" if @size == 8
+        elsif BOAST::get_architecture == BOAST::ARM then
+          raise "Unsupported data type in NEON: double!" if @size == 8
+          raise "Unsupported vector length in NEON: #{@total_size} (#{@size} x 8 x #{@vector_length})!" if @total_size * 8 != 64 or @total_size * 8 != 128
+          return "float#{@size*8}x#{@vector_length}_t"
         else
           raise "Unsupported architecture!"
         end
@@ -108,15 +137,31 @@ module BOAST
       @total_size = @vector_length*@size
     end
 
+    def to_hash
+      return { :size => @size, :vector_length => @vector_length, :signed => @signed }
+    end
+
+    def copy(options={})
+      hash = self.to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Int::new(hash)
+    end
+
     def decl
       return "integer(kind=#{@size})" if BOAST::get_lang == FORTRAN
       if BOAST::get_lang == C then
         if @vector_length == 1 then
-          return "int#{8*@size}_t"
+          s = ""
+          s += "u" if not @signed
+          return s+"int#{8*@size}_t"
         elsif @vector_length > 1 then
-          if BOAST::get_architecture == X86 then
-            return "__m#{@total_size*8}#{@total_size*8>64?"i":""}"
-           
+          if BOAST::get_architecture == BOAST::X86 then
+            return "__m#{@total_size*8}#{@total_size*8>64 ? "i" : ""}"
+          elsif BOAST::get_architecture == BOAST::ARM then
+            raise "Unsupported vector length in NEON: #{@total_size*8} (#{@size} x 8 x #{@vector_length})!" if @total_size * 8 != 64 and @total_size * 8 != 128
+            return "#{ @signed ? "" : "u"}int#{@size*8}x#{@vector_length}_t"
           else
             raise "Unsupported architecture!"
           end
