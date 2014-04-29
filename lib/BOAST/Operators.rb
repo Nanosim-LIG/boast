@@ -157,6 +157,50 @@ module BOAST
     end
   end
 
+  class Set < Operator
+
+    def Set.to_s(arg1, arg2, return_type)
+      if BOAST::get_lang == C then
+        if arg1.class == Variable and arg1.type.vector_length > 1 then
+          if arg1.type == arg2.type then
+            return basic_usage(arg1, arg2)
+          elsif arg1.type.vector_length == arg2.type.vector_length then
+            return "(#{arg1} = #{convert(arg2, arg1.type)})"
+          elsif arg2.type.vector_length == 1 then
+            size = arg1.type.total_size*8
+            case BOAST::get_architecture
+            when ARM
+              intr_name = "vmov"
+              intr_name += "q" if size == 128
+              intr_name += "_n_#{get_vector_name(arg1.type)}"
+            when X86
+              return "(#{arg1} = _m_from_int64( #{a2} ))" if arg1.type.class == Int and arg1.type.size == 8 and size == 64
+              intr_name = "_mm"
+              if size > 128 then
+                intr_name += "#{size}"
+              end
+              intr_name += "_set1_#{get_vector_name(arg1.type).gsub("u","")}"
+              intr_name += "x" if arg1.type.class == Int and arg1.type.size == 8
+            else
+              raise "Unsupported architecture!"
+            end
+            return "(#{arg1} = #{intr_name}( #{arg2} ))"
+          else
+            raise "Unknown convertion between vector of different length!"
+          end
+        else
+          return basic_usage(arg1, arg2)
+        end
+      else
+        return basic_usage(arg1, arg2)
+      end
+    end
+
+    def Set.basic_usage(arg1, arg2)
+      return "(#{arg1} = #{arg2})"
+    end
+  end
+
   class Affectation < Operator
     def Affectation.to_s(arg1, arg2, return_type)
       if BOAST::get_lang == C then

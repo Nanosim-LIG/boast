@@ -455,6 +455,8 @@ module BOAST
 
     def method_missing(m, *a, &b)
       return self.struct_reference(type.members[m.to_s]) if type.members[m.to_s]
+#      return self.get_element(m.to_s) if type.getters[m.to_s]
+#      return self.set_element(m.to_s) if type.setters[m.to_s]
       return self.orig_method_missing(m, *a, &b)
     end
 
@@ -471,6 +473,7 @@ module BOAST
     attr_reader :local
     attr_reader :texture
     attr_reader :sampler
+    attr_reader :restrict
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
@@ -482,6 +485,7 @@ module BOAST
       @local = hash[:local] ? hash[:local] : hash[:shared]
       @texture = hash[:texture]
       @allocate = hash[:allocate]
+      @restrict = hash[:restrict]
       @force_replace_constant = false
       if not hash[:replace_constant].nil? then
         @replace_constant = hash[:replace_constant]
@@ -528,6 +532,10 @@ module BOAST
 
     def to_var
       return self
+    end
+
+    def set(x)
+      return Expression::new(BOAST::Set, self, x)
     end
 
     def ===(x)
@@ -619,6 +627,13 @@ module BOAST
       s += @type.decl
       if(@dimension and not @constant and not @allocate and (not @local or (@local and device))) then
         s += " *"
+        if @restrict then
+          if BOAST::get_lang == CL
+            s += " restrict"
+          else
+            s += " __restrict__"
+          end
+        end
       end
       s += " #{@name}"
       if @dimension and @constant then

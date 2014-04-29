@@ -47,6 +47,8 @@ module BOAST
     attr_reader :signed
     attr_reader :vector_length
     attr_reader :total_size
+    attr_reader :getters
+    attr_reader :setters
 
     def ==(t)
       return true if t.class == self.class and t.size == self.size and t.vector_length == self.vector_length
@@ -59,8 +61,14 @@ module BOAST
       else
         @size = BOAST::get_default_real_size
       end
+#      @getters = {}
+#      @setters = {}
       if hash[:vector_length] and hash[:vector_length] > 1 then
         @vector_length = hash[:vector_length]
+#        @vector_length.times{ |indx|
+#          @getters["s#{indx}"] = indx
+#          @setters["s#{indx}="] = indx
+#        }
       else
         @vector_length = 1
       end
@@ -129,8 +137,14 @@ module BOAST
       else
         @signed = BOAST::get_default_int_signed
       end
+#      @getters = {}
+#      @setters = {}
       if hash[:vector_length] and hash[:vector_length] > 1 then
         @vector_length = hash[:vector_length]
+#        @vector_length.times{ |indx|
+#          @getters["s#{indx}"] = indx
+#          @setters["s#{indx}="] = indx
+#        }
       else
         @vector_length = 1
       end
