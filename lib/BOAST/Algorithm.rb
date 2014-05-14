@@ -874,17 +874,24 @@ module BOAST
       if BOAST::get_lang == CL then
         if not @properties[:local] then
           s += "__kernel "
-        end
-        wgs = @properties[:reqd_work_group_size]
-        if wgs then
-          s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+          wgs = @properties[:reqd_work_group_size]
+          if wgs then
+            s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+          end
         end
       elsif BOAST::get_lang == CUDA then
         if @properties[:local] then
           s += "static __device__ "
         else
           s += "__global__ "
+          wgs = @properties[:reqd_work_group_size]
+          if wgs then
+            s += "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
+          end
         end
+      end
+      if @properties[:qualifiers] then
+        s += "#{@properties[:qualifiers]} "
       end
       if @properties[:return] then
         s += "#{@properties[:return].type.decl} "
