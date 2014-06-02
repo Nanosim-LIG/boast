@@ -9,8 +9,8 @@ module BOAST
     a = Real("a",{:dir => :in, :dim => [ Dim(0,n-1)] })
     b = Real("b",{:dir => :in, :dim => [ Dim(0,n-1)] })
     c = Real("c",{:dir => :out, :dim => [ Dim(0,n-1)] })
-    i = Int("i",{:signed => false})
-    ig = Sizet("ig")
+    i = Int :i, :signed => false 
+    ig = Sizet :ig
     rts = CStruct("rts",:type_name => "recursive_test_struct", :members => [Int("ig"),i])
     ts = CStruct("ts", :type_name => "test_struct", :members => [Real("r"),rts])
     if get_lang == CL then

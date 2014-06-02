@@ -478,7 +478,7 @@ module BOAST
     attr_accessor :force_replace_constant
 
     def initialize(name,type,hash={})
-      @name = name
+      @name = name.to_s
       @direction = hash[:direction] ? hash[:direction] : hash[:dir]
       @constant = hash[:constant] ? hash[:constant]  : hash[:const]
       @dimension = hash[:dimension] ? hash[:dimension] : hash[:dim]
@@ -527,7 +527,7 @@ module BOAST
         s += "_wp" if BOAST::get_lang == FORTRAN and @type and @type.size == 8
         return s
       end
-      return @name.to_str
+      return @name
     end
 
     def to_var
