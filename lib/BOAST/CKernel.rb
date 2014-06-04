@@ -4,9 +4,27 @@ require 'rake'
 require 'tempfile'
 require 'rbconfig'
 require 'systemu'
+require 'yaml'
 
 module BOAST
   @@verbose = false
+  @@compiler_default_options = {
+    :FC => 'gfortran',
+    :FCFLAGS => '-O2 -Wall',
+    :CC => 'gcc',
+    :CFLAGS => '-O2 -Wall',
+    :CXX => 'g++',
+    :CXXFLAGS => '-O2 -Wall',
+    :NVCC => 'nvcc',
+    :NVCCFLAGS => '-O2',
+    :LDFLAGS => '',
+    :CLFLAGS => ''
+  }
+
+  def BOAST::get_options
+    return @@compiler_default_options.clone
+  end
+
 
   def BOAST::get_verbose
     return @@verbose
@@ -68,21 +86,14 @@ module BOAST
       Rake::verbose(verbose)
       Rake::FileUtilsExt.verbose_flag=verbose
       f_compiler = options[:FC]
-      f_compiler = "gfortran" if not f_compiler
       c_compiler = options[:CC]
-      c_compiler = "cc" if not c_compiler
       cxx_compiler = options[:CXX]
-      cxx_compiler = "g++" if not cxx_compiler
       cuda_compiler = options[:NVCC]
-      cuda_compiler = "nvcc"if not cuda_compiler
       f_flags = options[:FCFLAGS]
-      f_flags = "-O2 -Wall" if not f_flags
       f_flags += " -fPIC"
       f_flags += " -fno-second-underscore" if f_compiler == 'g95'
       ld_flags = options[:LDFLAGS]
-      ld_flags = "" if not ld_flags
       cuda_flags = options[:NVCCFLAGS]
-      cuda_flags = "-O2" if not cuda_flags
       cuda_flags += " --compiler-options '-fPIC'"
 
 
@@ -104,10 +115,11 @@ module BOAST
         end
       end
       includes += " -I#{narray_path}" if narray_path
-      cflags = "-O2 -Wall -fPIC #{includes}"
-      cxxflags = String::new(cflags)
+      cflags = options[:CFLAGS]
+      cxxflags = options[:CXXFLAGS]
+      cflags += " -fPIC #{includes}"
+      cxxflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
-      cflags += options[:CFLAGS] if options[:CFLAGS]
       fcflags = f_flags
       cudaflags = cuda_flags
 
@@ -244,15 +256,17 @@ EOF
     end
 
     def build(options = {})
-      return build_opencl(options) if @lang == BOAST::CL
-      ldflags = self.setup_compiler(options)
+      compiler_options = BOAST::get_options
+      compiler_options.update(options)
+      return build_opencl(comiler_options) if @lang == BOAST::CL
+      ldflags = self.setup_compiler(compiler_options)
       extension = ".c" if @lang == BOAST::C
       extension = ".cu" if @lang == BOAST::CUDA
       extension = ".f90" if @lang == BOAST::FORTRAN
 #temporary
-      c_compiler = options[:CC]
+      c_compiler = compiler_options[:CC]
       c_compiler = "cc" if not c_compiler
-      linker = options[:LD]
+      linker = compiler_options[:LD]
       linker = c_compiler if not linker
 #end temporary
       source_file = Tempfile::new([@procedure.name,extension])
