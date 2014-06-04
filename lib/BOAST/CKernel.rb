@@ -18,8 +18,22 @@ module BOAST
     :NVCC => 'nvcc',
     :NVCCFLAGS => '-O2',
     :LDFLAGS => '',
-    :CLFLAGS => ''
+    :CLFLAGS => '',
+    :openmp => false
   }
+
+  @@openmp_flags = {
+    "gcc" => "-fopenmp",
+    "icc" => "-openmp",
+    "gfortran" => "-fopenmp",
+    "ifort" => "-openmp",
+    "g++" => "-fopenmp",
+    "icpc" => "-openmp"
+  }
+
+  def BOAST::get_openmp_flags
+    return @@openmp_flags.clone
+  end
 
   def BOAST::get_options
     return @@compiler_default_options.clone
@@ -122,6 +136,40 @@ module BOAST
       cflags += " -DHAVE_NARRAY_H" if narray_path
       fcflags = f_flags
       cudaflags = cuda_flags
+
+      if options[:openmp] then
+        case @lang
+        when BOAST::C
+          openmp_c_flags = BOAST::get_openmp_flags[c_compiler]
+          if not openmp_c_flags then
+            keys = BOAST::get_openmp_flags.keys
+            keys.each { |k|
+              openmp_c_flags = BOAST::get_openmp_flags[k] if c_compiler.match(k)
+            }
+          end
+          raise "unkwown openmp flags for: #{c_compiler}" if not openmp_c_flags
+          cflags += " #{openmp_c_flags}"
+          openmp_cxx_flags = BOAST::get_openmp_flags[cxx_compiler]
+          if not openmp_cxx_flags then
+            keys = BOAST::get_openmp_flags.keys
+            keys.each { |k|
+              openmp_cxx_flags = BOAST::get_openmp_flags[k] if cxx_compiler.match(k)
+            }
+          end
+          raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxx_flags
+          cxxflags += " #{openmp_cxx_flags}"
+        when BOAST::FORTRAN
+          openmp_f_flags = BOAST::get_openmp_flags[f_compiler]
+          if not openmp_f_flags then
+            keys = BOAST::get_openmp_flags.keys
+            keys.each { |k|
+              openmp_f_flags = BOAST::get_openmp_flags[k] if f_compiler.match(k)
+            }
+          end
+          raise "unkwown openmp flags for: #{f_compiler}" if not openmp_f_flags
+          fcflags += " #{openmp_f_flags}"
+        end
+      end
 
       runner = lambda { |t, call_string|
         if verbose then
@@ -269,6 +317,17 @@ EOF
       linker = compiler_options[:LD]
       linker = c_compiler if not linker
 #end temporary
+      if options[:openmp] then
+        openmp_ld_flags = BOAST::get_openmp_flags[linker]
+          if not openmp_ld_flags then
+            keys = BOAST::get_openmp_flags.keys
+            keys.each { |k|
+              openmp_ld_flags = BOAST::get_openmp_flags[k] if linker.match(k)
+            }
+          end
+          raise "unkwown openmp flags for: #{linker}" if not openmp_ld_flags
+          ldflags += " #{openmp_ld_flags}"
+      end
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
       target = path.chomp(File::extname(path))+".o"
