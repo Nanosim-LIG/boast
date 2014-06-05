@@ -21,8 +21,8 @@ module BOAST
     :CLFLAGS => '',
     :openmp => false
   }
-
-  @@openmp_flags = {
+  
+  @@openmp_default_flags = {
     "gcc" => "-fopenmp",
     "icc" => "-openmp",
     "gfortran" => "-fopenmp",
@@ -31,11 +31,42 @@ module BOAST
     "icpc" => "-openmp"
   }
 
-  def BOAST::get_openmp_flags
-    return @@openmp_flags.clone
+  def BOAST::read_boast_config
+    home_config_dir = ENV["XDG_CONFIG_HOME"]
+    home_config_dir = "#{Dir.home}/.config" if not home_config_dir
+    Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
+    return if not File::directory?(home_config_dir)
+    boast_config_dir = "#{home_config_dir}/BOAST"
+    Dir.mkdir( boast_config_dir ) if not File::exist?( boast_config_dir )
+    compiler_options_file = "#{boast_config_dir}/compiler_options"
+    if File::exist?( compiler_options_file ) then
+      File::open( compiler_options_file, "r" ) { |f|
+        @@compiler_default_options.update( YAML::load( f.read ) )
+      }
+    else
+      File::open( compiler_options_file, "w" ) { |f|
+        f.write YAML::dump( @@compiler_default_options )
+      }
+    end
+    openmp_flags_file = "#{boast_config_dir}/openmp_flags"
+    if File::exist?( openmp_flags_file ) then
+      File::open( openmp_flags_file, "r" ) { |f|
+        @@openmp_default_flags.update( YAML::load( f.read ) )
+      }
+    else
+      File::open( openmp_flags_file, "w" ) { |f|
+        f.write YAML::dump( @@openmp_default_flags )
+      }
+    end
   end
 
-  def BOAST::get_options
+  BOAST::read_boast_config
+
+  def BOAST::get_openmp_flags
+    return @@openmp_default_flags.clone
+  end
+
+  def BOAST::get_compiler_options
     return @@compiler_default_options.clone
   end
 
@@ -304,7 +335,7 @@ EOF
     end
 
     def build(options = {})
-      compiler_options = BOAST::get_options
+      compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
       return build_opencl(comiler_options) if @lang == BOAST::CL
       ldflags = self.setup_compiler(compiler_options)
