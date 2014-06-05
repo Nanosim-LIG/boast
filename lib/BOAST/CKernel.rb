@@ -58,6 +58,9 @@ module BOAST
         f.write YAML::dump( @@openmp_default_flags )
       }
     end
+    @@compiler_default_options.each_key { |k|
+      @@compiler_default_options[k] = ENV[k.to_s] if ENV[k.to_s]
+    }
   end
 
   BOAST::read_boast_config
