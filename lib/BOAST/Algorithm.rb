@@ -8,8 +8,15 @@ module BOAST
   CUDA = 4
   X86 = 1
   ARM = 2
+
+  def BOAST::get_default_lang
+    lang = BOAST::const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
+    return lang if lang
+    return BOAST::FORTRAN
+  end
+
   @@output = STDOUT
-  @@lang = FORTRAN
+  @@lang = BOAST::get_default_lang
   @@replace_constants = true
   @@default_int_size = 4
   @@default_int_signed = true
