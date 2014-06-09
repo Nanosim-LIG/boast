@@ -61,6 +61,7 @@ module BOAST
     @@compiler_default_options.each_key { |k|
       @@compiler_default_options[k] = ENV[k.to_s] if ENV[k.to_s]
     }
+    @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
   end
 
   BOAST::read_boast_config
