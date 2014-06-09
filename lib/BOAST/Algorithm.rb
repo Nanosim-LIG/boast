@@ -413,7 +413,7 @@ module BOAST
       else
         start = BOAST::get_array_start
       end
-      sub = "#{@indexes.first} - #{start}"
+      sub = "#{@indexes.first} - (#{start})"
       i=1
       ss = ""
       @source.dimension[0..-2].each{ |d|
