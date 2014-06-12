@@ -1379,14 +1379,15 @@ module BOAST
     def to_str_fortran(constants, first)
       s = ""
       if first then
-        s += "select case #{@expression}\n"
+        s += " "*BOAST::get_indent_level
+        s += "select case (#{@expression})\n"
         BOAST::increment_indent_level
       else
         BOAST::decrement_indent_level
       end
       s += " "*BOAST::get_indent_level
       if constants and constants.size>0 then
-        s += "case #{constants.join(" : ")}"
+        s += "case (#{constants.join(" : ")})"
       else
         s += "case default"
       end
@@ -1397,7 +1398,7 @@ module BOAST
     def to_str_c(constants, first)
       s = ""
       if first then
-      s += " "*BOAST::get_indent_level
+        s += " "*BOAST::get_indent_level
         s += "switch(#{@expression}){\n"
         BOAST::increment_indent_level
       else
@@ -1488,10 +1489,10 @@ module BOAST
     def to_str_fortran(condition, first)
       s = ""
       if first then
-        s += "if #{condition} then"
+        s += "if ( #{condition} ) then"
       else
         if condition then
-          s += "else if #{condition} then"
+          s += "else if ( #{condition} ) then"
         else
           s += "else"
         end
@@ -1584,7 +1585,7 @@ module BOAST
     def to_str_fortran
       s = ""
       s += "do #{@iterator}=#{@begin}, #{@end}"
-      s += ", #{@step}" if @step != 1
+      s += ", #{@step}" if 1 != @step
       return s
     end
     def to_str_c

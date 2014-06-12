@@ -61,6 +61,7 @@ module BOAST
     @@compiler_default_options.each_key { |k|
       @@compiler_default_options[k] = ENV[k.to_s] if ENV[k.to_s]
     }
+    @@compiler_default_options[:LD] = ENV["LD"] if ENV["LD"]
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
   end
 
@@ -341,7 +342,7 @@ EOF
     def build(options = {})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
-      return build_opencl(comiler_options) if @lang == BOAST::CL
+      return build_opencl(compiler_options) if @lang == BOAST::CL
       ldflags = self.setup_compiler(compiler_options)
       extension = ".c" if @lang == BOAST::C
       extension = ".cu" if @lang == BOAST::CUDA
