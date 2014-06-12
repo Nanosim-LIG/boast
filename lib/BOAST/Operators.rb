@@ -201,6 +201,17 @@ module BOAST
     end
   end
 
+  class Different < Operator
+    def Different.to_s(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def Different.basic_usage(arg1, arg2)
+      return "#{arg1} /= #{arg2}" if BOAST::get_lang == FORTRAN
+      return "#{arg1} != #{arg2}"
+    end
+  end
+
   class Affectation < Operator
     def Affectation.to_s(arg1, arg2, return_type)
       if BOAST::get_lang == C then

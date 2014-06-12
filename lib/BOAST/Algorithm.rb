@@ -223,7 +223,11 @@ module BOAST
     def ==(x)
       return Expression::new("==",self,x)
     end
- 
+
+    def !=(x)
+      return Expression::new(BOAST::Different,self,x)
+    end
+
     def +(x)
       return Expression::new(BOAST::Addition,self,x)
     end
@@ -551,6 +555,10 @@ module BOAST
  
     def ==(x)
       return Expression::new("==",self,x)
+    end
+
+    def !=(x)
+      return Expression::new(BOAST::Different,self,x)
     end
 
     def >(x)
