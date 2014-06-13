@@ -743,7 +743,7 @@ module BOAST
              s += d
           }
         else
-          s += ":"
+          s += "*"
         end
         s += ")"
       end
