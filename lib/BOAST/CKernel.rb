@@ -91,6 +91,7 @@ module BOAST
     attr_accessor :lang
     attr_accessor :binary
     attr_accessor :kernels
+    attr_accessor :cost_function
     
     def initialize(options={})
       if options[:code] then
@@ -650,6 +651,10 @@ EOF
      else
        super
      end
+    end
+
+    def cost(*args)
+      @cost_function.call(*args)
     end
   end
 end
