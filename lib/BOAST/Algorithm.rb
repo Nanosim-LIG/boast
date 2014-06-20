@@ -252,6 +252,10 @@ module BOAST
       return Expression::new(BOAST::Division,self,x)
     end
  
+    def address
+      return Expression::new("&",nil,self)
+    end
+   
     def dereference
       return Expression::new("*",nil,self)
     end
@@ -281,7 +285,7 @@ module BOAST
         s += ")" if (oper == "*" or oper == "/") 
       end        
       s += " " unless oper == "++" or oper == "."
-      s += oper 
+      s += oper unless ( oper == "&" and BOAST::get_lang == BOAST::FORTRAN )
       s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
       if op2 then
         s += "(" if (oper == "*" or oper == "/" or oper == "-") 
