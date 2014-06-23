@@ -1038,9 +1038,9 @@ module BOAST
       s = ""
       return s if self.first.nil?
       s += "{\n"
-      s += self.first 
+      s += self.first.to_s 
       self[1..-1].each { |v|
-        s += ",\n"+v
+        s += ",\n"+v.to_s
       }
       s += "}"
     end
