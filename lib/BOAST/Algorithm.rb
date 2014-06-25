@@ -5,7 +5,7 @@ module BOAST
   FORTRAN = 1
   C = 2
   CL = 3
-  OpenCL = 3
+#  OpenCL = 3
   CUDA = 4
   X86 = 1
   ARM = 2
