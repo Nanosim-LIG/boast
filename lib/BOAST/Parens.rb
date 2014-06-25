@@ -21,3 +21,15 @@ class Object
   end
 end
 
+module BOAST
+
+  def BOAST.register_funccall(name)
+    s =<<EOF
+    def BOAST.#{name}(*args)
+      return BOAST::FuncCall("#{name}", *args)
+    end
+EOF
+    eval s
+  end
+
+end
