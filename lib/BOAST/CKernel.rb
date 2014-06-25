@@ -75,9 +75,17 @@ module BOAST
     return @@compiler_default_options.clone
   end
 
+  def BOAST::verbose
+    return @@verbose
+  end
+
 
   def BOAST::get_verbose
     return @@verbose
+  end
+
+  def BOAST::verbose=(verbose)
+    @@verbose = verbose
   end
 
   def BOAST::set_verbose(verbose)

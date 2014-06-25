@@ -5,6 +5,7 @@ module BOAST
   FORTRAN = 1
   C = 2
   CL = 3
+  OpenCL = 3
   CUDA = 4
   X86 = 1
   ARM = 2
@@ -65,20 +66,40 @@ module BOAST
     a.close
   end
 
+  def BOAST::architecture=(arch)
+    @@architecture = arch
+  end
+
   def BOAST::set_architecture(arch)
     @@architecture = arch
+  end
+
+  def BOAST::architecture
+    return @@architecture
   end
 
   def BOAST::get_architecture
     return @@architecture
   end
 
+  def BOAST::indent_level=(level)
+    @@indent_level = level
+  end
+
   def BOAST::set_indent_level(level)
     @@indent_level = level
   end
 
+  def BOAST::indent_level
+    return @@indent_level
+  end
+
   def BOAST::get_indent_level
     return @@indent_level
+  end
+
+  def BOAST::indent_increment
+    return @@indent_increment
   end
 
   def BOAST::get_indent_increment
@@ -97,44 +118,88 @@ module BOAST
     @@replace_constants = replace_constants
   end
 
+  def BOAST::replace_constants?
+    return @@replace_constants
+  end
+
   def BOAST::get_replace_constants
     return @@replace_constants
+  end
+
+  def BOAST::default_int_signed=(signed)
+    @@default_int_signed = signed
   end
 
   def BOAST::set_default_int_signed(signed)
     @@default_int_signed = signed
   end
 
+  def BOAST::default_int_signed?
+    return @@default_int_signed
+  end
+
   def BOAST::get_default_int_signed
     return @@default_int_signed
+  end
+
+  def BOAST::default_int_size=(size)
+    @@default_int_size = size
   end
 
   def BOAST::set_default_int_size(size)
     @@default_int_size = size
   end
 
+  def BOAST::default_int_size
+    return @@default_int_size
+  end
+
   def BOAST::get_default_int_size
     return @@default_int_size
+  end
+
+  def BOAST::default_real_size=(size)
+    @@default_real_size = size
   end
 
   def BOAST::set_default_real_size(size)
     @@default_real_size = size
   end
 
+  def BOAST::default_real_size
+    return @@default_real_size
+  end
+
   def BOAST::get_default_real_size
     return @@default_real_size
+  end
+
+  def BOAST::lang=(lang)
+    @@lang = lang
   end
 
   def BOAST::set_lang(lang)
     @@lang = lang
   end
 
+  def BOAST::lang
+    return @@lang
+  end
+
   def BOAST::get_lang
     return @@lang
   end
 
+  def BOAST::output(output)
+    @@output = output
+  end
+
   def BOAST::set_output(output)
     @@output = output
+  end
+
+  def BOAST::output
+    return @@output
   end
 
   def BOAST::get_output
@@ -149,8 +214,16 @@ module BOAST
     return @@chain_code
   end
 
+  def BOAST::array_start=(array_start)
+    @@array_start = array_start
+  end
+
   def BOAST::set_array_start(array_start)
     @@array_start = array_start
+  end
+
+  def BOAST::array_start
+    return @@array_start
   end
 
   def BOAST::get_array_start
