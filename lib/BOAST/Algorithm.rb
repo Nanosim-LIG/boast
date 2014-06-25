@@ -16,6 +16,12 @@ module BOAST
     return BOAST::FORTRAN
   end
 
+  def BOAST::get_default_debug
+    debug = false
+    debug = ENV["DEBUG"] if ENV["DEBUG"]
+    return debug
+  end
+
   @@output = STDOUT
   @@lang = BOAST::get_default_lang
   @@replace_constants = true
@@ -27,6 +33,7 @@ module BOAST
   @@array_start = 1
   @@chain_code = false
   @@architecture = X86
+  @@debug = BOAST::get_default_debug
 
   @@env = Hash.new{|h, k| h[k] = []}
 
@@ -64,6 +71,14 @@ module BOAST
 
   def BOAST::close(a)
     a.close
+  end
+
+  def BOAST::debug=(debug)
+    @@debug = debug
+  end
+
+  def BOAST::debug
+    return @@debug
   end
 
   def BOAST::architecture=(arch)

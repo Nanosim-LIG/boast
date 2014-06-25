@@ -12,7 +12,10 @@ class Object
     
     return klass.send(:parens, *a, &b)  if klass.respond_to? :parens
 
-    return BOAST::FuncCall::new(m,*a,&b) if s == BOAST
+    if s == BOAST then
+      STDERR.puts "Warning unkwown function #{m} generated as BOAST::FuncCall!" if BOAST::debug
+      return BOAST::FuncCall::new(m,*a,&b)
+    end
 
     orig_method_missing m, *a, &b
   end
