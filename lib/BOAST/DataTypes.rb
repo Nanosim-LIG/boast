@@ -163,6 +163,10 @@ module BOAST
       return Int::new(hash)
     end
 
+    def signed?
+      return @signed
+    end
+
     def decl
       return "integer(kind=#{@size})" if BOAST::get_lang == FORTRAN
       if BOAST::get_lang == C then
