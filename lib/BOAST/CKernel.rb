@@ -661,6 +661,101 @@ EOF
      end
     end
 
+    def load_ref_inputs(path = "", suffix = ".in" )
+      return load_ref_files( path, suffix, :in )
+    end
+
+    def load_ref_outputs(path = "", suffix = ".out" )
+      return load_ref_files( path, suffix, :out )
+    end
+
+    def load_ref_files(  path = "", suffix = "", intent )
+      proc_path = path + "/#{@procedure.name}."
+      res = [] 
+      @procedure.parameters.collect { |param|
+        if intent == :out and ( param.direction == :in or param.constant ) then
+          res.push nil
+          next
+        end
+        f = File::new( proc_path+param.name+suffix, "r" )
+        if param.dimension then
+          if param.type.class == BOAST::Real then
+            case param.type.size
+            when 4
+              type = NArray::SFLOAT
+            when 8
+              type = NArray::FLOAT
+            else
+              STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+              type = NArray::BYTE
+            end
+          elsif param.type.class == BOAST::Int then
+            case param.type.size
+            when 1
+              type = NArray::BYTE
+            when 2
+              type = NArray::SINT
+            when 4
+              type = NArray::SINT
+            else
+              STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+              type = NArray::BYTE
+            end
+          else
+            STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if BOAST::debug
+            type = NArray::BYTE
+          end
+          res.push NArray.to_na(f.read, type)
+        else
+          if param.type.class == BOAST::Real then
+            case param.type.size
+            when 4
+              type = "f"
+            when 8
+              type = "d"
+            else
+              raise "Unsupported Real scalar size: #{param.type.size}!"
+            end
+          elsif param.type.class == BOAST::Int then
+            case param.type.size
+            when 1
+              type = "C"
+            when 2
+              type = "S"
+            when 4
+              type = "L"
+            when 8
+              type = "Q"
+            else
+              raise "Unsupported Int scalar size: #{param.type.size}!"
+            end
+            if param.type.signed? then
+              type.downcase!
+            end
+          end
+          res.push f.read.unpack(type)
+        end
+        f.close
+      }
+      if @lang == BOAST::CUDA or @lang == BOAST::CL then
+        f = File::new( proc_path +"problem_size", "r")
+        s = File.read
+        local_dim, global_dim = scan(/<(.*?)>/).first
+        local_dim  =  local_dim.pop
+        global_dim = global_dim.pop
+        local_dim  = [1,1,1].update( local_dim.split(",").collect!{ |e| e.to_i } )
+        global_dim = [1,1,1].update( global_dim.split(",").collect!{ |e| e.to_i } )
+        if @lang == BOAST::CL then
+          local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
+          res.push { :global_work_size => global_dim, :local_work_size => local_dim }
+        else
+          res.push { :block_number => global_dim, :block_size => local_dim }
+        end
+        f.close
+      end
+      return res
+    end
+
     def cost(*args)
       @cost_function.call(*args)
     end
