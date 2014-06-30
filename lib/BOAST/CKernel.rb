@@ -669,6 +669,22 @@ EOF
       return load_ref_files( path, suffix, :out )
     end
 
+    def compare_ref(ref_outputs, outputs, epsilon= 1.0e-8)
+      @procedure.parameters.each_with_index { |param, indx|
+        if param.direction == :in or param.constant then
+          next
+        end
+        if param.dimension then
+          diff = (outputs[indx] - ref_outputs[indx]).abs
+          diff.each { |elem|
+            raise "Error: #{param.name} different from ref by: #{elem}!" if elem > epsilon
+          }
+        else
+          raise "Error: #{param.name} different from ref: #{outputs[indx]} != #{ref_outputs[indx]} !" if (outputs[indx] - ref_outputs[indx]).abs > epsilon
+        end
+      }
+    end
+
     def load_ref_files(  path = "", suffix = "", intent )
       proc_path = path + "/#{@procedure.name}."
       res = [] 
