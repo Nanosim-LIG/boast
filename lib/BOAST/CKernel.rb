@@ -721,7 +721,11 @@ EOF
             STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if BOAST::debug
             type = NArray::BYTE
           end
-          res.push NArray.to_na(f.read, type)
+          if f.size == 0 then
+            res.push NArray::new(type, 1)
+          else
+            res.push NArray.to_na(f.read, type)
+          end
         else
           if param.type.class == BOAST::Real then
             case param.type.size
@@ -749,6 +753,7 @@ EOF
               type.downcase!
             end
           end
+          puts f.inspect
           res.push f.read.unpack(type)
         end
         f.close
