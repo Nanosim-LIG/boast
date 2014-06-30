@@ -669,20 +669,26 @@ EOF
       return load_ref_files( path, suffix, :out )
     end
 
-    def compare_ref(ref_outputs, outputs, epsilon= 1.0e-8)
+    def compare_ref(ref_outputs, outputs, epsilon = nil)
+      res = {}
       @procedure.parameters.each_with_index { |param, indx|
         if param.direction == :in or param.constant then
           next
         end
         if param.dimension then
           diff = (outputs[indx] - ref_outputs[indx]).abs
-          diff.each { |elem|
-            raise "Error: #{param.name} different from ref by: #{elem}!" if elem > epsilon
-          }
+          if epsilon then
+            diff.each { |elem|
+              raise "Error: #{param.name} different from ref by: #{elem}!" if elem > epsilon
+            }
+          end
+          res[param.name] = diff.max
         else
-          raise "Error: #{param.name} different from ref: #{outputs[indx]} != #{ref_outputs[indx]} !" if (outputs[indx] - ref_outputs[indx]).abs > epsilon
+          raise "Error: #{param.name} different from ref: #{outputs[indx]} != #{ref_outputs[indx]} !" if epsilon and (outputs[indx] - ref_outputs[indx]).abs > epsilon
+          res[param.name] = (outputs[indx] - ref_outputs[indx]).abs
         end
       }
+      return res
     end
 
     def load_ref_files(  path = "", suffix = "", intent )
@@ -753,19 +759,18 @@ EOF
               type.downcase!
             end
           end
-          puts f.inspect
-          res.push f.read.unpack(type)
+          res.push f.read.unpack(type).first
         end
         f.close
       }
       if @lang == BOAST::CUDA or @lang == BOAST::CL then
         f = File::new( proc_path +"problem_size", "r")
-        s = File.read
-        local_dim, global_dim = scan(/<(.*?)>/).first
-        local_dim  =  local_dim.pop
-        global_dim = global_dim.pop
-        local_dim  = [1,1,1].update( local_dim.split(",").collect!{ |e| e.to_i } )
-        global_dim = [1,1,1].update( global_dim.split(",").collect!{ |e| e.to_i } )
+        s = f.read
+        local_dim, global_dim = s.scan(/<(.*?)>/)
+        local_dim  = local_dim.pop.split(",").collect!{ |e| e.to_i }
+        global_dim = global_dim.pop.split(",").collect!{ |e| e.to_i }
+        (local_dim.length..2).each{ |i| local_dim[i] = 1 }
+        (global_dim.length..2).each{ |i| global_dim[i] = 1 }
         if @lang == BOAST::CL then
           local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
           res.push( { :global_work_size => global_dim, :local_work_size => local_dim } )
