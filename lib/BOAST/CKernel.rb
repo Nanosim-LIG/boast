@@ -763,9 +763,9 @@ EOF
         global_dim = [1,1,1].update( global_dim.split(",").collect!{ |e| e.to_i } )
         if @lang == BOAST::CL then
           local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
-          res.push { :global_work_size => global_dim, :local_work_size => local_dim }
+          res.push( { :global_work_size => global_dim, :local_work_size => local_dim } )
         else
-          res.push { :block_number => global_dim, :block_size => local_dim }
+          res.push( { :block_number => global_dim, :block_size => local_dim } )
         end
         f.close
       end
