@@ -693,7 +693,7 @@ EOF
           res.push nil
           next
         end
-        f = File::new( proc_path+param.name+suffix, "r" )
+        f = File::new( proc_path+param.name+suffix, "rb" )
         if param.dimension then
           if param.type.class == BOAST::Real then
             case param.type.size
