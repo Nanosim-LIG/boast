@@ -1,4 +1,84 @@
 module BOAST
+
+  class Dimension
+    def self.parens(*args,&block)
+      return self::new(*args,&block)
+    end
+
+    attr_reader :val1
+    attr_reader :val2
+    attr_reader :size
+    def initialize(v1=nil,v2=nil)
+      @size = nil
+      @val1 = nil
+      @val2 = nil
+      if v2.nil? and v1 then
+        @val1 = BOAST::get_array_start
+        @val2 = v1 + BOAST::get_array_start - 1
+        @size = v1
+      else
+        @val1 = v1
+        @val2 = v2
+      end
+    end
+    def to_str
+      s = ""
+      if @val2 then
+        if BOAST::get_lang == BOAST::FORTRAN then
+          s += @val1.to_s
+          s += ":"
+          s += @val2.to_s
+        elsif [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang ) then
+          s += (@val2 - @val1 + 1).to_s
+        end
+      elsif @val1.nil? then
+        return nil
+      else
+        s += @val1.to_s
+      end
+      return s
+    end
+    def to_s
+      self.to_str
+    end
+  end
+
+  class ConstArray < Array
+    def initialize(array,type = nil)
+      super(array)
+      @type = type::new if type
+    end
+    def to_s
+      self.to_str
+    end
+    def to_str
+      return self.to_str_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return self.to_str_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+    end
+    def to_str_fortran
+      s = ""
+      return s if self.first.nil?
+      s += "(/ &\n"
+      s += self.first.to_s
+      s += "_wp" if @type and @type.size == 8
+      self[1..-1].each { |v|
+        s += ", &\n"+v.to_s
+        s += "_wp" if @type and @type.size == 8
+      }
+      s += " /)"
+    end
+    def to_str_c
+      s = ""
+      return s if self.first.nil?
+      s += "{\n"
+      s += self.first.to_s 
+      self[1..-1].each { |v|
+        s += ",\n"+v.to_s
+      }
+      s += "}"
+    end
+  end
+
   class Variable
     include BOAST::Arithmetic
 
@@ -43,7 +123,7 @@ module BOAST
       else
         @replace_constant = true
       end
-      if @texture and BOAST::get_lang == CL then
+      if @texture and BOAST::get_lang == BOAST::CL then
         @sampler = Variable::new("sampler_#{name}", BOAST::CustomType,:type_name => "sampler_t" ,:replace_constant => false, :constant => "CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST")
       else
         @sampler = nil
@@ -75,7 +155,7 @@ module BOAST
     def to_str
       if @force_replace_constant or ( @replace_constant and @constant and BOAST::get_replace_constants and not @dimension ) then
         s = @constant.to_s 
-        s += "_wp" if BOAST::get_lang == FORTRAN and @type and @type.size == 8
+        s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
       end
       return @name
@@ -90,14 +170,14 @@ module BOAST
     end
 
     def dereference
-      return self.copy("*(#{self.name})", :dimension => false, :dim => false) if [C, CL, CUDA].include?( BOAST::get_lang )
-      return self if BOAST::get_lang == FORTRAN
+      return self.copy("*(#{self.name})", :dimension => false, :dim => false) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return self if BOAST::get_lang == BOAST::FORTRAN
       #return Expression::new("*",nil,self)
     end
    
     def struct_reference(x)
-      return x.copy(self.name+"."+x.name) if [C, CL, CUDA].include?( BOAST::get_lang )
-      return x.copy(self.name+"%"+x.name) if BOAST::get_lang == FORTRAN
+      return x.copy(self.name+"."+x.name) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return x.copy(self.name+"%"+x.name) if BOAST::get_lang == BOAST::FORTRAN
     end
  
     def inc
@@ -114,7 +194,7 @@ module BOAST
 
     def finalize
        s = ""
-       s += ";" if [C, CL, CUDA].include?( BOAST::get_lang )
+       s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
        s+="\n"
        return s
     end
@@ -124,14 +204,14 @@ module BOAST
       s = ""
       s += self.indent if final
       s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and not (@hash[:register] or @hash[:private] or @local) and BOAST::get_lang == CL
-      s += "__local " if @local and BOAST::get_lang == CL
-      s += "__shared__ " if @local and not device and BOAST::get_lang == CUDA
+      s += "__global " if @direction and @dimension and not (@hash[:register] or @hash[:private] or @local) and BOAST::get_lang == BOAST::CL
+      s += "__local " if @local and BOAST::get_lang == BOAST::CL
+      s += "__shared__ " if @local and not device and BOAST::get_lang == BOAST::CUDA
       s += @type.decl
       if(@dimension and not @constant and not @allocate and (not @local or (@local and device))) then
         s += " *"
         if @restrict then
-          if BOAST::get_lang == CL
+          if BOAST::get_lang == BOAST::CL
             s += " restrict"
           else
             s += " __restrict__"
@@ -158,14 +238,14 @@ module BOAST
       s = ""
       s += self.indent if final
       s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and BOAST::get_lang == CL
-      s += "__local " if @local and BOAST::get_lang == CL
-      s += "__shared__ " if @local and BOAST::get_lang == CUDA
+      s += "__global " if @direction and @dimension and BOAST::get_lang == BOAST::CL
+      s += "__local " if @local and BOAST::get_lang == BOAST::CL
+      s += "__shared__ " if @local and BOAST::get_lang == BOAST::CUDA
       s += @type.decl
       if(@dimension and not @constant and not @local) then
         s += " *"
       end
-      if not @dimension and lang == FORTRAN then
+      if not @dimension and lang == BOAST::FORTRAN then
         s += " *"
       end
       s += " #{@name}"
@@ -184,12 +264,12 @@ module BOAST
     end
 
     def decl(final=true,device=false)
-      return self.decl_fortran(final) if BOAST::get_lang == FORTRAN
-      return self.decl_c(final, device) if [C, CL, CUDA].include?( BOAST::get_lang )
+      return self.decl_fortran(final) if BOAST::get_lang == BOAST::FORTRAN
+      return self.decl_c(final, device) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
     def decl_texture(final=true)
-      raise "Unsupported language #{BOAST::get_lang} for texture!" if not [CL, CUDA].include?( BOAST::get_lang )
+      raise "Unsupported language #{BOAST::get_lang} for texture!" if not [BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       raise "Write is unsupported for textures!" if not (@constant or @direction == :in)
       dim_number = 1
       if @dimension then
@@ -198,7 +278,7 @@ module BOAST
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
       s = ""
       s += self.indent if final
-      if BOAST::get_lang == CL then
+      if BOAST::get_lang == BOAST::CL then
         s += "__read_only "
         if dim_number < 3 then
           s += "image2d_t " #from OCL 1.2+ image1d_t is defined
