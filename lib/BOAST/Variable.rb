@@ -21,6 +21,7 @@ module BOAST
         @val2 = v2
       end
     end
+
     def to_str
       s = ""
       if @val2 then
@@ -158,6 +159,9 @@ module BOAST
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
       end
+      if not @dimension and ( @direction = :out or @direction = :inout ) then
+        return "(*#{self.name})"
+      end
       return @name
     end
 
@@ -218,6 +222,9 @@ module BOAST
           end
         end
       end
+      if not @dimension and ( @direction == :out or @direction == :inout ) then
+        s += " *"
+      end
       s += " #{@name}"
       if @dimension and @constant then
         s += "[]"
@@ -245,7 +252,7 @@ module BOAST
       if(@dimension and not @constant and not @local) then
         s += " *"
       end
-      if not @dimension and lang == BOAST::FORTRAN then
+      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
         s += " *"
       end
       s += " #{@name}"

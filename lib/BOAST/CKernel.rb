@@ -591,8 +591,8 @@ EOF
       module_file.print "_" if @lang == BOAST::FORTRAN
       module_file.print "_wrapper" if @lang == BOAST::CUDA
       module_file.print "("
+      params = []
       if(@lang == BOAST::FORTRAN) then
-        params = []
         @procedure.parameters.each { |param|
           if param.dimension then
             params.push( param.name )
@@ -600,14 +600,21 @@ EOF
             params.push( "&"+param.name )
           end
         }
-        module_file.print params.join(", ")
       else
-        module_file.print @procedure.parameters.join(", ") 
+        @procedure.parameters.each { |param|
+          if param.dimension then
+            params.push( param.name )
+          elsif param.direction == :out or param.direction == :inout then
+            params.push( "&"+param.name )
+          else
+            params.push( param.name )
+          end
+        }
       end
       if @lang == BOAST::CUDA then
-        module_file.print ", " if @procedure.parameters.length > 0
-        module_file.print "block_number, block_size"
+        params.push( "block_number", "block_size" )
       end
+      module_file.print params.join(", ")
       module_file.print "  );\n"
       module_file.print "  clock_gettime(CLOCK_REALTIME, &stop);\n"
 
