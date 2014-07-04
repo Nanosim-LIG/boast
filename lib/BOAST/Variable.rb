@@ -131,14 +131,20 @@ module BOAST
       end
       @type = type::new(hash)
       @hash = hash
+      if (@direction == :out or @direction == :inout) and not @dimension then
+        @scalar_output = true
+      else
+        @scalar_output = false
+      end
     end
 
-    def copy(name=@name,options={})
-      hash = @hash.clone
+    def copy(name=nil,options={})
+      name = @name if not name
+      h = @hash.clone
       options.each { |k,v|
-        hash[k] = v
+        h[k] = v
       }
-      return Variable::new(name, @type.class, hash)
+      return Variable::new(name, @type.class, h)
     end
 
     def Variable.from_type(name, type, options={})
@@ -146,6 +152,8 @@ module BOAST
       options.each { |k,v|
         hash[k] = v
       }
+      hash[:direction] = nil
+      hash[:dir] = nil
       return Variable::new(name, type.class, hash)
     end
   
@@ -159,7 +167,7 @@ module BOAST
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
       end
-      if not @dimension and ( @direction == :out or @direction == :inout ) then
+      if @scalar_output then
         return "(*#{self.name})"
       end
       return @name
@@ -174,7 +182,7 @@ module BOAST
     end
 
     def dereference
-      return self.copy("*(#{self.name})", :dimension => false, :dim => false) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return self.copy("*(#{self.name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       return self if BOAST::get_lang == BOAST::FORTRAN
       #return Expression::new("*",nil,self)
     end

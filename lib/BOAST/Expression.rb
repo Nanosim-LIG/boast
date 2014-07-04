@@ -23,7 +23,7 @@ module BOAST
     end
 
     def Expression.to_str_base(op1, op2, oper, return_type = nil)
-      return oper.to_s(op1,op2, return_type) if not oper.kind_of?(String)
+      return oper.to_s(op1, op2, return_type) if not oper.kind_of?(String)
       s = ""
       if op1 then
         s += "(" if (oper == "*" or oper == "/") 
@@ -49,13 +49,13 @@ module BOAST
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
         res_exp = BOAST::Expression::to_str_base(op1, op2, oper, r_t)
-        return r_t.copy(res_exp, :const => nil, :constant => nil)
+        return r_t.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op2
         res_exp = BOAST::Expression::to_str_base(@operand1, op2, @operator)
-        return op2.copy(res_exp, :const => nil, :constant => nil)
+        return op2.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op1
         res_exp = BOAST::Expression::to_str_base(op1, @operand2, @operator)
-        return op1.copy(res_exp, :const => nil, :constant => nil)
+        return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
         raise "Expression on no operand!"

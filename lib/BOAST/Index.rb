@@ -8,7 +8,8 @@ module BOAST
     end
 
     def to_var
-      return @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil)
+      var = @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil)
+      return var
     end
 
     def to_s
