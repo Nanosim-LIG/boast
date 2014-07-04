@@ -159,7 +159,7 @@ module BOAST
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
       end
-      if not @dimension and ( @direction = :out or @direction = :inout ) then
+      if not @dimension and ( @direction == :out or @direction == :inout ) then
         return "(*#{self.name})"
       end
       return @name
