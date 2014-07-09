@@ -167,7 +167,7 @@ module BOAST
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
       end
-      if @scalar_output then
+      if @scalar_output and [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang ) then
         return "(*#{self.name})"
       end
       return @name
