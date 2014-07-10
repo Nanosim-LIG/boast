@@ -279,7 +279,7 @@ module BOAST
       program.build(:options => options[:CLFLAGS])
       if options[:verbose] then
         program.build_log.each {|dev,log|
-          STDERR.puts "#{device.name}: #{log}"
+          puts "#{device.name}: #{log}"
         }
       end
       @queue = @context.create_command_queue(device, :properties => OpenCL::CommandQueue::PROFILING_ENABLE)
@@ -644,7 +644,7 @@ EOF
     size_t array_size;
     Data_Get_Struct(rb_ptr, struct NARRAY, n_ary);
     array_size = n_ary->total * na_sizeof[n_ary->type];
-    cudaMemcpy(#{param.name}, (void *) n_ary->ptr, array_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *) n_ary->ptr, #{param.name}, array_size, cudaMemcpyDeviceToHost);
 EOF
             end
             module_file.print <<EOF
