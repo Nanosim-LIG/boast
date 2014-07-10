@@ -294,18 +294,18 @@ def self.run(*args)
     if @procedure.parameters[i].dimension then
       if @procedure.parameters[i].direction == :in then
         flags = OpenCL::Mem::Flags::READ_ONLY
-      elsif @procedure.parameters[i].direction == :out
+      elsif @procedure.parameters[i].direction == :out then
         flags = OpenCL::Mem::Flags::WRITE_ONLY
       else
-        flags = nil
+        flags = OpenCL::Mem::Flags::READ_WRITE
       end
       if @procedure.parameters[i].texture then
-        params[i] = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), args[i].size * args[i].element_size, 1, :flags => nil )
+        params[i] = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), args[i].size * args[i].element_size, 1, :flags => flags )
         if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
           @queue.enqueue_write_image( params[i], args[i], :blocking => true )
         end
       else
-        params[i] = @context.create_buffer( args[i].size * args[i].element_size, :flags => nil )
+        params[i] = @context.create_buffer( args[i].size * args[i].element_size, :flags => flags )
         if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
           @queue.enqueue_write_buffer( params[i], args[i], :blocking => true )
         end
