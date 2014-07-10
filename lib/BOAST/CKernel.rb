@@ -301,14 +301,14 @@ def self.run(*args)
       end
       if @procedure.parameters[i].texture then
         params[i] = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), args[i].size * args[i].element_size, 1, :flags => flags )
-        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
+#        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
           @queue.enqueue_write_image( params[i], args[i], :blocking => true )
-        end
+#        end
       else
         params[i] = @context.create_buffer( args[i].size * args[i].element_size, :flags => flags )
-        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
+#        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
           @queue.enqueue_write_buffer( params[i], args[i], :blocking => true )
-        end
+#        end
       end
     else
       if @procedure.parameters[i].type.is_a?(Real) then
@@ -532,11 +532,11 @@ EOF
     array_size = n_ary->total * na_sizeof[n_ary->type];
     cudaMalloc( (void **) &#{param.name}, array_size);
 EOF
-            if param.direction == :in then
+#            if param.direction == :in then
             module_file.print <<EOF
     cudaMemcpy(#{param.name}, (void *) n_ary->ptr, array_size, cudaMemcpyHostToDevice);
 EOF
-            end
+#            end
             module_file.print <<EOF
   } else
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
@@ -638,7 +638,7 @@ EOF
             module_file.print <<EOF
   if ( IsNArray(rb_ptr) ) {
 EOF
-            if param.direction == :out then
+            if param.direction == :out or param.direction == :inout then
             module_file.print <<EOF
     struct NARRAY *n_ary;
     size_t array_size;
