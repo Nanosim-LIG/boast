@@ -331,7 +331,7 @@ module BOAST
         s += ")"
       end
       s += " :: #{@name}"
-      if @constant
+      if @constant then
         s += " = #{@constant}"
         s += "_wp" if not @dimension and @type and @type.size == 8
       end
