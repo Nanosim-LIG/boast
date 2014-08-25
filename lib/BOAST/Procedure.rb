@@ -109,7 +109,9 @@ module BOAST
 #      s += self.header(BOAST::get_lang,false)
 #      s += ";\n"
       if BOAST::get_lang == CL then
-        if not @properties[:local] then
+        if @properties[:local] then
+          s += "static "
+        else
           s += "__kernel "
           wgs = @properties[:reqd_work_group_size]
           if wgs then
