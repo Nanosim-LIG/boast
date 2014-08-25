@@ -256,7 +256,7 @@ module BOAST
       return ld_flags
     end
 
-    def select_cl_plaform(options)
+    def select_cl_platform(options)
       platforms = OpenCL::get_platforms
       if options[:platform_vendor] then
         platforms.select!{ |p|
@@ -277,7 +277,7 @@ module BOAST
 
     def select_cl_device(options)
       platform = select_cl_platform(options)
-      type = options[:device_type] ? options[:device_type] : options[:CLDEVICETYPE] ? options[:CLDEVICETYPE] : OpenCL::Device::Type::ALL
+      type = options[:device_type] ? OpenCL::Device::Type.const_get(options[:device_type]) : options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
       devices = platform.devices(type)
       if options[:device_name] then
         devices.select!{ |d|
