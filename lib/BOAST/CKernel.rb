@@ -20,6 +20,10 @@ module BOAST
     :NVCCFLAGS => '-O2',
     :LDFLAGS => '',
     :CLFLAGS => '',
+    :CLVENDOR => nil,
+    :CLPLATFORM => nil,
+    :CLDEVICE => nil,
+    :CLDEVICETYPE => nil,
     :openmp => false
   }
   
@@ -252,27 +256,44 @@ module BOAST
       return ld_flags
     end
 
-    def build_opencl(options)
-      require 'opencl_ruby_ffi'
-      platform = nil
+    def select_cl_plaform(options)
       platforms = OpenCL::get_platforms
       if options[:platform_vendor] then
-        platforms.each{ |p|
-          platform = p if p.vendor.match(options[:platform_vendor])
+        platforms.select!{ |p|
+          p.vendor.match(options[:platform_vendor])
         }
-      else
-        platform = platforms.first
+      elsif options[:CLVENDOR] then
+        platforms.select!{ |p|
+          p.vendor.match(options[:CLVENDOR])
+        }
       end
-      device = nil
-      type = options[:device_type] ? options[:device_type] : OpenCL::Device::Type::ALL
+      if options[:CLPLATFORM] then
+        platforms.select!{ |p|
+          p.name.match(options[:CLPLATFORM])
+        }
+      end
+      return platforms.first
+    end
+
+    def select_cl_device(options)
+      platform = select_cl_platform(options)
+      type = options[:device_type] ? options[:device_type] : options[:CLDEVICETYPE] ? options[:CLDEVICETYPE] : OpenCL::Device::Type::ALL
       devices = platform.devices(type)
       if options[:device_name] then
-        devices.each{ |d|
-          device = d if d.name.match(options[:device_name])
+        devices.select!{ |d|
+          d.name.match(options[:device_name])
         }
-      else
-        device = devices.first
+      elsif options[:CLDEVICE] then
+        devices.select!{ |d|
+          d.name.match(options[:CLDEVICE])
+        }
       end
+      return devices.first
+    end
+
+    def build_opencl(options)
+      require 'opencl_ruby_ffi'
+      device = select_cl_device(options)
       @context = OpenCL::create_context([device])
       program = @context.create_program_with_source([@code.string])
       opts = options[:CLFLAGS]
