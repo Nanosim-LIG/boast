@@ -298,7 +298,7 @@ module BOAST
       program = @context.create_program_with_source([@code.string])
       opts = options[:CLFLAGS]
       program.build(:options => options[:CLFLAGS])
-      if options[:verbose] then
+      if options[:verbose] or BOAST::get_verbose then
         program.build_log.each {|dev,log|
           puts "#{device.name}: #{log}"
         }
