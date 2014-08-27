@@ -297,7 +297,17 @@ module BOAST
       @context = OpenCL::create_context([device])
       program = @context.create_program_with_source([@code.string])
       opts = options[:CLFLAGS]
-      program.build(:options => options[:CLFLAGS])
+      begin
+        program.build(:options => options[:CLFLAGS])
+      rescue OpenCL::Error => e
+        puts e.to_s
+        puts prog.build_status
+        puts prog.build_log
+        if options[:verbose] or BOAST::get_verbose then
+          puts @code.string
+        end
+        raise "OpenCL Failed to build #{@procedure.name}"
+      end
       if options[:verbose] or BOAST::get_verbose then
         program.build_log.each {|dev,log|
           puts "#{device.name}: #{log}"
