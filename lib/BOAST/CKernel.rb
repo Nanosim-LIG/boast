@@ -301,8 +301,8 @@ module BOAST
         program.build(:options => options[:CLFLAGS])
       rescue OpenCL::Error => e
         puts e.to_s
-        puts prog.build_status
-        puts prog.build_log
+        puts program.build_status
+        puts program.build_log
         if options[:verbose] or BOAST::get_verbose then
           puts @code.string
         end
