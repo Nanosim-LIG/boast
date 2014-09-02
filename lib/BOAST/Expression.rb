@@ -1,5 +1,5 @@
 module BOAST
-  def BOAST::Return(value)
+  def self.Return(value)
     return Expression("return",nil, value)
   end
 

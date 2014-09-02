@@ -1,11 +1,11 @@
 module BOAST
   @@inspect = false
 
-  def BOAST.inspect?
+  def self.inspect?
     return @@inspect
   end
 
-  def BOAST.inspect=(val)
+  def self.inspect=(val)
     @@inspect = val
   end
 

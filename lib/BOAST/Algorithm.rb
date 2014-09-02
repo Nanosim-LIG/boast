@@ -10,13 +10,13 @@ module BOAST
   X86 = 1
   ARM = 2
 
-  def BOAST::get_default_lang
+  def self.get_default_lang
     lang = BOAST::const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
     return lang if lang
     return BOAST::FORTRAN
   end
 
-  def BOAST::get_default_debug
+  def self.get_default_debug
     debug = false
     debug = ENV["DEBUG"] if ENV["DEBUG"]
     return debug
@@ -35,9 +35,9 @@ module BOAST
   @@architecture = X86
   @@debug = BOAST::get_default_debug
 
-  @@env = Hash.new{|h, k| h[k] = []}
+  @@env = Hash::new{|h, k| h[k] = []}
 
-  def BOAST::push_env(vars = {})
+  def self.push_env(vars = {})
     vars.each { |key,value|
       var = nil
       begin
@@ -50,7 +50,7 @@ module BOAST
     }
   end
 
-  def BOAST::pop_env(*vars)
+  def self.pop_env(*vars)
     vars.each { |key|
       raise "Unknown module variable #{key}!" unless @@env.has_key?(key)
       ret = @@env[key].pop
@@ -59,189 +59,189 @@ module BOAST
     }
   end
 
-  def BOAST::print(a)
+  def self.print(a)
     a.print
   end
 
-  def BOAST::decl(*a)
+  def self.decl(*a)
     a.each { |d|
       d.decl
     }
   end
 
-  def BOAST::close(a)
+  def self.close(a)
     a.close
   end
 
-  def BOAST::debug=(debug)
+  def self.debug=(debug)
     @@debug = debug
   end
 
-  def BOAST::debug
+  def self.debug
     return @@debug
   end
 
-  def BOAST::architecture=(arch)
+  def self.architecture=(arch)
     @@architecture = arch
   end
 
-  def BOAST::set_architecture(arch)
+  def self.set_architecture(arch)
     @@architecture = arch
   end
 
-  def BOAST::architecture
+  def self.architecture
     return @@architecture
   end
 
-  def BOAST::get_architecture
+  def self.get_architecture
     return @@architecture
   end
 
-  def BOAST::indent_level=(level)
+  def self.indent_level=(level)
     @@indent_level = level
   end
 
-  def BOAST::set_indent_level(level)
+  def self.set_indent_level(level)
     @@indent_level = level
   end
 
-  def BOAST::indent_level
+  def self.indent_level
     return @@indent_level
   end
 
-  def BOAST::get_indent_level
+  def self.get_indent_level
     return @@indent_level
   end
 
-  def BOAST::indent_increment
+  def self.indent_increment
     return @@indent_increment
   end
 
-  def BOAST::get_indent_increment
+  def self.get_indent_increment
     return @@indent_increment
   end
 
-  def BOAST::increment_indent_level(increment = @@indent_increment)
+  def self.increment_indent_level(increment = @@indent_increment)
     @@indent_level += increment
   end
   
-  def BOAST::decrement_indent_level(increment = @@indent_increment)
+  def self.decrement_indent_level(increment = @@indent_increment)
     @@indent_level -= increment
   end
   
-  def BOAST::set_replace_constants(replace_constants)
+  def self.set_replace_constants(replace_constants)
     @@replace_constants = replace_constants
   end
 
-  def BOAST::replace_constants?
+  def self.replace_constants?
     return @@replace_constants
   end
 
-  def BOAST::get_replace_constants
+  def self.get_replace_constants
     return @@replace_constants
   end
 
-  def BOAST::default_int_signed=(signed)
+  def self.default_int_signed=(signed)
     @@default_int_signed = signed
   end
 
-  def BOAST::set_default_int_signed(signed)
+  def self.set_default_int_signed(signed)
     @@default_int_signed = signed
   end
 
-  def BOAST::default_int_signed?
+  def self.default_int_signed?
     return @@default_int_signed
   end
 
-  def BOAST::get_default_int_signed
+  def self.get_default_int_signed
     return @@default_int_signed
   end
 
-  def BOAST::default_int_size=(size)
+  def self.default_int_size=(size)
     @@default_int_size = size
   end
 
-  def BOAST::set_default_int_size(size)
+  def self.set_default_int_size(size)
     @@default_int_size = size
   end
 
-  def BOAST::default_int_size
+  def self.default_int_size
     return @@default_int_size
   end
 
-  def BOAST::get_default_int_size
+  def self.get_default_int_size
     return @@default_int_size
   end
 
-  def BOAST::default_real_size=(size)
+  def self.default_real_size=(size)
     @@default_real_size = size
   end
 
-  def BOAST::set_default_real_size(size)
+  def self.set_default_real_size(size)
     @@default_real_size = size
   end
 
-  def BOAST::default_real_size
+  def self.default_real_size
     return @@default_real_size
   end
 
-  def BOAST::get_default_real_size
+  def self.get_default_real_size
     return @@default_real_size
   end
 
-  def BOAST::lang=(lang)
+  def self.lang=(lang)
     @@lang = lang
   end
 
-  def BOAST::set_lang(lang)
+  def self.set_lang(lang)
     @@lang = lang
   end
 
-  def BOAST::lang
+  def self.lang
     return @@lang
   end
 
-  def BOAST::get_lang
+  def self.get_lang
     return @@lang
   end
 
-  def BOAST::output(output)
+  def self.output(output)
     @@output = output
   end
 
-  def BOAST::set_output(output)
+  def self.set_output(output)
     @@output = output
   end
 
-  def BOAST::output
+  def self.output
     return @@output
   end
 
-  def BOAST::get_output
+  def self.get_output
     return @@output
   end
 
-  def BOAST::set_chain_code(chain_code)
+  def self.set_chain_code(chain_code)
     @@chain_code = chain_code
   end
 
-  def BOAST::get_chain_code
+  def self.get_chain_code
     return @@chain_code
   end
 
-  def BOAST::array_start=(array_start)
+  def self.array_start=(array_start)
     @@array_start = array_start
   end
 
-  def BOAST::set_array_start(array_start)
+  def self.set_array_start(array_start)
     @@array_start = array_start
   end
 
-  def BOAST::array_start
+  def self.array_start
     return @@array_start
   end
 
-  def BOAST::get_array_start
+  def self.get_array_start
     return @@array_start
   end
 

@@ -36,7 +36,7 @@ module BOAST
     "icpc" => "-openmp"
   }
 
-  def BOAST::read_boast_config
+  def self.read_boast_config
     home_config_dir = ENV["XDG_CONFIG_HOME"]
     home_config_dir = "#{Dir.home}/.config" if not home_config_dir
     Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
@@ -72,28 +72,28 @@ module BOAST
 
   BOAST::read_boast_config
 
-  def BOAST::get_openmp_flags
+  def self.get_openmp_flags
     return @@openmp_default_flags.clone
   end
 
-  def BOAST::get_compiler_options
+  def self.get_compiler_options
     return @@compiler_default_options.clone
   end
 
-  def BOAST::verbose
+  def self.verbose
     return @@verbose
   end
 
 
-  def BOAST::get_verbose
+  def self.get_verbose
     return @@verbose
   end
 
-  def BOAST::verbose=(verbose)
+  def self.verbose=(verbose)
     @@verbose = verbose
   end
 
-  def BOAST::set_verbose(verbose)
+  def self.set_verbose(verbose)
     @@verbose = verbose
   end
 

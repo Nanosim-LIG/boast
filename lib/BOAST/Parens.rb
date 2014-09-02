@@ -23,9 +23,9 @@ end
 
 module BOAST
 
-  def BOAST.register_funccall(name)
+  def self.register_funccall(name)
     s =<<EOF
-    def BOAST.#{name}(*args)
+    def self.#{name}(*args)
       return BOAST::FuncCall("#{name}", *args)
     end
 EOF

@@ -6,7 +6,7 @@ module BOAST
   @@cuda_blockDim = CStruct("blockDim",:type_name => "cuda_blockDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
   @@cuda_gridDim = CStruct("gridDim",:type_name => "cuda_gridDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
 
-  def BOAST::barrier(*locality)
+  def self.barrier(*locality)
     if @@lang == CL then
       loc=""
       if locality.include?(:local) and locality.include?(:global) then
@@ -26,7 +26,7 @@ module BOAST
   end
 
 
-  def BOAST::get_work_dim
+  def self.get_work_dim
     if @@lang == CL then
       return FuncCall::new("get_work_dim", :returns => Int("wd", :signed => false))
     else
@@ -34,7 +34,7 @@ module BOAST
     end
   end
   
-  def BOAST::get_global_size(dim)
+  def self.get_global_size(dim)
     if @@lang == CL then
       return FuncCall::new("get_global_size", dim, :returns => Sizet)
     elsif @@lang == CUDA then
@@ -46,7 +46,7 @@ module BOAST
     end
   end
 
-  def BOAST::get_global_id(dim)
+  def self.get_global_id(dim)
     if @@lang == CL then
       return FuncCall::new("get_global_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
@@ -58,7 +58,7 @@ module BOAST
     end
   end
 
-  def BOAST::get_local_size(dim)
+  def self.get_local_size(dim)
     if @@lang == CL then
       return FuncCall::new("get_local_size",dim, :returns => Sizet)
     elsif @@lang == CUDA then
@@ -70,7 +70,7 @@ module BOAST
     end
   end
 
-  def BOAST::get_local_id(dim)
+  def self.get_local_id(dim)
     if @@lang == CL then
       return FuncCall::new("get_local_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
@@ -82,7 +82,7 @@ module BOAST
     end
   end
   
-  def BOAST::get_num_groups(dim)
+  def self.get_num_groups(dim)
     if @@lang == CL then
       return FuncCall::new("get_num_groups",dim, :returns => Sizet)
     elsif @@lang == CUDA then
@@ -94,7 +94,7 @@ module BOAST
     end
   end
 
-  def BOAST::get_group_id(dim)
+  def self.get_group_id(dim)
     if @@lang == CL then
       return FuncCall::new("get_group_id",dim, :returns => Sizet)
     elsif @@lang == CUDA then
