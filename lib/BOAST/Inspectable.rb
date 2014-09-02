@@ -1,7 +1,7 @@
 module BOAST
   @@inspect = false
 
-  def BOAST.inspect
+  def BOAST.inspect?
     return @@inspect
   end
 
@@ -12,7 +12,7 @@ module BOAST
   module Inspectable
 
     def inspect
-      if BOAST::inspect then
+      if BOAST::inspect? then
         variables = self.instance_variables.map{ |v|
           instance_variable_get(v) ? "#{v}=#{instance_variable_get(v).inspect}" : nil
         }.reject{ |v| v.nil? }.join(", ")
