@@ -99,6 +99,7 @@ module BOAST
 
   class CKernel
     include Rake::DSL
+    include BOAST::Inspectable
     attr_accessor :code
     attr_accessor :procedure
     attr_accessor :lang

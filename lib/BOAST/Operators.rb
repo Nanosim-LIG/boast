@@ -1,6 +1,7 @@
 module BOAST
 
   class Operator
+    include BOAST::Inspectable
     def Operator.get_vector_name(type)
       case BOAST::get_architecture
       when X86

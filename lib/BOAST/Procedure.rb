@@ -1,5 +1,6 @@
 module BOAST
   class Procedure
+    include BOAST::Inspectable
     def self.parens(*args,&block)
       return self::new(*args,&block)
     end

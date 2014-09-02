@@ -1,5 +1,6 @@
 module BOAST
   class Index < Expression
+    include BOAST::Inspectable
     attr_reader :source
     attr_reader :indexes
     def initialize(source, indexes)

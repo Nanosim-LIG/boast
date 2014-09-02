@@ -1,5 +1,6 @@
 module BOAST
   class For
+    include BOAST::Inspectable
     attr_reader :iterator
     attr_reader :begin
     attr_reader :end

@@ -1,6 +1,7 @@
 module BOAST
 
   class Dimension
+    include BOAST::Inspectable
     def self.parens(*args,&block)
       return self::new(*args,&block)
     end
@@ -42,6 +43,7 @@ module BOAST
   end
 
   class ConstArray < Array
+    include BOAST::Inspectable
     def initialize(array,type = nil)
       super(array)
       @type = type::new if type
@@ -76,6 +78,7 @@ module BOAST
 
   class Variable
     include BOAST::Arithmetic
+    include BOAST::Inspectable
 
     alias_method :orig_method_missing, :method_missing
 
@@ -124,7 +127,7 @@ module BOAST
         @sampler = nil
       end
       @type = type::new(hash)
-      @hash = hash
+      @options = hash
       if (@direction == :out or @direction == :inout) and not @dimension then
         @scalar_output = true
       else
@@ -135,7 +138,7 @@ module BOAST
 
     def copy(name=nil,options={})
       name = @name if not name
-      h = @hash.clone
+      h = @options.clone
       options.each { |k,v|
         h[k] = v
       }
@@ -207,7 +210,7 @@ module BOAST
       s = ""
       s += self.indent if final
       s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and not (@hash[:register] or @hash[:private] or @local) and BOAST::get_lang == BOAST::CL
+      s += "__global " if @direction and @dimension and not (@options[:register] or @options[:private] or @local) and BOAST::get_lang == BOAST::CL
       s += "__local " if @local and BOAST::get_lang == BOAST::CL
       s += "__shared__ " if @local and not device and BOAST::get_lang == BOAST::CUDA
       s += @type.decl

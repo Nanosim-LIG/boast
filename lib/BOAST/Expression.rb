@@ -5,6 +5,7 @@ module BOAST
 
   class Expression
     include BOAST::Arithmetic
+    include BOAST::Inspectable
 
     def self.parens(*args,&block)
       return self::new(*args,&block)

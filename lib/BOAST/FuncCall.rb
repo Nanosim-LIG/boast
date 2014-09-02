@@ -2,6 +2,7 @@ module BOAST
 
   class FuncCall
     include BOAST::Arithmetic
+    include BOAST::Inspectable
 
     @return_type
     @options

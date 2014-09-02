@@ -1,3 +1,4 @@
+require 'BOAST/Inspectable.rb'
 require 'BOAST/Transitions.rb'
 require 'BOAST/Arithmetic.rb'
 require 'BOAST/Operators.rb'
