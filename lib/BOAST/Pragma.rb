@@ -14,10 +14,6 @@ module BOAST
     end
 
     def to_s
-      self.to_str
-    end
-
-    def to_str
       s = ""
       if BOAST::get_lang == FORTRAN then
         s += "$!"
@@ -32,7 +28,7 @@ module BOAST
 
     def print(final = true)
       s=""
-      s += self.to_str
+      s += self.to_s
       BOAST::get_output.puts s if final
       return s
     end

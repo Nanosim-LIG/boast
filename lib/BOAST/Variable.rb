@@ -22,7 +22,7 @@ module BOAST
       end
     end
 
-    def to_str
+    def to_s
       s = ""
       if @val2 then
         if BOAST::get_lang == BOAST::FORTRAN then
@@ -39,9 +39,6 @@ module BOAST
       end
       return s
     end
-    def to_s
-      self.to_str
-    end
   end
 
   class ConstArray < Array
@@ -50,13 +47,10 @@ module BOAST
       @type = type::new if type
     end
     def to_s
-      self.to_str
+      return self.to_s_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return self.to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
-    def to_str
-      return self.to_str_fortran if BOAST::get_lang == BOAST::FORTRAN
-      return self.to_str_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-    end
-    def to_str_fortran
+    def to_s_fortran
       s = ""
       return s if self.first.nil?
       s += "(/ &\n"
@@ -68,7 +62,7 @@ module BOAST
       }
       s += " /)"
     end
-    def to_str_c
+    def to_s_c
       s = ""
       return s if self.first.nil?
       s += "{\n"
@@ -159,10 +153,6 @@ module BOAST
     end
   
     def to_s
-      self.to_str
-    end    
-
-    def to_str
       if @force_replace_constant or ( @replace_constant and @constant and BOAST::get_replace_constants and not @dimension ) then
         s = @constant.to_s 
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
@@ -319,7 +309,7 @@ module BOAST
       s += ", parameter" if @constant
       if(@dimension) then
         s += ", dimension("
-        dim = @dimension[0].to_str
+        dim = @dimension[0].to_s
         if dim then
           s += dim
           @dimension[1..-1].each { |d|

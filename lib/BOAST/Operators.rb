@@ -417,21 +417,19 @@ module BOAST
     end
 
     def to_s
-      self.to_str
+      raise "Ternary operator unsupported in FORTRAN!" if BOAST::get_lang == BOAST::FORTRAN
+      return self.to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
-    def to_str
-      raise "Ternary operator unsupported in FORTRAN!" if BOAST::get_lang == BOAST::FORTRAN
-      return self.to_str_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-    end
-    def to_str_c
+    def to_s_c
       s = ""
       s += "(#{@operand1} ? #{@operand2} : #{@operand3})"
     end
+
     def print(final=true)
       s=""
       s += " "*BOAST::get_indent_level if final
-      s += self.to_str
+      s += self.to_s
       s += ";" if final and [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       BOAST::get_output.puts s if final
       return s

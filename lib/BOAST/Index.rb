@@ -13,18 +13,17 @@ module BOAST
     end
 
     def to_s
-      self.to_str
+      return self.to_s_fortran if BOAST::get_lang == FORTRAN
+      return self.to_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
-    def to_str
-      return self.to_str_fortran if BOAST::get_lang == FORTRAN
-      return self.to_str_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-    def to_str_fortran
+
+    def to_s_fortran
       s = ""
       s += "#{@source}(#{@indexes.join(", ")})"
       return s
     end
-    def to_str_texture
+
+    def to_s_texture
       raise "Unsupported language #{BOAST::get_lang} for texture!" if not [CL, CUDA].include?( BOAST::get_lang )
       raise "Write is unsupported for textures!" if not ( @source.constant or @source.direction == :in )
       dim_number = 1
@@ -69,8 +68,9 @@ module BOAST
       end
       return s
     end
-    def to_str_c
-      return to_str_texture if @source.texture
+
+    def to_s_c
+      return to_s_texture if @source.texture
       dim = @source.dimension.first
       if dim.val2 then
         start = dim.val1
@@ -113,7 +113,7 @@ module BOAST
     def print(final=true)
       s=""
       s += " "*BOAST::get_indent_level if final
-      s += self.to_str
+      s += self.to_s
       s += ";" if final and [C, CL, CUDA].include?( BOAST::get_lang )
       BOAST::get_output.puts s if final
       return s

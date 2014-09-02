@@ -28,16 +28,12 @@ module BOAST
       end
     end
 
-    def to_s(*args)
-      self.to_str(*args)
+    def to_s(constants, first= true)
+      return self.to_s_fortran(constants, first) if BOAST::get_lang == FORTRAN
+      return self.to_s_c(constants, first) if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
-    def to_str(constants, first= true)
-      return self.to_str_fortran(constants, first) if BOAST::get_lang == FORTRAN
-      return self.to_str_c(constants, first) if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def to_str_fortran(constants, first)
+    def to_s_fortran(constants, first)
       s = ""
       if first then
         s += " "*BOAST::get_indent_level
@@ -56,7 +52,7 @@ module BOAST
       return s
     end
 
-    def to_str_c(constants, first)
+    def to_s_c(constants, first)
       s = ""
       if first then
         s += " "*BOAST::get_indent_level
@@ -79,7 +75,7 @@ module BOAST
     def print(*args)
       first = true
       @blocks.each_index { |indx|
-        s = self.to_str(@constants_list[indx],first)
+        s = self.to_s(@constants_list[indx],first)
         BOAST::get_output.puts s
         @blocks[indx].call(*args)
         first = false

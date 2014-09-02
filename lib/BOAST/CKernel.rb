@@ -133,11 +133,6 @@ module BOAST
       puts @code.read
     end
 
-    def to_str
-      @code.rewind
-      return code.read
-    end
-
     def to_s
       @code.rewind
       return code.read

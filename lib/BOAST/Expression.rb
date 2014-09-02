@@ -18,11 +18,8 @@ module BOAST
       @operand1 = operand1
       @operand2 = operand2
     end
-    def to_s
-      self.to_str
-    end
 
-    def Expression.to_str_base(op1, op2, oper, return_type = nil)
+    def Expression.to_s_base(op1, op2, oper, return_type = nil)
       return oper.to_s(op1, op2, return_type) if not oper.kind_of?(String)
       s = ""
       if op1 then
@@ -48,13 +45,13 @@ module BOAST
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       if op1 and op2 then
         r_t, oper = BOAST::transition(op1, op2, @operator)
-        res_exp = BOAST::Expression::to_str_base(op1, op2, oper, r_t)
+        res_exp = BOAST::Expression::to_s_base(op1, op2, oper, r_t)
         return r_t.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op2
-        res_exp = BOAST::Expression::to_str_base(@operand1, op2, @operator)
+        res_exp = BOAST::Expression::to_s_base(@operand1, op2, @operator)
         return op2.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op1
-        res_exp = BOAST::Expression::to_str_base(op1, @operand2, @operator)
+        res_exp = BOAST::Expression::to_s_base(op1, @operand2, @operator)
         return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
@@ -62,7 +59,7 @@ module BOAST
       end
     end
  
-    def to_str
+    def to_s
       op1 = nil
       op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
       op2 = nil
@@ -77,13 +74,13 @@ module BOAST
       op1 = @operand1 if op1.nil?
       op2 = @operand2 if op2.nil?
 
-      return BOAST::Expression::to_str_base(op1, op2, oper, r_t)
+      return BOAST::Expression::to_s_base(op1, op2, oper, r_t)
     end
 
     def print(final=true)
       s=""
       s += " "*BOAST::get_indent_level if final
-      s += self.to_str
+      s += self.to_s
       s += ";" if final and [C, CL, CUDA].include?( BOAST::get_lang ) 
       BOAST::get_output.puts s if final
       return s

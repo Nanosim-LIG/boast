@@ -36,27 +36,26 @@ module BOAST
     end
       
     def to_s
-      self.to_str
+      return self.to_s_fortran if BOAST::get_lang == FORTRAN
+      return self.to_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
-    def to_str
-      return self.to_str_fortran if BOAST::get_lang == FORTRAN
-      return self.to_str_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-    def to_str_fortran
+    def to_s_fortran
       s = ""
       s += @prefix if @prefix
       s += "#{func_name}(#{@args.join(", ")})"
     end
-    def to_str_c
+
+    def to_s_c
       s = ""
       s += @prefix if @prefix
       s += "#{func_name}(#{@args.join(", ")})"
     end
+
     def print(final=true)
       s=""
       s += " "*BOAST::get_indent_level if final
-      s += self.to_str
+      s += self.to_s
       s += ";" if final and [C, CL, CUDA].include?( BOAST::get_lang )
       BOAST::get_output.puts s if final
       return s
