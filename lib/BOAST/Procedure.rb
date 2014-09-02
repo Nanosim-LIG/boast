@@ -154,6 +154,7 @@ module BOAST
       BOAST::get_output.print s if final
       return s
     end
+
     def decl_fortran(final=true)
       s = ""
       if @properties[:return] then
@@ -163,9 +164,9 @@ module BOAST
       end
       s += "#{@name}("
       if parameters.first then
-        s += parameters.first
+        s += parameters.first.to_s
         parameters[1..-1].each { |p|
-          s += ", "+p
+          s += ", #{p}"
         }
       end
       s += ")\n"

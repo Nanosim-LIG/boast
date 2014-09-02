@@ -313,8 +313,7 @@ module BOAST
         if dim then
           s += dim
           @dimension[1..-1].each { |d|
-             s += ", "
-             s += d
+             s += ", #{d}"
           }
         else
           s += "*"
