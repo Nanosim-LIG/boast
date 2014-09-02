@@ -29,18 +29,18 @@ module BOAST
       end
     end
 
-    def to_s(condition, first= true)
-      return self.to_s_fortran(condition, first) if BOAST::get_lang == FORTRAN
-      return self.to_s_c(condition, first) if [C, CL, CUDA].include?( BOAST::get_lang )
+    def to_s(condition_number = 0)
+      return self.to_s_fortran(condition_number) if BOAST::get_lang == FORTRAN
+      return self.to_s_c(condition_number) if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
-    def to_s_fortran(condition, first)
+    def to_s_fortran(condition_number)
       s = ""
-      if first then
-        s += "if ( #{condition} ) then"
+      if condition_number == 0 then
+        s += "if ( #{@conditions.first} ) then"
       else
-        if condition then
-          s += "else if ( #{condition} ) then"
+        if @conditions[condition_number] then
+          s += "else if ( #{@conditions[condition_number]} ) then"
         else
           s += "else"
         end
@@ -48,13 +48,13 @@ module BOAST
       return s
     end
 
-    def to_s_c(condition, first)
+    def to_s_c(condition_number)
       s = ""
-      if first then
-        s += "if(#{condition}){"
+      if condition_number == 0 then
+        s += "if(#{@conditions.first}){"
       else
-        if condition then
-          s += "} else if(#{condition}){"
+        if @conditions[condition_number] then
+          s += "} else if(#{@conditions[condition_number]}){"
         else
           s += "} else {"
         end
@@ -62,50 +62,57 @@ module BOAST
       return s
     end
 
-    def print(*args)
+    def decl
       s=""
       s += " "*BOAST::get_indent_level
-      s += self.to_s(@conditions.first)
-      BOAST::increment_indent_level      
+      s += self.to_s
       BOAST::get_output.puts s
+      BOAST::increment_indent_level
+      return self
+    end
+
+    def print(*args)
       if @blocks.size > 0 then
-        if @blocks[0] then
-          @blocks[0].call(*args)
-        end
-        @blocks[1..-1].each_index { |indx|
-          BOAST::decrement_indent_level      
+        BOAST::increment_indent_level
+        @blocks.each_index { |indx|
+          BOAST::decrement_indent_level
           s=""
-          s += " "*BOAST::get_indent_level 
-          s += self.to_s(@conditions[1..-1][indx],false)
-          BOAST::increment_indent_level
+          s += " "*BOAST::get_indent_level
+          s += self.to_s(indx)
           BOAST::get_output.puts s
-          @blocks[1..-1][indx].call(*args)
+          BOAST::increment_indent_level
+          @blocks[indx].call(*args)
         }
         self.close
+      else
+        self.decl
       end
       return self
     end
-    def close(final=true)
-      return self.close_fortran(final) if BOAST::get_lang == FORTRAN
-      return self.close_c(final) if [C, CL, CUDA].include?( BOAST::get_lang )
+
+    def close
+      return self.close_fortran if BOAST::get_lang == FORTRAN
+      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
-    def close_c(final=true)
+
+    def close_c
+      BOAST::decrement_indent_level
       s = ""
-      BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += "}"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
-    def close_fortran(final=true)
+
+    def close_fortran
+      BOAST::decrement_indent_level
       s = ""
-      BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += "end if"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
 
   end
 
-end 
+end

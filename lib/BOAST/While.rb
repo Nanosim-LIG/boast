@@ -2,6 +2,7 @@ module BOAST
 
   class While
     include BOAST::Inspectable
+
     def self.parens(*args,&block)
       return self::new(*args,&block)
     end
@@ -28,39 +29,45 @@ module BOAST
       s += "while(#{@condition}){"
       return s
     end
-    def print(*args)
-      final = true
+
+    def decl
       s=""
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += self.to_s
-      BOAST::increment_indent_level      
-      BOAST::get_output.puts s if final
+      BOAST::get_output.puts s
+      BOAST::increment_indent_level
+      return self
+    end
+
+    def print(*args)
+      self.decl
       if @block then
-        s += "\n"
         @block.call(*args)
-        s += self.close
+        self.close
       end
-      return s
+      return self
     end
-    def close(final=true)
-      return self.close_fortran(final) if BOAST::get_lang == FORTRAN
-      return self.close_c(final) if [C, CL, CUDA].include?( BOAST::get_lang )
+
+    def close
+      return self.close_fortran if BOAST::get_lang == FORTRAN
+      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
-    def close_c(final=true)
-      s = ""
+    def close_c
       BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s = ""
+      s += " "*BOAST::get_indent_level
       s += "}"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
-    def close_fortran(final=true)
+
+    def close_fortran
+      BOAST::decrement_indent_level
       s = ""
-      BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += "end do"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
 
   end

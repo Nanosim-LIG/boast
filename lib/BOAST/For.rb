@@ -79,41 +79,47 @@ module BOAST
       @iterator.constant = nil
     end
 
-    def print(*args)
-      final = true
+    def decl
       s=""
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += self.to_s
+      BOAST::get_output.puts s
       BOAST::increment_indent_level      
-      BOAST::get_output.puts s if final
+      return self
+    end 
+
+    def print(*args)
+      self.decl
       if @block then
-        s += "\n"
         @block.call(*args)
-        s += self.close
+        self.close
       end
-      return s
+      return self
     end
 
-    def close(final=true)
-      return self.close_fortran(final) if BOAST::get_lang == FORTRAN
-      return self.close_c(final) if [C, CL, CUDA].include?( BOAST::get_lang )
+    def close
+      return self.close_fortran if BOAST::get_lang == FORTRAN
+      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
-    def close_c(final=true)
-      s = ""
+
+    def close_c
       BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s = ""
+      s += " "*BOAST::get_indent_level
       s += "}"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
-    def close_fortran(final=true)
+
+    def close_fortran
       s = ""
       BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += "enddo"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
+
   end
 
 end
