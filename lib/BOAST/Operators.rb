@@ -1,9 +1,10 @@
 module BOAST
 
   class Operator
-    class << self
-      include BOAST::Inspectable
+    def Operator.inspect
+      return "#{self.name}"
     end
+
     def Operator.get_vector_name(type)
       case BOAST::get_architecture
       when X86
@@ -404,6 +405,7 @@ module BOAST
 
   class Ternary
     include BOAST::Arithmetic
+    include BOAST::Inspectable
 
     def self.parens(*args,&block)
       return self::new(*args,&block)
