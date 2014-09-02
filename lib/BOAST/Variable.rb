@@ -136,6 +136,7 @@ module BOAST
       else
         @scalar_output = false
       end
+      @dimension = [@dimension].flatten if @dimension
     end
 
     def copy(name=nil,options={})
