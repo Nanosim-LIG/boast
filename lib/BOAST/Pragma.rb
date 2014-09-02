@@ -27,11 +27,11 @@ module BOAST
       return s
     end
 
-    def print(final = true)
+    def print
       s=""
       s += self.to_s
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
   end
 

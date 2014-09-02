@@ -44,14 +44,17 @@ module BOAST
 
   class ConstArray < Array
     include BOAST::Inspectable
+
     def initialize(array,type = nil)
       super(array)
       @type = type::new if type
     end
+
     def to_s
       return self.to_s_fortran if BOAST::get_lang == BOAST::FORTRAN
       return self.to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
+
     def to_s_fortran
       s = ""
       return s if self.first.nil?
@@ -64,6 +67,7 @@ module BOAST
       }
       s += " /)"
     end
+
     def to_s_c
       s = ""
       return s if self.first.nil?
@@ -302,7 +306,6 @@ module BOAST
       BOAST::get_output.print s if final
       return s
     end
-
 
     def decl_fortran(final=true)
       s = ""

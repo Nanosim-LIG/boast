@@ -96,13 +96,13 @@ module BOAST
       return s
     end
 
-    def print(final=true)
+    def print
       s = self.decl
       if @block then
         @block.call
         s += self.close
       end
-      return s
+      return self
     end
 
     def decl_c(final=true)

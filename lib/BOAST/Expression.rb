@@ -78,13 +78,13 @@ module BOAST
       return BOAST::Expression::to_s_base(op1, op2, oper, r_t)
     end
 
-    def print(final=true)
+    def print
       s=""
-      s += " "*BOAST::get_indent_level if final
+      s += " "*BOAST::get_indent_level
       s += self.to_s
-      s += ";" if final and [C, CL, CUDA].include?( BOAST::get_lang ) 
-      BOAST::get_output.puts s if final
-      return s
+      s += ";" if [C, CL, CUDA].include?( BOAST::get_lang ) 
+      BOAST::get_output.puts s
+      return self
     end
   end
 
