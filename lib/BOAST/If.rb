@@ -68,7 +68,7 @@ module BOAST
       return s
     end
 
-    def decl
+    def open
       s=""
       s += " "*BOAST::get_indent_level
       s += self.to_s
@@ -91,7 +91,7 @@ module BOAST
         }
         self.close
       else
-        self.decl
+        self.open
       end
       return self
     end

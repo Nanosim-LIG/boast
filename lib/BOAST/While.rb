@@ -35,7 +35,7 @@ module BOAST
       return while_string(@condition)
     end
 
-    def decl
+    def open
       s=""
       s += " "*BOAST::get_indent_level
       s += self.to_s
@@ -45,7 +45,7 @@ module BOAST
     end
 
     def print(*args)
-      self.decl
+      self.open
       if @block then
         @block.call(*args)
         self.close

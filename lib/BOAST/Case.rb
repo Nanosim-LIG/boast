@@ -77,13 +77,13 @@ module BOAST
       return s
     end
 
-    def decl
+    def open
       BOAST::get_output.puts self.to_s
       return self
     end
 
     def print(*args)
-      self.decl
+      self.open
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
           s = self.to_s(indx)

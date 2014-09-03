@@ -72,6 +72,10 @@ module BOAST
     a.close
   end
 
+  def self.open(a)
+    a.open
+  end
+
   def self.debug=(debug)
     @@debug = debug
   end
