@@ -17,13 +17,13 @@ module BOAST
       @@output.puts "#pragma OPENCL EXTENSION cl_khr_fp64: enable"
     end
     if get_lang != FORTRAN then
-      rts.type.header
-      ts.type.header
+      rts.type.define
+      ts.type.define
     end
     print p = Procedure(function_name, [n,a,b,c]) {
       if get_lang == FORTRAN then
-        rts.type.header
-        ts.type.header
+        rts.type.define
+        ts.type.define
       end
       decl ts
       if (get_lang == CL or get_lang == CUDA) then

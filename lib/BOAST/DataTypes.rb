@@ -243,9 +243,17 @@ module BOAST
       }
     end
 
-    def decl
+    def decl_c
       return "struct #{@name}" if [C, CL, CUDA].include?( BOAST::get_lang )
+    end
+
+    def decl_fortran
       return "TYPE(#{@name})" if BOAST::get_lang == FORTRAN
+    end
+
+    def decl
+      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return self.decl_fortran if BOAST::get_lang == FORTRAN
     end
 
     def finalize
@@ -259,40 +267,37 @@ module BOAST
        return " "*BOAST::get_indent_level
     end
 
-    def header
-      return header_c if [C, CL, CUDA].include?( BOAST::get_lang )
-      return header_fortran if BOAST::get_lang == FORTRAN
-      raise "Unsupported language!"
+    def define
+      return define_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return define_fortran if BOAST::get_lang == FORTRAN
     end
 
-    def header_c(final = true)
-      s = ""
-      s += self.indent if final
-      s += self.decl + " {\n"
+    def define_c
+      s = self.indent
+      s += self.decl_c + " {"
+      BOAST::get_output.puts s
       @members_array.each { |value|
-         s+= self.indent if final
-         s+= " "*BOAST::get_indent_increment + value.decl(false)+";\n"
+         value.decl
       }
-      s += self.indent if final
+      s = self.indent
       s += "}"
-      s += self.finalize if final
-      BOAST::get_output.print s if final
-      return s
+      s += self.finalize
+      BOAST::get_output.print s
+      return self
     end
     
-    def header_fortran(final = true)
-      s = ""
-      s += self.indent if final
+    def define_fortran
+      s = self.indent
       s += "TYPE :: #{@name}\n"
-      members_array.each { |value|
-         s+= self.indent if final
-         s+= " "*BOAST::get_indent_increment + value.decl(false)+"\n"
+      BOAST::get_output.puts s
+      @members_array.each { |value|
+         value.decl
       }
-      s += self.indent if final
+      s = self.indent
       s += "END TYPE #{@name}"
-      s += self.finalize if final
-      BOAST::get_output.print s if final
-      return s
+      s += self.finalize
+      BOAST::get_output.print s
+      return self
     end
 
   end
