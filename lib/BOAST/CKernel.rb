@@ -470,7 +470,7 @@ EOF
       if @lang == BOAST::CUDA then
         source_file.write <<EOF
 extern "C" {
-  #{@procedure.boast_header(BOAST::CUDA,false)}{
+  #{@procedure.boast_header_s(BOAST::CUDA)}{
     dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
     dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
     cudaEvent_t __start, __stop;

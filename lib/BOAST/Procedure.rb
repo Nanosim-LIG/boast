@@ -20,7 +20,7 @@ module BOAST
       @headers = [] if not @headers
     end
 
-    def boast_header(lang=C,final=true)
+    def boast_header_s( lang=C )
       s = ""
       headers.each { |h|
         s += "#include <#{h}>\n"
@@ -44,10 +44,10 @@ module BOAST
       end
       s += "#{@name}#{trailer}("
       if parameters.first then
-        s += parameters.first.header(lang,false)
+        s += parameters.first.boast_header(lang)
         parameters[1..-1].each { |p|
           s += ", "
-          s += p.header(lang,false)
+          s += p.boast_header(lang)
         }
       end
       if lang == CUDA then
@@ -55,9 +55,14 @@ module BOAST
         s += "size_t *block_number, size_t *block_size"
       end
       s += ")"
-      s += ";\n" if final
-      BOAST::get_output.print s if final
       return s
+    end
+
+    def boast_header(lang=C)
+      s = boast_header_s(lang)
+      s += ";\n"
+      BOAST::get_output.print s
+      return self
     end
 
     def call(*parameters)

@@ -205,6 +205,26 @@ module BOAST
        return s
     end
 
+    def boast_header(lang=C)
+      return decl_texture_s if @texture
+      s = ""
+      s += "const " if @constant or @direction == :in
+      s += @type.decl
+      if @dimension then
+        s += " *"
+      end
+      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
+        s += " *"
+      end
+      s += " #{@name}"
+      return s
+    end
+
+    def decl
+      return self.decl_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return self.decl_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+    end
+
     def decl_c_s(device = false)
       return decl_texture_s if @texture
       s = ""
@@ -269,41 +289,6 @@ module BOAST
       s += self.finalize
       BOAST::get_output.print s
       return self
-    end
-
-    def header(lang=C,final=true)
-      return decl_texture(final) if @texture
-      s = ""
-      s += self.indent if final
-      s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and BOAST::get_lang == BOAST::CL
-      s += "__local " if @local and BOAST::get_lang == BOAST::CL
-      s += "__shared__ " if @local and BOAST::get_lang == BOAST::CUDA
-      s += @type.decl
-      if(@dimension and not @constant and not @local) then
-        s += " *"
-      end
-      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
-        s += " *"
-      end
-      s += " #{@name}"
-      if(@dimension and @constant) then
-        s += "[]"
-      end
-      if(@dimension and @local) then
-         s +="["
-         s += @dimension.reverse.join("*")
-         s +="]"
-      end 
-      s += " = #{@constant}" if @constant
-      s += self.finalize if final
-      BOAST::get_output.print s if final
-      return s
-    end
-
-    def decl
-      return self.decl_fortran if BOAST::get_lang == BOAST::FORTRAN
-      return self.decl_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
 
