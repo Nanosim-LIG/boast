@@ -1,6 +1,6 @@
 module BOAST
 
-  class While
+  class While < BOAST::ControlStructure
     include BOAST::Inspectable
     extend BOAST::Functor
 
@@ -11,21 +11,28 @@ module BOAST
       @block = block
     end
 
+    @@c_strings = {
+      :while => '"while (#{cond}) {"',
+      :end => '"}"'
+    }
+
+    @@f_strings = {
+      :while => '"do while (#{cond})"',
+      :end => '"end do"'
+    }
+
+    @@strings = {
+      BOAST::C => @@c_strings,
+      BOAST::CL => @@c_strings,
+      BOAST::CUDA => @@c_strings,
+      BOAST::FORTRAN => @@f_strings
+    }
+
+    eval token_string_generator( * %w{while cond} )
+    eval token_string_generator( * %w{end} )
+
     def to_s
-      return self.to_s_fortran if BOAST::get_lang == FORTRAN
-      return self.to_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def to_s_fortran
-      s = ""
-      s += "do while( #{@condition} )"
-      return s
-    end
-
-    def to_s_c
-      s = ""
-      s += "while(#{@condition}){"
-      return s
+      return while_string(@condition)
     end
 
     def decl
@@ -47,23 +54,10 @@ module BOAST
     end
 
     def close
-      return self.close_fortran if BOAST::get_lang == FORTRAN
-      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-    def close_c
       BOAST::decrement_indent_level      
       s = ""
       s += " "*BOAST::get_indent_level
-      s += "}"
-      BOAST::get_output.puts s
-      return self
-    end
-
-    def close_fortran
-      BOAST::decrement_indent_level
-      s = ""
-      s += " "*BOAST::get_indent_level
-      s += "end do"
+      s += end_string
       BOAST::get_output.puts s
       return self
     end

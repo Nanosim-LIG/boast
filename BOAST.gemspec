@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
                 lib/BOAST/Pragma.rb
                 lib/BOAST/Inspectable.rb
                 lib/BOAST/Functors.rb
+                lib/BOAST/ControlStructure.rb
               )
   s.has_rdoc = true
   s.license = 'BSD'

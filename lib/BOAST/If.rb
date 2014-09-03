@@ -1,6 +1,6 @@
 module BOAST
 
-  class If
+  class If < BOAST::ControlStructure
     include BOAST::Inspectable
     extend BOAST::Functor
 
@@ -28,34 +28,41 @@ module BOAST
       end
     end
 
+    @@c_strings = {
+      :if => '"if (#{cond}) {"',
+      :else_if => '"} else if (#{cond}) {"',
+      :else => '"} else {"',
+      :end => '"}"'
+    }
+
+    @@f_strings = {
+      :if => '"if (#{cond}) then"',
+      :elsif => '"else if (#{cond}) then"',
+      :else => '"else"',
+      :end => '"end if"'
+    }
+
+    @@strings = {
+      BOAST::C => @@c_strings,
+      BOAST::CL => @@c_strings,
+      BOAST::CUDA => @@c_strings,
+      BOAST::FORTRAN => @@f_strings
+    }
+
+    eval token_string_generator( * %w{if cond} )
+    eval token_string_generator( * %w{elsif cond} )
+    eval token_string_generator( * %w{else} )
+    eval token_string_generator( * %w{end} )
+
     def to_s(condition_number = 0)
-      return self.to_s_fortran(condition_number) if BOAST::get_lang == FORTRAN
-      return self.to_s_c(condition_number) if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def to_s_fortran(condition_number)
       s = ""
       if condition_number == 0 then
-        s += "if ( #{@conditions.first} ) then"
+        s += if_string(@conditions.first)
       else
         if @conditions[condition_number] then
-          s += "else if ( #{@conditions[condition_number]} ) then"
+          s += elsif_string(@conditions[condition_number])
         else
-          s += "else"
-        end
-      end
-      return s
-    end
-
-    def to_s_c(condition_number)
-      s = ""
-      if condition_number == 0 then
-        s += "if(#{@conditions.first}){"
-      else
-        if @conditions[condition_number] then
-          s += "} else if(#{@conditions[condition_number]}){"
-        else
-          s += "} else {"
+          s += else_string
         end
       end
       return s
@@ -90,24 +97,10 @@ module BOAST
     end
 
     def close
-      return self.close_fortran if BOAST::get_lang == FORTRAN
-      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def close_c
       BOAST::decrement_indent_level
       s = ""
       s += " "*BOAST::get_indent_level
-      s += "}"
-      BOAST::get_output.puts s
-      return self
-    end
-
-    def close_fortran
-      BOAST::decrement_indent_level
-      s = ""
-      s += " "*BOAST::get_indent_level
-      s += "end if"
+      s += end_string
       BOAST::get_output.puts s
       return self
     end

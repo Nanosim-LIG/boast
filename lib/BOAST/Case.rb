@@ -1,6 +1,6 @@
 module BOAST
 
-  class Case
+  class Case < BOAST::ControlStructure
     include BOAST::Inspectable
     extend BOAST::Functor
 
@@ -27,45 +27,51 @@ module BOAST
       end
     end
 
+    @@c_strings = {
+      :switch => '"switch (#{expr}) {"',
+      :case => '"case #{constants.join(" : case")} :"',
+      :default => '"default :"',
+      :break => '"break;"',
+      :end => '"}"'
+    }
+
+    @@f_strings = {
+      :siwtch => '"select case (#{expr})"',
+      :case => '"case (#{constants.join(" : ")}) then"',
+      :default => '"case default"',
+      :break => 'nil',
+      :end => '"end select"'
+    }
+
+    @@strings = {
+      BOAST::C => @@c_strings,
+      BOAST::CL => @@c_strings,
+      BOAST::CUDA => @@c_strings,
+      BOAST::FORTRAN => @@f_strings
+    }
+
+    eval token_string_generator( * %w{switch expr})
+    eval token_string_generator( * %w{case constants})
+    eval token_string_generator( * %w{default})
+    eval token_string_generator( * %w{break})
+    eval token_string_generator( * %w{end})
+
     def to_s(block_number = nil)
-      return self.to_s_fortran(block_number) if BOAST::get_lang == FORTRAN
-      return self.to_s_c(block_number) if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def to_s_fortran(block_number)
-      s = ""
-      if block_number then
-        BOAST::decrement_indent_level if block_number != 0
-        s += " "*BOAST::get_indent_level
-        if @constants_list[block_number] and @constants_list[block_number].size > 0 then
-          s += "case (#{@constants_list[block_number].join(" : ")})"
-        else
-          s += "case default"
-        end
-      else
-        s += " "*BOAST::get_indent_level
-        s += "select case (#{@expression})"
-      end
-      BOAST::increment_indent_level
-      return s
-    end
-
-    def to_s_c(block_number)
       s = ""
       if block_number then
         if block_number != 0 then
-          s += " "*BOAST::get_indent_level + "break;\n"
+          s += " "*BOAST::get_indent_level + break_string + "\n" if break_string
           BOAST::decrement_indent_level
         end
         s += " "*BOAST::get_indent_level
         if @constants_list[block_number] and @constants_list[block_number].size > 0 then
-          s += "case #{@constants_list[block_number].join(" : case")} :"
+          s += case_string(@constants_list[block_number])
         else
-          s += "default :"
+          s += default_string
         end
       else
         s += " "*BOAST::get_indent_level
-        s += "switch(#{@expression}){"
+        s += switch_string(@expression)
       end
       BOAST::increment_indent_level
       return s
@@ -90,27 +96,11 @@ module BOAST
     end
 
     def close
-      return self.close_fortran if BOAST::get_lang == FORTRAN
-      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-
-    def close_c
       s = ""
-      s += " "*BOAST::get_indent_level
-      s += "break;\n"
+      s += " "*BOAST::get_indent_level + break_string + "\n" if break_string
       BOAST::decrement_indent_level      
       s += " "*BOAST::get_indent_level
-      s += "}"
-      BOAST::decrement_indent_level      
-      BOAST::get_output.puts s
-      return self
-    end
-
-    def close_fortran
-      BOAST::decrement_indent_level      
-      s = ""
-      s += " "*BOAST::get_indent_level
-      s += "end select"
+      s += end_string
       BOAST::decrement_indent_level      
       BOAST::get_output.puts s
       return self
