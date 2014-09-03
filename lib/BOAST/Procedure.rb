@@ -20,7 +20,7 @@ module BOAST
       @headers = [] if not @headers
     end
 
-    def header(lang=C,final=true)
+    def boast_header(lang=C,final=true)
       s = ""
       headers.each { |h|
         s += "#include <#{h}>\n"
@@ -113,7 +113,7 @@ module BOAST
       raise "Interfaces are not implemented in FORTRAN yet!"
     end
 
-    def decl_c
+    def decl_c_s
       s = ""
       if BOAST::get_lang == CL then
         if @properties[:local] then
@@ -151,7 +151,12 @@ module BOAST
           s += ", "+p.decl(false, @properties[:local])
         }
       end
-      s += ");"
+      s += ")"
+      return s
+    end
+
+    def decl_c
+      s = decl_c_s + ";"
       BOAST::get_output.puts s
       return self
     end
@@ -162,47 +167,8 @@ module BOAST
     end
 
     def open_c
-      s = ""
-#      s += self.header(BOAST::get_lang,false)
-#      s += ";\n"
-      if BOAST::get_lang == CL then
-        if @properties[:local] then
-          s += "static "
-        else
-          s += "__kernel "
-          wgs = @properties[:reqd_work_group_size]
-          if wgs then
-            s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
-          end
-        end
-      elsif BOAST::get_lang == CUDA then
-        if @properties[:local] then
-          s += "static __device__ "
-        else
-          s += "__global__ "
-          wgs = @properties[:reqd_work_group_size]
-          if wgs then
-            s += "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
-          end
-        end
-      end
-      if @properties[:qualifiers] then
-        s += "#{@properties[:qualifiers]} "
-      end
-      if @properties[:return] then
-        s += "#{@properties[:return].type.decl} "
-      else
-        s += "void "
-      end
-      s += "#{@name}("
-      if parameters.first then
-        s += parameters.first.decl(false, @properties[:local])
-        parameters[1..-1].each { |p|
-          s += ", "+p.decl(false, @properties[:local])
-        }
-      end
-      s += "){\n"
-      BOAST::get_output.print s
+      s = decl_c_s + "{"
+      BOAST::get_output.puts s
       BOAST::increment_indent_level
       constants.each { |c|
         c.decl
