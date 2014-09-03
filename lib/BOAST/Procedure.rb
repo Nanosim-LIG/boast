@@ -192,7 +192,7 @@ module BOAST
       s += parameters.join(", ")
       s += ")\n"
       BOAST::increment_indent_level
-      s += " "*BOAST::get_indent_level + "integer, parameter :: wp=kind(1.0d0)"
+      s += BOAST::indent + "integer, parameter :: wp=kind(1.0d0)"
       BOAST::get_output.puts s
       constants.each { |c|
         c.decl

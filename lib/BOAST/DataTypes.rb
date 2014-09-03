@@ -263,23 +263,19 @@ module BOAST
        return s
     end
 
-    def indent
-       return " "*BOAST::get_indent_level
-    end
-
     def define
       return define_c if [C, CL, CUDA].include?( BOAST::get_lang )
       return define_fortran if BOAST::get_lang == FORTRAN
     end
 
     def define_c
-      s = self.indent
+      s = BOAST::indent
       s += self.decl_c + " {"
       BOAST::get_output.puts s
       @members_array.each { |value|
          value.decl
       }
-      s = self.indent
+      s = BOAST::indent
       s += "}"
       s += self.finalize
       BOAST::get_output.print s
@@ -287,13 +283,13 @@ module BOAST
     end
     
     def define_fortran
-      s = self.indent
+      s = BOAST::indent
       s += "TYPE :: #{@name}\n"
       BOAST::get_output.puts s
       @members_array.each { |value|
          value.decl
       }
-      s = self.indent
+      s = BOAST::indent
       s += "END TYPE #{@name}"
       s += self.finalize
       BOAST::get_output.print s

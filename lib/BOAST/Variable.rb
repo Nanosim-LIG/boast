@@ -194,10 +194,6 @@ module BOAST
       return Index::new(self,args)
     end
  
-    def indent
-       return " "*BOAST::get_indent_level
-    end
-
     def finalize
        s = ""
        s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
@@ -284,7 +280,7 @@ module BOAST
 
     def decl_c
       s = ""
-      s += self.indent
+      s += BOAST::indent
       s += self.decl_c_s
       s += self.finalize
       BOAST::get_output.print s
@@ -294,7 +290,7 @@ module BOAST
 
     def decl_fortran
       s = ""
-      s += self.indent
+      s += BOAST::indent
       s += @type.decl
       s += ", intent(#{@direction})" if @direction 
       s += ", parameter" if @constant
