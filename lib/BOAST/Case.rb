@@ -36,8 +36,8 @@ module BOAST
     }
 
     @@f_strings = {
-      :siwtch => '"select case (#{expr})"',
-      :case => '"case (#{constants.join(" : ")}) then"',
+      :switch => '"select case (#{expr})"',
+      :case => '"case (#{constants.join(" : ")})"',
       :default => '"case default"',
       :break => 'nil',
       :end => '"end select"'
