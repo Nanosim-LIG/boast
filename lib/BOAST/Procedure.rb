@@ -96,7 +96,7 @@ module BOAST
     end
 
     def print
-      self.decl
+      self.open
       if @block then
         @block.call
         self.close
@@ -104,12 +104,16 @@ module BOAST
       return self
     end
 
-    def declaration_s
-      return self.declaration_s_fortran if BOAST::get_lang==FORTRAN
-      return self.declaration_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
+    def decl
+      return self.decl_fortran if BOAST::get_lang==FORTRAN
+      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
-    def declaration_s_c
+    def decl_fortran
+      raise "Interfaces are not implemented in FORTRAN yet!"
+    end
+
+    def decl_c
       s = ""
       if BOAST::get_lang == CL then
         if @properties[:local] then
@@ -148,15 +152,16 @@ module BOAST
         }
       end
       s += ");"
-      return s
+      BOAST::get_output.puts s
+      return self
     end
 
-    def decl
-      return self.decl_fortran if BOAST::get_lang==FORTRAN
-      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+    def open
+      return self.open_fortran if BOAST::get_lang==FORTRAN
+      return self.open_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
-    def decl_c
+    def open_c
       s = ""
 #      s += self.header(BOAST::get_lang,false)
 #      s += ";\n"
@@ -205,7 +210,7 @@ module BOAST
       return self
     end
 
-    def decl_fortran
+    def open_fortran
       s = ""
       if @properties[:return] then
         s += "#{@properties[:return].type.decl} FUNCTION "
@@ -216,8 +221,8 @@ module BOAST
       s += parameters.join(", ")
       s += ")\n"
       BOAST::increment_indent_level
-      s += " "*BOAST::get_indent_level + "integer, parameter :: wp=kind(1.0d0)\n"
-      BOAST::get_output.print s
+      s += " "*BOAST::get_indent_level + "integer, parameter :: wp=kind(1.0d0)"
+      BOAST::get_output.puts s
       constants.each { |c|
         c.decl
       }
