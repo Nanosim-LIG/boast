@@ -2,13 +2,12 @@ module BOAST
 
   class Dimension
     include BOAST::Inspectable
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :val1
     attr_reader :val2
     attr_reader :size
+
     def initialize(v1=nil,v2=nil)
       @size = nil
       @val1 = nil
@@ -83,6 +82,7 @@ module BOAST
   class Variable
     include BOAST::Arithmetic
     include BOAST::Inspectable
+    extend BOAST::Functor
 
     alias_method :orig_method_missing, :method_missing
 
@@ -91,10 +91,6 @@ module BOAST
 #      return self.get_element(m.to_s) if type.getters[m.to_s]
 #      return self.set_element(m.to_s) if type.setters[m.to_s]
       return self.orig_method_missing(m, *a, &b)
-    end
-
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
     end
 
     attr_reader :name

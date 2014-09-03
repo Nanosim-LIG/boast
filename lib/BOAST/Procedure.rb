@@ -1,15 +1,15 @@
 module BOAST
+
   class Procedure
     include BOAST::Inspectable
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :name
     attr_reader :parameters
     attr_reader :constants
     attr_reader :properties
     attr_reader :headers
+
     def initialize(name, parameters=[], constants=[], properties={}, &block)
       @name = name
       @parameters = parameters

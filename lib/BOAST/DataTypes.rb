@@ -1,9 +1,7 @@
 module BOAST
 
   class Sizet
-    def self.parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
-    end
+    extend BOAST::VarFunctor
 
     attr_reader :signed
     attr_reader :size
@@ -39,9 +37,7 @@ module BOAST
   end
  
   class Real
-    def self.parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
-    end
+    extend BOAST::VarFunctor
 
     attr_reader :size
     attr_reader :signed
@@ -112,9 +108,7 @@ module BOAST
   end
 
   class Int
-    def self.parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
-    end
+    extend BOAST::VarFunctor
 
     attr_reader :size
     attr_reader :signed
@@ -234,10 +228,9 @@ module BOAST
   end
 
   class CStruct
+    extend BOAST::VarFunctor
+
     attr_reader :name, :members, :members_array
-    def self.parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
-    end
 
     def initialize(hash={})
       @name = hash[:type_name]

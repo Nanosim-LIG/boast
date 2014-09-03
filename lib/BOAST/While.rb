@@ -2,12 +2,10 @@ module BOAST
 
   class While
     include BOAST::Inspectable
-
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :condition
+
     def initialize(condition, &block)
       @condition = condition
       @block = block

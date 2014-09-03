@@ -1,4 +1,5 @@
 module BOAST
+
   @@inspect = false
 
   def self.inspect?

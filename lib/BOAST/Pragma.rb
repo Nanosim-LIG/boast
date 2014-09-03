@@ -2,9 +2,7 @@ module BOAST
 
   class Pragma
     include BOAST::Inspectable
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :name
     attr_reader :options

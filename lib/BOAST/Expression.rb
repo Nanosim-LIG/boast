@@ -1,4 +1,5 @@
 module BOAST
+
   def self.Return(value)
     return Expression("return",nil, value)
   end
@@ -6,10 +7,7 @@ module BOAST
   class Expression
     include BOAST::Arithmetic
     include BOAST::Inspectable
-
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :operator
     attr_reader :operand1

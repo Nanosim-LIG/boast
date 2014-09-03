@@ -3,12 +3,10 @@ module BOAST
   class FuncCall
     include BOAST::Arithmetic
     include BOAST::Inspectable
+    extend BOAST::Functor
 
     @return_type
     @options
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
 
     attr_reader :func_name
     attr_reader :args

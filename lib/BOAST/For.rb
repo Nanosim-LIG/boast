@@ -1,14 +1,13 @@
 module BOAST
+
   class For
     include BOAST::Inspectable
+    extend BOAST::Functor
+
     attr_reader :iterator
     attr_reader :begin
     attr_reader :end
     attr_reader :step
-
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
 
     def initialize(i, b, e, s=1, &block)
       @iterator = i

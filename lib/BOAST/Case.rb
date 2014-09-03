@@ -2,9 +2,7 @@ module BOAST
 
   class Case
     include BOAST::Inspectable
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
+    extend BOAST::Functor
 
     attr_reader :expression
     attr_reader :constants_list
