@@ -146,9 +146,9 @@ module BOAST
       end
       s += "#{@name}("
       if parameters.first then
-        s += parameters.first.decl(false, @properties[:local])
+        s += parameters.first.decl_c_s(@properties[:local])
         parameters[1..-1].each { |p|
-          s += ", "+p.decl(false, @properties[:local])
+          s += ", "+p.decl_c_s(@properties[:local])
         }
       end
       s += ")"
