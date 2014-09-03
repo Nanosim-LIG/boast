@@ -67,23 +67,22 @@ module BOAST
       f.prefix = prefix
       return f
     end
-    def decl(final=true)
-      return self.decl_fortran(final) if BOAST::get_lang==FORTRAN
-      return self.decl_c(final) if [C, CL, CUDA].include?( BOAST::get_lang )
+
+    def close
+      return self.close_fortran if BOAST::get_lang==FORTRAN
+      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
-    def close(final=true)
-      return self.close_fortran(final) if BOAST::get_lang==FORTRAN
-      return self.close_c(final) if [C, CL, CUDA].include?( BOAST::get_lang )
-    end
-    def close_c(final=true)
+
+    def close_c
       BOAST::decrement_indent_level
       s = ""
       s += "  return #{@properties[:return]};\n" if @properties[:return]
       s += "}"
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
-    def close_fortran(final=true)
+
+    def close_fortran
       BOAST::decrement_indent_level
       s = ""
       if @properties[:return] then
@@ -92,20 +91,72 @@ module BOAST
       else
         s += "END SUBROUTINE #{@name}"
       end
-      BOAST::get_output.puts s if final
-      return s
+      BOAST::get_output.puts s
+      return self
     end
 
     def print
-      s = self.decl
+      self.decl
       if @block then
         @block.call
-        s += self.close
+        self.close
       end
       return self
     end
 
-    def decl_c(final=true)
+    def declaration_s
+      return self.declaration_s_fortran if BOAST::get_lang==FORTRAN
+      return self.declaration_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
+    end
+
+    def declaration_s_c
+      s = ""
+      if BOAST::get_lang == CL then
+        if @properties[:local] then
+          s += "static "
+        else
+          s += "__kernel "
+          wgs = @properties[:reqd_work_group_size]
+          if wgs then
+            s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+          end
+        end
+      elsif BOAST::get_lang == CUDA then
+        if @properties[:local] then
+          s += "static __device__ "
+        else
+          s += "__global__ "
+          wgs = @properties[:reqd_work_group_size]
+          if wgs then
+            s += "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
+          end
+        end
+      end
+      if @properties[:qualifiers] then
+        s += "#{@properties[:qualifiers]} "
+      end
+      if @properties[:return] then
+        s += "#{@properties[:return].type.decl} "
+      else
+        s += "void "
+      end
+      s += "#{@name}("
+      if parameters.first then
+        s += parameters.first.decl(false, @properties[:local])
+        parameters[1..-1].each { |p|
+          s += ", "+p.decl(false, @properties[:local])
+        }
+      end
+      s += ");"
+      return s
+    end
+
+    def decl
+      return self.decl_fortran if BOAST::get_lang==FORTRAN
+      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+    end
+
+    def decl_c
       s = ""
 #      s += self.header(BOAST::get_lang,false)
 #      s += ";\n"
@@ -146,17 +197,15 @@ module BOAST
         }
       end
       s += "){\n"
+      BOAST::get_output.print s
       BOAST::increment_indent_level
       constants.each { |c|
-        s += " "*BOAST::get_indent_level
-        s += c.decl(false)
-        s += ";\n"
+        c.decl
       }
-      BOAST::get_output.print s if final
-      return s
+      return self
     end
 
-    def decl_fortran(final=true)
+    def decl_fortran
       s = ""
       if @properties[:return] then
         s += "#{@properties[:return].type.decl} FUNCTION "
@@ -164,27 +213,18 @@ module BOAST
         s += "SUBROUTINE "
       end
       s += "#{@name}("
-      if parameters.first then
-        s += parameters.first.to_s
-        parameters[1..-1].each { |p|
-          s += ", #{p}"
-        }
-      end
+      s += parameters.join(", ")
       s += ")\n"
       BOAST::increment_indent_level
       s += " "*BOAST::get_indent_level + "integer, parameter :: wp=kind(1.0d0)\n"
+      BOAST::get_output.print s
       constants.each { |c|
-        s += " "*BOAST::get_indent_level
-        s += c.decl(false)
-        s += "\n"
+        c.decl
       }
       parameters.each { |p|
-        s += " "*BOAST::get_indent_level
-        s += p.decl(false)
-        s += "\n"
+        p.decl
       }
-      BOAST::get_output.print s if final
-      return s
+      return self
     end
   end
 
