@@ -72,6 +72,10 @@ module BOAST
     a.close
   end
 
+  def self.open(a)
+    a.open
+  end
+
   def self.debug=(debug)
     @@debug = debug
   end
@@ -126,6 +130,10 @@ module BOAST
   
   def self.decrement_indent_level(increment = @@indent_increment)
     @@indent_level -= increment
+  end
+
+  def self.indent
+     return " "*BOAST::get_indent_level
   end
   
   def self.set_replace_constants(replace_constants)

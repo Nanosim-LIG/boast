@@ -60,30 +60,30 @@ module BOAST
       s = ""
       if block_number then
         if block_number != 0 then
-          s += " "*BOAST::get_indent_level + break_string + "\n" if break_string
+          s += BOAST::indent + break_string + "\n" if break_string
           BOAST::decrement_indent_level
         end
-        s += " "*BOAST::get_indent_level
+        s += BOAST::indent
         if @constants_list[block_number] and @constants_list[block_number].size > 0 then
           s += case_string(@constants_list[block_number])
         else
           s += default_string
         end
       else
-        s += " "*BOAST::get_indent_level
+        s += BOAST::indent
         s += switch_string(@expression)
       end
       BOAST::increment_indent_level
       return s
     end
 
-    def decl
+    def open
       BOAST::get_output.puts self.to_s
       return self
     end
 
     def print(*args)
-      self.decl
+      self.open
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
           s = self.to_s(indx)
@@ -97,9 +97,9 @@ module BOAST
 
     def close
       s = ""
-      s += " "*BOAST::get_indent_level + break_string + "\n" if break_string
+      s += BOAST::indent + break_string + "\n" if break_string
       BOAST::decrement_indent_level      
-      s += " "*BOAST::get_indent_level
+      s += BOAST::indent
       s += end_string
       BOAST::decrement_indent_level      
       BOAST::get_output.puts s

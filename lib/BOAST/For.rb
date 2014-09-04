@@ -85,9 +85,9 @@ module BOAST
       @iterator.constant = nil
     end
 
-    def decl
+    def open
       s=""
-      s += " "*BOAST::get_indent_level
+      s += BOAST::indent
       s += self.to_s
       BOAST::get_output.puts s
       BOAST::increment_indent_level      
@@ -95,7 +95,7 @@ module BOAST
     end 
 
     def print(*args)
-      self.decl
+      self.open
       if @block then
         @block.call(*args)
         self.close
@@ -106,7 +106,7 @@ module BOAST
     def close
       BOAST::decrement_indent_level      
       s = ""
-      s += " "*BOAST::get_indent_level
+      s += BOAST::indent
       s += end_string
       BOAST::get_output.puts s
       return self

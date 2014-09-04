@@ -78,7 +78,7 @@ module BOAST
 
     def print
       s=""
-      s += " "*BOAST::get_indent_level
+      s += BOAST::indent
       s += self.to_s
       s += ";" if [C, CL, CUDA].include?( BOAST::get_lang ) 
       BOAST::get_output.puts s

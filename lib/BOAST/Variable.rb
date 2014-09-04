@@ -194,10 +194,6 @@ module BOAST
       return Index::new(self,args)
     end
  
-    def indent
-       return " "*BOAST::get_indent_level
-    end
-
     def finalize
        s = ""
        s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
@@ -205,10 +201,29 @@ module BOAST
        return s
     end
 
-    def decl_c(final=true, device=false)
-      return decl_texture(final) if @texture
+    def boast_header(lang=C)
+      return decl_texture_s if @texture
       s = ""
-      s += self.indent if final
+      s += "const " if @constant or @direction == :in
+      s += @type.decl
+      if @dimension then
+        s += " *"
+      end
+      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
+        s += " *"
+      end
+      s += " #{@name}"
+      return s
+    end
+
+    def decl
+      return self.decl_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return self.decl_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+    end
+
+    def decl_c_s(device = false)
+      return decl_texture_s if @texture
+      s = ""
       s += "const " if @constant or @direction == :in
       s += "__global " if @direction and @dimension and not (@options[:register] or @options[:private] or @local) and BOAST::get_lang == BOAST::CL
       s += "__local " if @local and BOAST::get_lang == BOAST::CL
@@ -237,47 +252,10 @@ module BOAST
          s +="]"
       end 
       s += " = #{@constant}" if @constant
-      s += self.finalize if final
-      BOAST::get_output.print s if final
       return s
     end
 
-    def header(lang=C,final=true)
-      return decl_texture(final) if @texture
-      s = ""
-      s += self.indent if final
-      s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and BOAST::get_lang == BOAST::CL
-      s += "__local " if @local and BOAST::get_lang == BOAST::CL
-      s += "__shared__ " if @local and BOAST::get_lang == BOAST::CUDA
-      s += @type.decl
-      if(@dimension and not @constant and not @local) then
-        s += " *"
-      end
-      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
-        s += " *"
-      end
-      s += " #{@name}"
-      if(@dimension and @constant) then
-        s += "[]"
-      end
-      if(@dimension and @local) then
-         s +="["
-         s += @dimension.reverse.join("*")
-         s +="]"
-      end 
-      s += " = #{@constant}" if @constant
-      s += self.finalize if final
-      BOAST::get_output.print s if final
-      return s
-    end
-
-    def decl(final=true,device=false)
-      return self.decl_fortran(final) if BOAST::get_lang == BOAST::FORTRAN
-      return self.decl_c(final, device) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-    end
-
-    def decl_texture(final=true)
+    def decl_texture_s
       raise "Unsupported language #{BOAST::get_lang} for texture!" if not [BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       raise "Write is unsupported for textures!" if not (@constant or @direction == :in)
       dim_number = 1
@@ -286,7 +264,6 @@ module BOAST
       end
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
       s = ""
-      s += self.indent if final
       if BOAST::get_lang == BOAST::CL then
         s += "__read_only "
         if dim_number < 3 then
@@ -298,14 +275,22 @@ module BOAST
         s += "texture<#{@type.decl}, cudaTextureType#{dim_number}D, cudaReadModeElementType> "
       end
       s += @name
-      s += self.finalize if final
-      BOAST::get_output.print s if final
       return s
     end
 
-    def decl_fortran(final=true)
+    def decl_c
       s = ""
-      s += self.indent if final
+      s += BOAST::indent
+      s += self.decl_c_s
+      s += self.finalize
+      BOAST::get_output.print s
+      return self
+    end
+
+
+    def decl_fortran
+      s = ""
+      s += BOAST::indent
       s += @type.decl
       s += ", intent(#{@direction})" if @direction 
       s += ", parameter" if @constant
@@ -327,9 +312,9 @@ module BOAST
         s += " = #{@constant}"
         s += "_wp" if not @dimension and @type and @type.size == 8
       end
-      s += self.finalize if final
-      BOAST::get_output.print s if final
-      return s
+      s += self.finalize
+      BOAST::get_output.print s
+      return self
     end
 
   end

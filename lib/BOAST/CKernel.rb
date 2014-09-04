@@ -449,7 +449,7 @@ EOF
       BOAST::set_output(module_file)
       fill_module(module_file, module_name)
       module_file.rewind
-#     puts module_file.read
+     #puts module_file.read
       module_file.close
       BOAST::set_lang(previous_lang)
       BOAST::set_output(previous_output)
@@ -492,7 +492,7 @@ EOF
       if @lang == BOAST::CUDA then
         source_file.write <<EOF
 extern "C" {
-  #{@procedure.header(BOAST::CUDA,false)}{
+  #{@procedure.boast_header_s(BOAST::CUDA)}{
     dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
     dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
     cudaEvent_t __start, __stop;
@@ -524,7 +524,7 @@ EOF
       if( @lang == BOAST::CUDA ) then
         module_file.print "#include <cuda_runtime.h>\n"
       end
-      module_file.print @procedure.header(@lang)
+      @procedure.boast_header(@lang)
       module_file.write <<EOF
 VALUE #{module_name} = Qnil;
 void Init_#{module_name}();
