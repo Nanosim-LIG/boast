@@ -139,29 +139,27 @@ module BOAST
       return code.read
     end
 
-    def setup_compiler(options = {})
-      Rake::Task::clear
-      verbose = options[:verbose]
-      verbose = BOAST::get_verbose if not verbose
-      Rake::verbose(verbose)
-      Rake::FileUtilsExt.verbose_flag=verbose
-      f_compiler = options[:FC]
-      c_compiler = options[:CC]
-      cxx_compiler = options[:CXX]
-      cuda_compiler = options[:NVCC]
-      f_flags = options[:FCFLAGS]
-      f_flags += " -fPIC"
-      f_flags += " -fno-second-underscore" if f_compiler == 'g95'
-      ld_flags = options[:LDFLAGS]
-      cuda_flags = options[:NVCCFLAGS]
-      cuda_flags += " --compiler-options '-fPIC'"
 
+    def get_openmp_flags(compiler)
+      openmp_flags = BOAST::get_openmp_flags[compiler]
+      if not openmp_flags then
+        keys = BOAST::get_openmp_flags.keys
+        keys.each { |k|
+          openmp_flags = BOAST::get_openmp_flags[k] if compiler.match(k)
+        }
+      end
+      return openmp_flags
+    end
 
+    def get_includes(narray_path)
       includes = "-I#{RbConfig::CONFIG["archdir"]}"
       includes += " -I#{RbConfig::CONFIG["rubyhdrdir"]} -I#{RbConfig::CONFIG["rubyhdrdir"]}/#{RbConfig::CONFIG["arch"]}"
       includes += " -I#{RbConfig::CONFIG["rubyarchhdrdir"]}" if RbConfig::CONFIG["rubyarchhdrdir"]
-      ld_flags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
-      ld_flags += " -lcudart" if @lang == BOAST::CUDA
+      includes += " -I#{narray_path}" if narray_path
+      return includes
+    end
+
+    def get_narray_path
       narray_path = nil
       begin
         spec = Gem::Specification::find_by_name('narray')
@@ -174,48 +172,84 @@ module BOAST
           narray_path = Gem.loaded_specs['narray'].full_gem_path
         end
       end
-      includes += " -I#{narray_path}" if narray_path
-      cflags = options[:CFLAGS]
-      cxxflags = options[:CXXFLAGS]
-      cflags += " -fPIC #{includes}"
-      cxxflags += " -fPIC #{includes}"
-      cflags += " -DHAVE_NARRAY_H" if narray_path
-      fcflags = f_flags
-      cudaflags = cuda_flags
+    end
 
-      if options[:openmp] then
-        case @lang
-        when BOAST::C
-          openmp_c_flags = BOAST::get_openmp_flags[c_compiler]
-          if not openmp_c_flags then
-            keys = BOAST::get_openmp_flags.keys
-            keys.each { |k|
-              openmp_c_flags = BOAST::get_openmp_flags[k] if c_compiler.match(k)
-            }
-          end
-          raise "unkwown openmp flags for: #{c_compiler}" if not openmp_c_flags
-          cflags += " #{openmp_c_flags}"
-          openmp_cxx_flags = BOAST::get_openmp_flags[cxx_compiler]
-          if not openmp_cxx_flags then
-            keys = BOAST::get_openmp_flags.keys
-            keys.each { |k|
-              openmp_cxx_flags = BOAST::get_openmp_flags[k] if cxx_compiler.match(k)
-            }
-          end
-          raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxx_flags
-          cxxflags += " #{openmp_cxx_flags}"
-        when BOAST::FORTRAN
-          openmp_f_flags = BOAST::get_openmp_flags[f_compiler]
-          if not openmp_f_flags then
-            keys = BOAST::get_openmp_flags.keys
-            keys.each { |k|
-              openmp_f_flags = BOAST::get_openmp_flags[k] if f_compiler.match(k)
-            }
-          end
-          raise "unkwown openmp flags for: #{f_compiler}" if not openmp_f_flags
-          fcflags += " #{openmp_f_flags}"
-        end
+    def setup_c_compiler(options, includes, narray_path, runner)
+      c_compiler = options[:CC]
+      cflags = options[:CFLAGS]
+      cflags += " -fPIC #{includes}"
+      cflags += " -DHAVE_NARRAY_H" if narray_path
+      if options[:openmp] and @lang == BOAST::C then
+          openmp_cflags = get_openmp_flags(c_compiler)
+          raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
+          cflags += " #{openmp_cflags}"
       end
+
+      rule '.o' => '.c' do |t|
+        c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
+      end
+    end
+
+    def setup_cxx_compiler(options, includes, runner)
+      cxx_compiler = options[:CXX]
+      cxxflags = options[:CXXFLAGS]
+      cxxflags += " -fPIC #{includes}"
+      if options[:openmp] and @lang == BOAST::C then
+          openmp_cxxflags = get_openmp_flags(cxx_compiler)
+          raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxxflags
+          cxxflags += " #{openmp_cxxflags}"
+      end
+
+      rule '.o' => '.cpp' do |t|
+        cxx_call_string = "#{cxx_compiler} #{cxxflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, cxx_call_string)
+      end
+    end
+
+    def setup_fortran_compiler(options, runner)
+      f_compiler = options[:FC]
+      fcflags = options[:FCFLAGS]
+      fcflags += " -fPIC"
+      fcflags += " -fno-second-underscore" if f_compiler == 'g95'
+      if options[:openmp] and @lang == BOAST::FORTRAN then
+          openmp_fcflags = get_openmp_flags(f_compiler)
+          raise "unkwown openmp flags for: #{f_compiler}" if not openmp_fcflags
+          fcflags += " #{openmp_fcflags}"
+      end
+
+      rule '.o' => '.f90' do |t|
+        f_call_string = "#{f_compiler} #{fcflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, f_call_string)
+      end
+    end
+
+    def setup_cuda_compiler(options, runner)
+      cuda_compiler = options[:NVCC]
+      cudaflags = options[:NVCCFLAGS]
+      cudaflags += " --compiler-options '-fPIC'"
+
+      rule '.o' => '.cu' do |t|
+        cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, cuda_call_string)
+      end
+    end
+
+    def get_linker_flags(options)
+      ld_flags = options[:LDFLAGS]
+      ld_flags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
+      ld_flags += " -lcudart" if @lang == BOAST::CUDA
+    end
+
+    def setup_compilers(options = {})
+      Rake::Task::clear
+      verbose = options[:verbose]
+      verbose = BOAST::get_verbose if not verbose
+      Rake::verbose(verbose)
+      Rake::FileUtilsExt.verbose_flag=verbose
+
+      narray_path = get_narray_path
+      includes = get_includes(narray_path)
 
       runner = lambda { |t, call_string|
         if verbose then
@@ -230,26 +264,14 @@ module BOAST
         end
       }
 
-      rule '.o' => '.c' do |t|
-        c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, c_call_string)
-      end
+      setup_c_compiler(options, includes, narray_path, runner)
+      setup_cxx_compiler(options, includes, runner)
+      setup_fortran_compiler(options, runner)
+      setup_cuda_compiler(options, runner)
 
-      rule '.o' => '.f90' do |t|
-        f_call_string = "#{f_compiler} #{fcflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, f_call_string)
-      end
+      ldflags = get_linker_flags(options)
 
-      rule '.o' => '.cpp' do |t|
-        cxx_call_string = "#{cxx_compiler} #{cxxflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, cxx_call_string)
-      end
-
-      rule '.o' => '.cu' do |t|
-        cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, cuda_call_string)
-      end
-      return ld_flags
+      return ldflags
     end
 
     def select_cl_platform(options)
