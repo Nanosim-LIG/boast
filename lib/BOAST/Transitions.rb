@@ -3,7 +3,6 @@ module BOAST
     @@transitions = Hash::new { |hash, key| hash[key] = Hash::new }
     def get_transition(type1, type2, operator)
       #STDERR.puts @@transitions.inspect
-      #STDERR.puts @@transitions[t1][t2].inspec
       ops = @@transitions[[type1,type2]]
       raise "Types #{[type1,type2]} have no relation!" if not ops
       t = ops[operator]
@@ -21,9 +20,13 @@ module BOAST
        signed = false
        size = nil
        vector_length = 1
-       return_type, operator = get_transition(var1.type.class, var2.type.class, operator)
+       t1 = var1.type.class
+       t2 = var2.type.class
+       t1 = var1.type.name if t1 == BOAST::CustomType
+       t2 = var2.type.name if t2 == BOAST::CustomType
+       return_type, operator = get_transition(t1, t2, operator)
        #STDERR.puts "#{return_type} : #{var1.type.class} #{operator} #{var2.type.class}"
-       if var1.type.class == return_type and var2.type.class == return_type then
+       if t1 == return_type and t2 == return_type then
          signed = (signed or var1.type.signed)
          signed = (signed or var2.type.signed)
          size = [var1.type.size, var2.type.size].max
@@ -31,7 +34,7 @@ module BOAST
          [BOAST::Variable::new("dummy", return_type, :size => size, :signed => signed, :vector_length => vector_length), operator]
        elsif var1.type.class == return_type then
          return [var1, operator]
-       elsif var2.type.class == return_type then
+       else # var2.type.class == return_type then
          return [var2, operator]
        end
      end

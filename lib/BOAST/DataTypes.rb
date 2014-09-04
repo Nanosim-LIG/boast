@@ -299,6 +299,8 @@ module BOAST
   end
 
   class CustomType
+    extend BOAST::VarFunctor
+
     attr_reader :size, :name, :vector_length
     def initialize(hash={})
       @name = hash[:type_name]
