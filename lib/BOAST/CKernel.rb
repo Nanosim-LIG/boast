@@ -811,6 +811,104 @@ EOF
       return res
     end
 
+    def get_array_type(param)
+      if param.type.class == BOAST::Real then
+        case param.type.size
+        when 4
+          type = NArray::SFLOAT
+        when 8
+          type = NArray::FLOAT
+        else
+          STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+          type = NArray::BYTE
+        end
+      elsif param.type.class == BOAST::Int then
+        case param.type.size
+        when 1
+          type = NArray::BYTE
+        when 2
+          type = NArray::SINT
+        when 4
+          type = NArray::SINT
+        else
+          STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+          type = NArray::BYTE
+        end
+      else
+        STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if BOAST::debug
+        type = NArray::BYTE
+      end
+      return type
+    end
+
+    def get_scalar_type(param)
+      if param.type.class == BOAST::Real then
+        case param.type.size
+        when 4
+          type = "f"
+        when 8
+          type = "d"
+        else
+          raise "Unsupported Real scalar size: #{param.type.size}!"
+        end
+      elsif param.type.class == BOAST::Int then
+        case param.type.size
+        when 1
+          type = "C"
+        when 2
+          type = "S"
+        when 4
+          type = "L"
+        when 8
+          type = "Q"
+        else
+          raise "Unsupported Int scalar size: #{param.type.size}!"
+        end
+        if param.type.signed? then
+          type.downcase!
+        end
+      end
+      return type
+    end
+
+    def read_param(param, directory, suffix, intent)
+      if intent == :out and ( param.direction == :in or param.constant ) then
+        return nil
+      end
+      f = File::new( directory + "/" + param.name+suffix, "rb" )
+      if param.dimension then
+        type = get_array_type(param)
+        if f.size == 0 then
+          res = NArray::new(type, 1)
+        else
+          res = NArray.to_na(f.read, type)
+        end
+      else
+        type = get_scalar_type(param)
+        res = f.read.unpack(type).first
+      end
+      f.close
+      return res
+    end
+
+    def get_gpu_dim(directory)
+      f = File::new( directory + "/problem_size", "r")
+      s = f.read
+      local_dim, global_dim = s.scan(/<(.*?)>/)
+      local_dim  = local_dim.pop.split(",").collect!{ |e| e.to_i }
+      global_dim = global_dim.pop.split(",").collect!{ |e| e.to_i }
+      (local_dim.length..2).each{ |i| local_dim[i] = 1 }
+      (global_dim.length..2).each{ |i| global_dim[i] = 1 }
+      if @lang == BOAST::CL then
+        local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
+        res = { :global_work_size => global_dim, :local_work_size => local_dim }
+      else
+        res = { :block_number => global_dim, :block_size => local_dim }
+      end
+      f.close
+      return res
+    end
+
     def load_ref_files(  path = "", suffix = "", intent )
       proc_path = path + "/#{@procedure.name}/"
       res_h = {}
@@ -823,89 +921,10 @@ EOF
       dirs.each { |d|
         res = [] 
         @procedure.parameters.collect { |param|
-          if intent == :out and ( param.direction == :in or param.constant ) then
-            res.push nil
-            next
-          end
-          f = File::new( d+"/"+param.name+suffix, "rb" )
-          if param.dimension then
-            if param.type.class == BOAST::Real then
-              case param.type.size
-              when 4
-                type = NArray::SFLOAT
-              when 8
-                type = NArray::FLOAT
-              else
-                STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
-                type = NArray::BYTE
-              end
-            elsif param.type.class == BOAST::Int then
-              case param.type.size
-              when 1
-                type = NArray::BYTE
-              when 2
-                type = NArray::SINT
-              when 4
-                type = NArray::SINT
-              else
-                STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
-                type = NArray::BYTE
-              end
-            else
-              STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if BOAST::debug
-              type = NArray::BYTE
-            end
-            if f.size == 0 then
-              res.push NArray::new(type, 1)
-            else
-              res.push NArray.to_na(f.read, type)
-            end
-          else
-            if param.type.class == BOAST::Real then
-              case param.type.size
-              when 4
-                type = "f"
-              when 8
-                type = "d"
-              else
-                raise "Unsupported Real scalar size: #{param.type.size}!"
-              end
-            elsif param.type.class == BOAST::Int then
-              case param.type.size
-              when 1
-                type = "C"
-              when 2
-                type = "S"
-              when 4
-                type = "L"
-              when 8
-                type = "Q"
-              else
-                raise "Unsupported Int scalar size: #{param.type.size}!"
-              end
-              if param.type.signed? then
-                type.downcase!
-              end
-            end
-            res.push f.read.unpack(type).first
-          end
-          f.close
+          res.push read_param(param, d, suffix, intent)
         }
         if @lang == BOAST::CUDA or @lang == BOAST::CL then
-          f = File::new( d +"/problem_size", "r")
-          s = f.read
-          local_dim, global_dim = s.scan(/<(.*?)>/)
-          local_dim  = local_dim.pop.split(",").collect!{ |e| e.to_i }
-          global_dim = global_dim.pop.split(",").collect!{ |e| e.to_i }
-          (local_dim.length..2).each{ |i| local_dim[i] = 1 }
-          (global_dim.length..2).each{ |i| global_dim[i] = 1 }
-          if @lang == BOAST::CL then
-            local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
-            res.push( { :global_work_size => global_dim, :local_work_size => local_dim } )
-          else
-            res.push( { :block_number => global_dim, :block_size => local_dim } )
-          end
-          f.close
+          res.push get_gpu_dim(d)
         end
         res_h[d] =  res
       }

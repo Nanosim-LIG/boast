@@ -60,6 +60,6 @@ module BOAST
     def dereference
       return BOAST::Expression::new("*",nil,self)
     end
- 
+
   end
 end
