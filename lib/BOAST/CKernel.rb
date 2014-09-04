@@ -564,8 +564,8 @@ EOF
       @code.rewind
     end
 
-    def fill_module(module_file, module_name)
-      module_file.write <<EOF
+    def module_header(module_file)
+      module_file.print <<EOF
 #include "ruby.h"
 #include <inttypes.h>
 #include <time.h>
@@ -576,8 +576,10 @@ EOF
       if( @lang == BOAST::CUDA ) then
         module_file.print "#include <cuda_runtime.h>\n"
       end
-      @procedure.boast_header(@lang)
-      module_file.write <<EOF
+    end
+
+    def module_preamble(module_file, module_name)
+      module_file.print <<EOF
 VALUE #{module_name} = Qnil;
 void Init_#{module_name}();
 VALUE method_run(int argc, VALUE *argv, VALUE self);
@@ -585,45 +587,36 @@ void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
   rb_define_method(#{module_name}, "run", method_run, -1);
 }
-VALUE method_run(int argc, VALUE *argv, VALUE self) {
 EOF
-      if( @lang == BOAST::CUDA ) then
-        module_file.write <<EOF
+    end
+
+    def check_args(module_file)
+      if @lang == BOAST::CUDA then
+        module_file.print <<EOF
   if( argc < #{@procedure.parameters.length} || argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
-  VALUE rb_opts;
-  VALUE rb_ptr;
-  size_t block_size[3] = {1,1,1};
-  size_t block_number[3] = {1,1,1};
 EOF
       else
-        module_file.write <<EOF
+        module_file.print <<EOF
   if( argc != #{@procedure.parameters.length} )
     rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
-  VALUE rb_ptr;
 EOF
       end
-      argc = @procedure.parameters.length
-      argv = Variable::new("argv",Real,{:dimension => [ Dimension::new(0,argc-1) ] })
-      rb_ptr = Variable::new("rb_ptr",Int)
-      @procedure.parameters.each { |param| 
-        param_copy = param.copy
-        param_copy.constant = nil
-        param_copy.direction = nil
-        param_copy.decl
-      }
+    end
+
+    def get_params_value(module_file, argv, rb_ptr)
       @procedure.parameters.each_index do |i|
         param = @procedure.parameters[i]
         if not param.dimension then
           case param.type
             when Int 
-              (param === FuncCall::new("NUM2INT", argv[i])).print if param.type.size == 4
-              (param === FuncCall::new("NUM2LONG", argv[i])).print if param.type.size == 8
+              BOAST::print param === FuncCall::new("NUM2INT", argv[i]) if param.type.size == 4
+              BOAST::print param === FuncCall::new("NUM2LONG", argv[i]) if param.type.size == 8
             when Real
-              (param === FuncCall::new("NUM2DBL", argv[i])).print
+              BOAST::print param === FuncCall::new("NUM2DBL", argv[i])
           end
         else
-          (rb_ptr === argv[i]).print
+          BOAST::print rb_ptr === argv[i]
           if @lang == BOAST::CUDA then
             module_file.print <<EOF
   if ( IsNArray(rb_ptr) ) {
@@ -632,16 +625,9 @@ EOF
     Data_Get_Struct(rb_ptr, struct NARRAY, n_ary);
     array_size = n_ary->total * na_sizeof[n_ary->type];
     cudaMalloc( (void **) &#{param.name}, array_size);
-EOF
-#            if param.direction == :in then
-            module_file.print <<EOF
     cudaMemcpy(#{param.name}, (void *) n_ary->ptr, array_size, cudaMemcpyHostToDevice);
-EOF
-#            end
-            module_file.print <<EOF
   } else
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
-  
 EOF
           else
             module_file.print <<EOF
@@ -657,8 +643,26 @@ EOF
           end
         end
       end
-      if @lang == BOAST::CUDA then
-        module_file.write <<EOF
+    end
+
+    def decl_module_params(module_file)
+      @procedure.parameters.each { |param| 
+        param_copy = param.copy
+        param_copy.constant = nil
+        param_copy.direction = nil
+        BOAST::decl param_copy
+      }
+      module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
+      module_file.print "  VALUE stats = rb_hash_new();\n"
+      module_file.print "  struct timespec start, stop;\n"
+      module_file.print "  unsigned long long int duration;\n"
+    end
+
+    def get_cuda_launch_bounds(module_file)
+      module_file.print <<EOF
+  VALUE rb_opts;
+  size_t block_size[3] = {1,1,1};
+  size_t block_number[3] = {1,1,1};
   if( argc == #{@procedure.parameters.length + 1} ) {
     rb_opts = argv[argc -1];
     if ( rb_opts != Qnil ) {
@@ -689,12 +693,9 @@ EOF
     }
   }
 EOF
-      end
-      module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
-      module_file.print "  VALUE stats = rb_hash_new();\n"
-      module_file.print "  struct timespec start, stop;\n"
-      module_file.print "  unsigned long long int duration;\n"
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &start);\n"
+    end
+
+    def create_procedure_call(module_file)
       if @lang == BOAST::CUDA then
         module_file.print "  duration = "
       elsif @procedure.properties[:return] then
@@ -729,8 +730,9 @@ EOF
       end
       module_file.print params.join(", ")
       module_file.print "  );\n"
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &stop);\n"
+    end
 
+    def get_results(module_file, argv, rb_ptr)
       if @lang == BOAST::CUDA then
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
@@ -757,6 +759,9 @@ EOF
           end
         end
       end
+    end
+
+    def store_result(module_file)
       if @lang != BOAST::CUDA then
         module_file.print "  duration = (unsigned long long int)stop.tv_sec * (unsigned long long int)1000000000 + stop.tv_nsec;\n"
         module_file.print "  duration -= (unsigned long long int)start.tv_sec * (unsigned long long int)1000000000 + start.tv_nsec;\n"
@@ -768,8 +773,43 @@ EOF
         module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
         module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)ret));\n" if type_ret.kind_of?(Real)
       end
+    end
+
+    def fill_module(module_file, module_name)
+      module_header(module_file)
+      @procedure.boast_header(@lang)
+      module_preamble(module_file, module_name)
+
+      module_file.puts "VALUE method_run(int argc, VALUE *argv, VALUE self) {"
+
+      check_args(module_file)
+
+      argc = @procedure.parameters.length
+      argv = BOAST::CustomType("argv", :type_name => "VALUE", :dimension => [ BOAST::Dim(0,argc-1) ] )
+      rb_ptr = BOAST::CustomType("rb_ptr", :type_name => "VALUE")
+      BOAST::set_transition("VALUE", "VALUE", :default,  BOAST::CustomType::new(:type_name => "VALUE"))
+      BOAST::decl rb_ptr
+
+      decl_module_params(module_file)
+
+      get_params_value(module_file, argv, rb_ptr)
+
+      if @lang == BOAST::CUDA then
+        module_file.print get_cuda_launch_bounds(module_file)
+      end
+
+      module_file.print "  clock_gettime(CLOCK_REALTIME, &start);\n"
+
+      create_procedure_call(module_file)
+
+      module_file.print "  clock_gettime(CLOCK_REALTIME, &stop);\n"
+
+      get_results(module_file, argv, rb_ptr)
+
+      store_result(module_file)
+
       module_file.print "  return stats;\n"
-      module_file.print  "}"
+      module_file.print "}"
     end
 
     def method_missing(meth, *args, &block)
