@@ -319,8 +319,32 @@ module BOAST
       return devices.first
     end
 
-    def build_opencl(options)
+    def init_opencl_types
+      @@opencl_real_types = {
+        2 => OpenCL::Half,
+        4 => OpenCL::Float,
+        8 => OpenCL::Double
+      }
+
+      @@opencl_int_types = {
+        true => {
+          1 => OpenCL::Char,
+          2 => OpenCL::Short,
+          4 => OpenCL::Int,
+          8 => OpenCL::Long
+        },
+        false => {
+          1 => OpenCL::UChar,
+          2 => OpenCL::UShort,
+          4 => OpenCL::UInt,
+          8 => OpenCL::ULong
+        }
+      }
+    end
+
+    def init_opencl(options)
       require 'opencl_ruby_ffi'
+      init_opencl_types
       device = select_cl_device(options)
       @context = OpenCL::create_context([device])
       program = @context.create_program_with_source([@code.string])
@@ -343,6 +367,56 @@ module BOAST
       end
       @queue = @context.create_command_queue(device, :properties => OpenCL::CommandQueue::PROFILING_ENABLE)
       @kernel = program.create_kernel(@procedure.name)
+      return self
+    end
+
+    def create_opencl_array(arg, parameter)
+      if parameter.direction == :in then
+        flags = OpenCL::Mem::Flags::READ_ONLY
+      elsif parameter.direction == :out then
+        flags = OpenCL::Mem::Flags::WRITE_ONLY
+      else
+        flags = OpenCL::Mem::Flags::READ_WRITE
+      end
+      if parameter.texture then
+        param = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), arg.size * arg.element_size, 1, :flags => flags )
+        @queue.enqueue_write_image( param, arg, :blocking => true )
+      else
+        param = @context.create_buffer( arg.size * arg.element_size, :flags => flags )
+        @queue.enqueue_write_buffer( param, arg, :blocking => true )
+      end
+      return param
+    end
+
+    def create_opencl_scalar(arg, parameter)
+      if parameter.type.is_a?(Real) then
+        return @@opencl_real_types[parameter.type.size]::new(arg)
+      elsif parameter.type.is_a?(Int) then
+        return @@opencl_int_types[parameter.type.signed][parameter.type.size]::new(arg)
+      else
+        return arg
+      end
+    end
+
+    def create_opencl_param(arg, parameter)
+      if parameter.dimension then
+        return create_opencl_array(arg, parameter)
+      else
+        return create_opencl_scalar(arg, parameter)
+      end
+    end
+
+    def read_opencl_param(param, arg, parameter)
+      if parameter.texture then
+        @queue.enqueue_read_image( param, arg, :blocking => true )
+      else
+        @queue.enqueue_read_buffer( param, arg, :blocking => true )
+      end
+    end
+
+    def build_opencl(options)
+      init_opencl(options)
+
       run_method = <<EOF
 def self.run(*args)
   raise "Wrong number of arguments \#{args.length} for #{@procedure.parameters.length}" if args.length > #{@procedure.parameters.length+1} or args.length < #{@procedure.parameters.length}
@@ -350,62 +424,15 @@ def self.run(*args)
   opts = {}
   opts = args.pop if args.length == #{@procedure.parameters.length+1}
   @procedure.parameters.each_index { |i|
-    if @procedure.parameters[i].dimension then
-      if @procedure.parameters[i].direction == :in then
-        flags = OpenCL::Mem::Flags::READ_ONLY
-      elsif @procedure.parameters[i].direction == :out then
-        flags = OpenCL::Mem::Flags::WRITE_ONLY
-      else
-        flags = OpenCL::Mem::Flags::READ_WRITE
-      end
-      if @procedure.parameters[i].texture then
-        params[i] = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), args[i].size * args[i].element_size, 1, :flags => flags )
-#        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
-          @queue.enqueue_write_image( params[i], args[i], :blocking => true )
-#        end
-      else
-        params[i] = @context.create_buffer( args[i].size * args[i].element_size, :flags => flags )
-#        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :in then
-          @queue.enqueue_write_buffer( params[i], args[i], :blocking => true )
-#        end
-      end
-    else
-      if @procedure.parameters[i].type.is_a?(Real) then
-        params[i] = OpenCL::Half::new(args[i]) if @procedure.parameters[i].type.size == 2
-        params[i] = OpenCL::Float::new(args[i]) if @procedure.parameters[i].type.size == 4
-        params[i] = OpenCL::Double::new(args[i]) if @procedure.parameters[i].type.size == 8
-      elsif @procedure.parameters[i].type.is_a?(Int) then
-        if @procedure.parameters[i].type.signed
-          params[i] = OpenCL::Char::new(args[i]) if @procedure.parameters[i].type.size == 1
-          params[i] = OpenCL::Short::new(args[i]) if @procedure.parameters[i].type.size == 2
-          params[i] = OpenCL::Int::new(args[i]) if @procedure.parameters[i].type.size == 4
-          params[i] = OpenCL::Long::new(args[i]) if @procedure.parameters[i].type.size == 8
-        else
-          params[i] = OpenCL::UChar::new(args[i]) if @procedure.parameters[i].type.size == 1
-          params[i] = OpenCL::UShort::new(args[i]) if @procedure.parameters[i].type.size == 2
-          params[i] = OpenCL::UInt::new(args[i]) if @procedure.parameters[i].type.size == 4
-          params[i] = OpenCL::ULong::new(args[i]) if @procedure.parameters[i].type.size == 8
-        end
-      else
-        params[i] = args[i]
-      end
-    end
+    params[i] = create_opencl_param( args[i], @procedure.parameters[i] )
   }
   params.each_index{ |i|
     @kernel.set_arg(i, params[i])
   }
   event = @queue.enqueue_NDrange_kernel(@kernel, opts[:global_work_size], :local_work_size => opts[:local_work_size])
   @procedure.parameters.each_index { |i|
-    if @procedure.parameters[i].dimension then
-      if @procedure.parameters[i].texture then
-        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out then
-          @queue.enqueue_read_image( params[i], args[i], :blocking => true )
-        end
-      else
-        if @procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out then
-          @queue.enqueue_read_buffer( params[i], args[i], :blocking => true )
-        end
-      end
+    if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
+      read_opencl_param( params[i], args[i], @procedure.parameters[i] )
     end
   }
   result = {}
