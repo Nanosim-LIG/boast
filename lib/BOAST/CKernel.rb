@@ -235,10 +235,21 @@ module BOAST
       end
     end
 
-    def get_linker_flags(options)
-      ld_flags = options[:LDFLAGS]
-      ld_flags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
-      ld_flags += " -lcudart" if @lang == BOAST::CUDA
+    def setup_linker(options)
+      ldflags = options[:LDFLAGS]
+      ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
+      ldflags += " -lcudart" if @lang == BOAST::CUDA
+      c_compiler = options[:CC]
+      c_compiler = "cc" if not c_compiler
+      linker = options[:LD]
+      linker = c_compiler if not linker
+      if options[:openmp] then
+        openmp_ldflags = get_openmp_flags(linker)
+        raise "unkwown openmp flags for: #{linker}" if not openmp_ldflags
+        ldflags += " #{openmp_ldflags}"
+      end
+
+      return [linker, ldflags]
     end
 
     def setup_compilers(options = {})
@@ -269,9 +280,8 @@ module BOAST
       setup_fortran_compiler(options, runner)
       setup_cuda_compiler(options, runner)
 
-      ldflags = get_linker_flags(options)
+      return setup_linker(options)
 
-      return ldflags
     end
 
     def select_cl_platform(options)
@@ -409,37 +419,24 @@ EOF
     return self
     end
 
-    def build(options = {})
-      compiler_options = BOAST::get_compiler_options
-      compiler_options.update(options)
-      return build_opencl(compiler_options) if @lang == BOAST::CL
-      ldflags = self.setup_compiler(compiler_options)
-      extension = ".c" if @lang == BOAST::C
-      extension = ".cu" if @lang == BOAST::CUDA
-      extension = ".f90" if @lang == BOAST::FORTRAN
-#temporary
-      c_compiler = compiler_options[:CC]
-      c_compiler = "cc" if not c_compiler
-      linker = compiler_options[:LD]
-      linker = c_compiler if not linker
-#end temporary
-      if options[:openmp] then
-        openmp_ld_flags = BOAST::get_openmp_flags[linker]
-          if not openmp_ld_flags then
-            keys = BOAST::get_openmp_flags.keys
-            keys.each { |k|
-              openmp_ld_flags = BOAST::get_openmp_flags[k] if linker.match(k)
-            }
-          end
-          raise "unkwown openmp flags for: #{linker}" if not openmp_ld_flags
-          ldflags += " #{openmp_ld_flags}"
-      end
-      source_file = Tempfile::new([@procedure.name,extension])
-      path = source_file.path
-      target = path.chomp(File::extname(path))+".o"
-      fill_code(source_file)
-      source_file.close
+    @@extensions = {
+      BOAST::C => ".c",
+      BOAST::CUDA => ".cu",
+      BOAST::FORTRAN => ".f90"
+    }
 
+    def get_sub_kernels
+      kernel_files = []
+      @kernels.each { |kernel|
+        kernel_file = Tempfile::new([kernel.procedure.name,".o"])
+        kernel.binary.rewind
+        kernel_file.write( kernel.binary.read )
+        kernel_file.close
+        kernel_files.push(kernel_file)
+      }
+    end
+
+    def create_module_source(path)
       previous_lang = BOAST::get_lang
       previous_output = BOAST::get_output
       BOAST::set_lang(BOAST::C)
@@ -453,31 +450,59 @@ EOF
       module_file.close
       BOAST::set_lang(previous_lang)
       BOAST::set_output(previous_output)
+      return [module_file_name, module_name]
+    end
+
+    def save_binary(target)
+      f = File::open(target,"rb")
+      @binary = StringIO::new
+      @binary.write( f.read )
+      f.close
+    end
+
+    def create_source
+      extension = @@extensions[@lang]
+      source_file = Tempfile::new([@procedure.name,extension])
+      path = source_file.path
+      target = path.chomp(File::extname(path))+".o"
+      fill_code(source_file)
+      source_file.close
+      return [source_file, path, target]
+    end
+
+    def build(options = {})
+      compiler_options = BOAST::get_compiler_options
+      compiler_options.update(options)
+      return build_opencl(compiler_options) if @lang == BOAST::CL
+
+      linker, ldflags = self.setup_compilers(compiler_options)
+
+      extension = @@extensions[@lang]
+
+      source_file, path, target = create_source
+
+      module_file_name, module_name = create_module_source(path)
+
       module_target = module_file_name.chomp(File::extname(module_file_name))+".o"
       module_final = module_file_name.chomp(File::extname(module_file_name))+".so"
-      kernel_files = []
-      @kernels.each { |kernel|
-        kernel_file = Tempfile::new([kernel.procedure.name,".o"])
-        kernel.binary.rewind
-        kernel_file.write( kernel.binary.read )
-        kernel_file.close
-        kernel_files.push(kernel_file)
-      }
+
+
+      kernel_files = get_sub_kernels
+
       file module_final => [module_target, target] do
         #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
         sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
       end
       Rake::Task[module_final].invoke
+
       require(module_final)
       eval "self.extend(#{module_name})"
-      f = File::open(target,"rb")
-      @binary = StringIO::new
-      @binary.write( f.read )
-      f.close
-      File.unlink(target)
-      File.unlink(module_target)
-      File.unlink(module_file_name)
-      File.unlink(module_final)
+
+      save_binary(target)
+
+      [target, module_target, module_file_name, module_final].each { |fn|
+        File::unlink(fn)
+      }
       kernel_files.each { |f|
         f.unlink
       }
