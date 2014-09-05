@@ -78,19 +78,19 @@ module BOAST
     end
 
     def open
-      BOAST::get_output.puts self.to_s
+      BOAST::get_output.puts to_s
       return self
     end
 
     def print(*args)
-      self.open
+      open
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
-          s = self.to_s(indx)
+          s = to_s(indx)
           BOAST::get_output.puts s
           @blocks[indx].call(*args)
         }
-        self.close
+        close
       end
       return self
     end

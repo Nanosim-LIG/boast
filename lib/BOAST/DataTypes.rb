@@ -34,6 +34,11 @@ module BOAST
         return "ptrdiff_t" if [C, CL, CUDA].include?( BOAST::get_lang )
       end
     end
+
+    def signed?
+      return signed
+    end
+
   end
  
   class Real
@@ -70,6 +75,10 @@ module BOAST
       end
       @total_size = @vector_length*@size
       @signed = true
+    end
+
+    def signed?
+      return signed
     end
 
     def to_hash
