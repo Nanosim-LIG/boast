@@ -404,12 +404,9 @@ module BOAST
   end
 
   class Ternary
+    extend BOAST::Functor
     include BOAST::Arithmetic
     include BOAST::Inspectable
-
-    def self.parens(*args,&block)
-      return self::new(*args,&block)
-    end
 
     attr_reader :operand1
     attr_reader :operand2
