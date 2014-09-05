@@ -74,8 +74,8 @@ module BOAST
     end
 
     def close
-      return self.close_fortran if BOAST::get_lang==FORTRAN
-      return self.close_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return close_fortran if BOAST::get_lang==FORTRAN
+      return close_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
     def close_c
@@ -101,17 +101,17 @@ module BOAST
     end
 
     def print
-      self.open
+      open
       if @block then
         @block.call
-        self.close
+        close
       end
       return self
     end
 
     def decl
-      return self.decl_fortran if BOAST::get_lang==FORTRAN
-      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return decl_fortran if BOAST::get_lang==FORTRAN
+      return decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
     def decl_fortran
@@ -167,8 +167,8 @@ module BOAST
     end
 
     def open
-      return self.open_fortran if BOAST::get_lang==FORTRAN
-      return self.open_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return open_fortran if BOAST::get_lang==FORTRAN
+      return open_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
     def open_c

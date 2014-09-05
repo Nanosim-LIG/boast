@@ -27,7 +27,7 @@ module BOAST
 
     def print
       s=""
-      s += self.to_s
+      s += to_s
       BOAST::get_output.puts s
       return self
     end

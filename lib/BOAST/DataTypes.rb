@@ -19,7 +19,7 @@ module BOAST
     end
 
     def copy(options={})
-      hash = self.to_hash
+      hash = to_hash
       options.each { |k,v|
         hash[k] = v
       }
@@ -47,7 +47,7 @@ module BOAST
     attr_reader :setters
 
     def ==(t)
-      return true if t.class == self.class and t.size == self.size and t.vector_length == self.vector_length
+      return true if t.class == self.class and t.size == size and t.vector_length == vector_length
       return false
     end
 
@@ -116,7 +116,7 @@ module BOAST
     attr_reader :total_size
 
     def ==(t)
-      return true if t.class == self.class and t.signed == self.signed and t.size == self.size and t.vector_length == self.vector_length
+      return true if t.class == self.class and t.signed == signed and t.size == size and t.vector_length == vector_length
       return false
     end
 
@@ -150,7 +150,7 @@ module BOAST
     end
 
     def copy(options={})
-      hash = self.to_hash
+      hash = to_hash
       options.each { |k,v|
         hash[k] = v
       }
@@ -252,8 +252,8 @@ module BOAST
     end
 
     def decl
-      return self.decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
-      return self.decl_fortran if BOAST::get_lang == FORTRAN
+      return decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return decl_fortran if BOAST::get_lang == FORTRAN
     end
 
     def finalize
@@ -270,14 +270,14 @@ module BOAST
 
     def define_c
       s = BOAST::indent
-      s += self.decl_c + " {"
+      s += decl_c + " {"
       BOAST::get_output.puts s
       @members_array.each { |value|
          value.decl
       }
       s = BOAST::indent
       s += "}"
-      s += self.finalize
+      s += finalize
       BOAST::get_output.print s
       return self
     end
@@ -291,7 +291,7 @@ module BOAST
       }
       s = BOAST::indent
       s += "END TYPE #{@name}"
-      s += self.finalize
+      s += finalize
       BOAST::get_output.print s
       return self
     end

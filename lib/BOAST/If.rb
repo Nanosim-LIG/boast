@@ -71,7 +71,7 @@ module BOAST
     def open
       s=""
       s += BOAST::indent
-      s += self.to_s
+      s += to_s
       BOAST::get_output.puts s
       BOAST::increment_indent_level
       return self
@@ -84,14 +84,14 @@ module BOAST
           BOAST::decrement_indent_level
           s=""
           s += BOAST::indent
-          s += self.to_s(indx)
+          s += to_s(indx)
           BOAST::get_output.puts s
           BOAST::increment_indent_level
           @blocks[indx].call(*args)
         }
-        self.close
+        close
       else
-        self.open
+        open
       end
       return self
     end

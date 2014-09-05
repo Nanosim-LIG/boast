@@ -38,17 +38,17 @@ module BOAST
     def open
       s=""
       s += BOAST::indent
-      s += self.to_s
+      s += to_s
       BOAST::get_output.puts s
       BOAST::increment_indent_level
       return self
     end
 
     def print(*args)
-      self.open
+      open
       if @block then
         @block.call(*args)
-        self.close
+        close
       end
       return self
     end

@@ -50,15 +50,15 @@ module BOAST
     end
 
     def to_s
-      return self.to_s_fortran if BOAST::get_lang == BOAST::FORTRAN
-      return self.to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return to_s_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
     def to_s_fortran
       s = ""
-      return s if self.first.nil?
+      return s if first.nil?
       s += "(/ &\n"
-      s += self.first.to_s
+      s += first.to_s
       s += "_wp" if @type and @type.size == 8
       self[1..-1].each { |v|
         s += ", &\n"+v.to_s
@@ -69,9 +69,9 @@ module BOAST
 
     def to_s_c
       s = ""
-      return s if self.first.nil?
+      return s if first.nil?
       s += "{\n"
-      s += self.first.to_s 
+      s += first.to_s 
       self[1..-1].each { |v|
         s += ",\n"+v.to_s
       }
@@ -87,10 +87,10 @@ module BOAST
     alias_method :orig_method_missing, :method_missing
 
     def method_missing(m, *a, &b)
-      return self.struct_reference(type.members[m.to_s]) if type.members[m.to_s]
+      return struct_reference(type.members[m.to_s]) if type.members[m.to_s]
 #      return self.get_element(m.to_s) if type.getters[m.to_s]
 #      return self.set_element(m.to_s) if type.setters[m.to_s]
-      return self.orig_method_missing(m, *a, &b)
+      return orig_method_missing(m, *a, &b)
     end
 
     attr_reader :name
@@ -177,7 +177,7 @@ module BOAST
       return Variable::new(name, @type.class, h)
     end
 
-    def Variable.from_type(name, type, options={})
+    def self.from_type(name, type, options={})
       hash = type.to_hash
       options.each { |k,v|
         hash[k] = v
@@ -194,7 +194,7 @@ module BOAST
         return s
       end
       if @scalar_output and [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang ) then
-        return "(*#{self.name})"
+        return "(*#{name})"
       end
       return @name
     end
@@ -208,14 +208,14 @@ module BOAST
     end
 
     def dereference
-      return self.copy("*(#{self.name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       return self if BOAST::get_lang == BOAST::FORTRAN
       #return Expression::new("*",nil,self)
     end
    
     def struct_reference(x)
-      return x.copy(self.name+"."+x.name) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-      return x.copy(self.name+"%"+x.name) if BOAST::get_lang == BOAST::FORTRAN
+      return x.copy(name+"."+x.name) if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return x.copy(name+"%"+x.name) if BOAST::get_lang == BOAST::FORTRAN
     end
  
     def inc
@@ -249,8 +249,8 @@ module BOAST
     end
 
     def decl
-      return self.decl_fortran if BOAST::get_lang == BOAST::FORTRAN
-      return self.decl_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return decl_fortran if BOAST::get_lang == BOAST::FORTRAN
+      return decl_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
     def decl_c_s(device = false)
@@ -313,8 +313,8 @@ module BOAST
     def decl_c
       s = ""
       s += BOAST::indent
-      s += self.decl_c_s
-      s += self.finalize
+      s += decl_c_s
+      s += finalize
       BOAST::get_output.print s
       return self
     end
@@ -344,7 +344,7 @@ module BOAST
         s += " = #{@constant}"
         s += "_wp" if not dimension? and @type and @type.size == 8
       end
-      s += self.finalize
+      s += finalize
       BOAST::get_output.print s
       return self
     end

@@ -2,7 +2,7 @@ module BOAST
 
   class Operator
     def Operator.inspect
-      return "#{self.name}"
+      return "#{name}"
     end
 
     def Operator.get_vector_name(type)
@@ -423,7 +423,7 @@ module BOAST
 
     def to_s
       raise "Ternary operator unsupported in FORTRAN!" if BOAST::get_lang == BOAST::FORTRAN
-      return self.to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      return to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
     end
 
     def to_s_c
@@ -434,7 +434,7 @@ module BOAST
     def print
       s=""
       s += BOAST::indent
-      s += self.to_s
+      s += to_s
       s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
       BOAST::get_output.puts s
       return self
