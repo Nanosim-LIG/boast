@@ -141,7 +141,7 @@ module BOAST
   end
 
   def self.replace_constants?
-    return @@replace_constants
+    return !!@@replace_constants
   end
 
   def self.get_replace_constants
@@ -157,7 +157,7 @@ module BOAST
   end
 
   def self.default_int_signed?
-    return @@default_int_signed
+    return !!@@default_int_signed
   end
 
   def self.get_default_int_signed

@@ -106,6 +106,38 @@ module BOAST
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
+    def constant?
+      !!@constant
+    end
+
+    def allocate?
+      !!@allocate
+    end
+
+    def texture?
+      !!@texture
+    end
+
+    def local?
+      !!@local
+    end
+
+    def restrict?
+      !!@restrict
+    end
+
+    def replace_constant?
+      !!@replace_constant
+    end
+
+    def force_replace_constant?
+      !!@force_replace_constant
+    end
+
+    def dimension?
+      !!@dimension
+    end
+
     def initialize(name,type,hash={})
       @name = name.to_s
       @direction = hash[:direction] ? hash[:direction] : hash[:dir]
@@ -128,12 +160,12 @@ module BOAST
       end
       @type = type::new(hash)
       @options = hash
-      if (@direction == :out or @direction == :inout) and not @dimension then
+      if (@direction == :out or @direction == :inout) and not dimension? then
         @scalar_output = true
       else
         @scalar_output = false
       end
-      @dimension = [@dimension].flatten if @dimension
+      @dimension = [@dimension].flatten if dimension?
     end
 
     def copy(name=nil,options={})
@@ -156,7 +188,7 @@ module BOAST
     end
   
     def to_s
-      if @force_replace_constant or ( @replace_constant and @constant and BOAST::get_replace_constants and not @dimension ) then
+      if force_replace_constant? or ( replace_constant? and constant? and BOAST::replace_constants? and not dimension? ) then
         s = @constant.to_s 
         s += "_wp" if BOAST::get_lang == BOAST::FORTRAN and @type and @type.size == 8
         return s
@@ -202,14 +234,14 @@ module BOAST
     end
 
     def boast_header(lang=C)
-      return decl_texture_s if @texture
+      return decl_texture_s if texture?
       s = ""
-      s += "const " if @constant or @direction == :in
+      s += "const " if constant? or @direction == :in
       s += @type.decl
-      if @dimension then
+      if dimension? then
         s += " *"
       end
-      if not @dimension and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
+      if not dimension? and ( lang == BOAST::FORTRAN or @direction == :out or @direction == :inout ) then
         s += " *"
       end
       s += " #{@name}"
@@ -222,16 +254,16 @@ module BOAST
     end
 
     def decl_c_s(device = false)
-      return decl_texture_s if @texture
+      return decl_texture_s if texture?
       s = ""
-      s += "const " if @constant or @direction == :in
-      s += "__global " if @direction and @dimension and not (@options[:register] or @options[:private] or @local) and BOAST::get_lang == BOAST::CL
-      s += "__local " if @local and BOAST::get_lang == BOAST::CL
-      s += "__shared__ " if @local and not device and BOAST::get_lang == BOAST::CUDA
+      s += "const " if constant? or @direction == :in
+      s += "__global " if @direction and dimension? and not (@options[:register] or @options[:private] or local?) and BOAST::get_lang == BOAST::CL
+      s += "__local " if local? and BOAST::get_lang == BOAST::CL
+      s += "__shared__ " if local? and not device and BOAST::get_lang == BOAST::CUDA
       s += @type.decl
-      if(@dimension and not @constant and not @allocate and (not @local or (@local and device))) then
+      if dimension? and not constant? and not allocate? and (not local? or (local? and device)) then
         s += " *"
-        if @restrict then
+        if restrict? then
           if BOAST::get_lang == BOAST::CL
             s += " restrict"
           else
@@ -239,27 +271,27 @@ module BOAST
           end
         end
       end
-      if not @dimension and ( @direction == :out or @direction == :inout ) then
+      if not dimension? and ( @direction == :out or @direction == :inout ) then
         s += " *"
       end
       s += " #{@name}"
-      if @dimension and @constant then
+      if dimension? and constant? then
         s += "[]"
       end
-      if @dimension and ((@local and not device) or (@allocate and not @constant)) then
+      if dimension? and ((local? and not device) or (allocate? and not constant?)) then
          s +="["
          s += @dimension.reverse.join("*")
          s +="]"
       end 
-      s += " = #{@constant}" if @constant
+      s += " = #{@constant}" if constant?
       return s
     end
 
     def decl_texture_s
       raise "Unsupported language #{BOAST::get_lang} for texture!" if not [BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-      raise "Write is unsupported for textures!" if not (@constant or @direction == :in)
+      raise "Write is unsupported for textures!" if not (constant? or @direction == :in)
       dim_number = 1
-      if @dimension then
+      if dimension? then
         dim_number == @dimension.size
       end
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
@@ -293,8 +325,8 @@ module BOAST
       s += BOAST::indent
       s += @type.decl
       s += ", intent(#{@direction})" if @direction 
-      s += ", parameter" if @constant
-      if(@dimension) then
+      s += ", parameter" if constant?
+      if dimension? then
         s += ", dimension("
         dim = @dimension[0].to_s
         if dim then
@@ -308,9 +340,9 @@ module BOAST
         s += ")"
       end
       s += " :: #{@name}"
-      if @constant then
+      if constant? then
         s += " = #{@constant}"
-        s += "_wp" if not @dimension and @type and @type.size == 8
+        s += "_wp" if not dimension? and @type and @type.size == 8
       end
       s += self.finalize
       BOAST::get_output.print s
