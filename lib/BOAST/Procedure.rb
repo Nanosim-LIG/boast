@@ -171,6 +171,23 @@ module BOAST
       return open_c if [C, CL, CUDA].include?( BOAST::get_lang )
     end
 
+    def to_s
+      return decl_c_s if [C, CL, CUDA].include?( BOAST::get_lang )
+      return to_s_fortran if BOAST::get_lang==FORTRAN
+    end
+
+    def to_s_fortran
+      s = ""
+      if @properties[:return] then
+        s += "#{@properties[:return].type.decl} FUNCTION "
+      else
+        s += "SUBROUTINE "
+      end
+      s += "#{@name}("
+      s += parameters.join(", ")
+      s += ")"
+    end
+
     def open_c
       s = decl_c_s + "{"
       BOAST::get_output.puts s
@@ -182,15 +199,8 @@ module BOAST
     end
 
     def open_fortran
-      s = ""
-      if @properties[:return] then
-        s += "#{@properties[:return].type.decl} FUNCTION "
-      else
-        s += "SUBROUTINE "
-      end
-      s += "#{@name}("
-      s += parameters.join(", ")
-      s += ")\n"
+      s = to_s_fortran
+      s += "\n"
       BOAST::increment_indent_level
       s += BOAST::indent + "integer, parameter :: wp=kind(1.0d0)"
       BOAST::get_output.puts s
@@ -202,6 +212,7 @@ module BOAST
       }
       return self
     end
+
   end
 
 end
