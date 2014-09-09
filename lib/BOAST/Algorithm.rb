@@ -34,7 +34,7 @@ module BOAST
   @@array_start = 1
   @@chain_code = false
   @@architecture = X86
-  @debug = get_default_debug
+  @@debug = get_default_debug
 
   @@env = Hash::new{|h, k| h[k] = []}
 
