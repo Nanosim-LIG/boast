@@ -2,6 +2,8 @@ module BOAST
 
   @@inspect = false
 
+  module_function
+
   def inspect?
     return @@inspect
   end
@@ -9,8 +11,6 @@ module BOAST
   def inspect=(val)
     @@inspect = val
   end
-
-  extend self
 
   module Inspectable
 

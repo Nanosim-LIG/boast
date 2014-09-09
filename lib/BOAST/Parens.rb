@@ -19,11 +19,14 @@ class Object
 
     orig_method_missing m, *a, &b
   end
+
 end
 
 module BOAST
 
-  def self.register_funccall(name)
+  module_function
+
+  def register_funccall(name)
     s =<<EOF
     def self.#{name}(*args)
       return BOAST::FuncCall("#{name}", *args)

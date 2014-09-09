@@ -9,6 +9,8 @@ module BOAST
   X86 = 1
   ARM = 2
 
+  module_function
+
   def get_default_lang
     lang = const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
     return lang if lang
@@ -20,8 +22,6 @@ module BOAST
     debug = ENV["DEBUG"] if ENV["DEBUG"]
     return debug
   end
-
-  extend self
 
   @@output = STDOUT
   @@lang = get_default_lang
@@ -270,8 +270,6 @@ module BOAST
   set_transition(Sizet, Int, :default, Sizet)
   set_transition(Int, Sizet, :default, Sizet)
 
-  extend self
- 
 end
 
 ConvolutionGenerator = BOAST

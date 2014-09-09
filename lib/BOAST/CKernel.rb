@@ -36,6 +36,8 @@ module BOAST
     "icpc" => "-openmp"
   }
 
+  module_function
+
   def read_boast_config
     home_config_dir = ENV["XDG_CONFIG_HOME"]
     home_config_dir = "#{Dir.home}/.config" if not home_config_dir
@@ -70,8 +72,6 @@ module BOAST
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
   end
 
-  extend self
-
   BOAST::read_boast_config
 
   def get_openmp_flags
@@ -102,8 +102,6 @@ module BOAST
   def set_verbose(verbose)
     @@verbose = verbose
   end
-
-  extend self
 
   class CKernel
     include Rake::DSL

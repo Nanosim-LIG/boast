@@ -6,6 +6,8 @@ module BOAST
   CUDA_BLOCKDIM = CStruct("blockDim",:type_name => "cuda_blockDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
   CUDA_GRIDDIM = CStruct("gridDim",:type_name => "cuda_gridDim", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
 
+  module_function
+
   def barrier(*locality)
     if BOAST::lang == CL then
       loc=""
@@ -106,6 +108,4 @@ module BOAST
     end
   end
 
-  extend self 
- 
 end
