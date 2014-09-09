@@ -137,7 +137,7 @@ module BOAST
       end
     end
 
-    def pr
+    def print
       @code.rewind
       puts @code.read
     end

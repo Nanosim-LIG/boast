@@ -64,10 +64,6 @@ module BOAST
     a.pr
   end
 
-  def print(a)
-    a.pr
-  end
-
   def decl(*a)
     a.each { |d|
       d.decl
