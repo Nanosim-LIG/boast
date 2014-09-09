@@ -111,12 +111,12 @@ module BOAST
       if options[:code] then
         @code = options[:code]
       elsif BOAST::get_chain_code
-        @code = BOAST::get_output
+        @code = BOAST::output
         @code.seek(0,SEEK_END)
       else
         @code = StringIO::new
       end
-      BOAST::set_output( @code )
+      BOAST::output = @code
       if options[:kernels] then
         @kernels = options[:kernels]
       else
@@ -125,7 +125,7 @@ module BOAST
       if options[:lang] then
         @lang = options[:lang]
       else
-        @lang = BOAST::get_lang
+        @lang = BOAST::lang
       end
     end
 
@@ -464,19 +464,19 @@ EOF
     end
 
     def create_module_source(path)
-      previous_lang = BOAST::get_lang
-      previous_output = BOAST::get_output
-      BOAST::set_lang(BOAST::C)
+      previous_lang = BOAST::lang
+      previous_output = BOAST::output
+      BOAST::lang = BOAST::C
       module_file_name = File::split(path.chomp(File::extname(path)))[0] + "/Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
-      BOAST::set_output(module_file)
+      BOAST::output = module_file
       fill_module(module_file, module_name)
       module_file.rewind
      #puts module_file.read
       module_file.close
-      BOAST::set_lang(previous_lang)
-      BOAST::set_output(previous_output)
+      BOAST::lang = previous_lang
+      BOAST::output = previous_output
       return [module_file_name, module_name]
     end
 

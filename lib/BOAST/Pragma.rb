@@ -14,7 +14,7 @@ module BOAST
 
     def to_s
       s = ""
-      if BOAST::get_lang == FORTRAN then
+      if BOAST::lang == FORTRAN then
         s += "$!"
       else
         s += "#pragma"
@@ -28,7 +28,7 @@ module BOAST
     def print
       s=""
       s += to_s
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
   end

@@ -39,7 +39,7 @@ module BOAST
       s=""
       s += BOAST::indent
       s += to_s
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       BOAST::increment_indent_level
       return self
     end
@@ -58,7 +58,7 @@ module BOAST
       s = ""
       s += BOAST::indent
       s += end_string
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 

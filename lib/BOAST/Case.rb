@@ -78,7 +78,7 @@ module BOAST
     end
 
     def open
-      BOAST::get_output.puts to_s
+      BOAST::output.puts to_s
       return self
     end
 
@@ -87,7 +87,7 @@ module BOAST
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
           s = to_s(indx)
-          BOAST::get_output.puts s
+          BOAST::output.puts s
           @blocks[indx].call(*args)
         }
         close
@@ -102,7 +102,7 @@ module BOAST
       s += BOAST::indent
       s += end_string
       BOAST::decrement_indent_level      
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 

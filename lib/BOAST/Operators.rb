@@ -114,7 +114,7 @@ module BOAST
 
     def BasicBinaryOperator.to_s(arg1, arg2, return_type)
       #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
-      if BOAST::get_lang == BOAST::C and (arg1.class == BOAST::Variable and arg2.class == BOAST::Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+      if BOAST::lang == BOAST::C and (arg1.class == BOAST::Variable and arg2.class == BOAST::Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
         #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
 	return_name = get_vector_name(return_type.type)
@@ -164,7 +164,7 @@ module BOAST
   class Set < BOAST::Operator
 
     def Set.to_s(arg1, arg2, return_type)
-      if BOAST::get_lang == BOAST::C then
+      if BOAST::lang == BOAST::C then
         if arg1.class == BOAST::Variable and arg1.type.vector_length > 1 then
           if arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
@@ -211,14 +211,14 @@ module BOAST
     end
 
     def Different.basic_usage(arg1, arg2)
-      return "#{arg1} /= #{arg2}" if BOAST::get_lang == BOAST::FORTRAN
+      return "#{arg1} /= #{arg2}" if BOAST::lang == BOAST::FORTRAN
       return "#{arg1} != #{arg2}"
     end
   end
 
   class Affectation < BOAST::Operator
     def Affectation.to_s(arg1, arg2, return_type)
-      if BOAST::get_lang == BOAST::C then
+      if BOAST::lang == BOAST::C then
         if arg1.class == BOAST::Variable and arg1.type.vector_length > 1 then
           #puts "#{arg1.type.vector_length} #{arg2.type.vector_length}"
           if arg1.type == arg2.type then
@@ -419,8 +419,8 @@ module BOAST
     end
 
     def to_s
-      raise "Ternary operator unsupported in FORTRAN!" if BOAST::get_lang == BOAST::FORTRAN
-      return to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
+      raise "Ternary operator unsupported in FORTRAN!" if BOAST::lang == BOAST::FORTRAN
+      return to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::lang )
     end
 
     def to_s_c
@@ -432,8 +432,8 @@ module BOAST
       s=""
       s += BOAST::indent
       s += to_s
-      s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::get_lang )
-      BOAST::get_output.puts s
+      s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::lang )
+      BOAST::output.puts s
       return self
     end
   end

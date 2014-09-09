@@ -84,6 +84,10 @@ module BOAST
     return @@debug
   end
 
+  def self.debug?
+    return !!@@debug
+  end
+
   def self.architecture=(arch)
     @@architecture = arch
   end
@@ -212,7 +216,7 @@ module BOAST
     return @@lang
   end
 
-  def self.output(output)
+  def self.output=(output)
     @@output = output
   end
 

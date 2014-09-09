@@ -35,8 +35,8 @@ module BOAST
     end
       
     def to_s
-      return to_s_fortran if BOAST::get_lang == FORTRAN
-      return to_s_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return to_s_fortran if BOAST::lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( BOAST::lang )
     end
 
     def to_s_fortran
@@ -55,8 +55,8 @@ module BOAST
       s=""
       s += BOAST::indent
       s += to_s
-      s += ";" if [C, CL, CUDA].include?( BOAST::get_lang )
-      BOAST::get_output.puts s
+      s += ";" if [C, CL, CUDA].include?( BOAST::lang )
+      BOAST::output.puts s
       return self
     end
   end

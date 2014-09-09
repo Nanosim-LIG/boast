@@ -27,7 +27,7 @@ module BOAST
         s += ")" if (oper == "*" or oper == "/") 
       end        
       s += " " unless oper == "++" or oper == "."
-      s += oper unless ( oper == "&" and BOAST::get_lang == BOAST::FORTRAN )
+      s += oper unless ( oper == "&" and BOAST::lang == BOAST::FORTRAN )
       s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
       if op2 then
         s += "(" if (oper == "*" or oper == "/" or oper == "-") 
@@ -80,8 +80,8 @@ module BOAST
       s=""
       s += BOAST::indent
       s += self.to_s
-      s += ";" if [C, CL, CUDA].include?( BOAST::get_lang ) 
-      BOAST::get_output.puts s
+      s += ";" if [C, CL, CUDA].include?( BOAST::lang ) 
+      BOAST::output.puts s
       return self
     end
   end

@@ -14,11 +14,27 @@ module BOAST
       @begin = b
       @end = e
       @step = s
+      @operator = "<="
       @block = block
+      begin
+        BOAST::push_env( :replace_constants => true )
+        if @step.kind_of?(Variable) then
+          step = @step.constant
+        elsif @step.kind_of?(Expression) then
+          step = eval "#{@step}"
+        else
+          step = @step.to_i
+        end
+        @operator = ">=" if step < 0
+      rescue
+        STDERR.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( BOAST::lang ) and BOAST::debug?
+      ensure
+        BOAST::pop_env( :replace_constants )
+      end
     end
 
     @@c_strings = {
-      :for => '"for (#{i} = #{b}; #{i} <= #{e}; #{i} += #{s}) {"',
+      :for => '"for (#{i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
       :end => '"}"'
     }
 
@@ -34,11 +50,11 @@ module BOAST
       BOAST::FORTRAN => @@f_strings
     }
 
-    eval token_string_generator( * %w{for i b e s})
+    eval token_string_generator( * %w{for i b e s o})
     eval token_string_generator( * %w{end})
 
     def to_s
-      s = for_string(@iterator, @begin, @end, @step)
+      s = for_string(@iterator, @begin, @end, @step, @operator)
       return s
     end
 
@@ -89,7 +105,7 @@ module BOAST
       s=""
       s += BOAST::indent
       s += to_s
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       BOAST::increment_indent_level      
       return self
     end 
@@ -108,7 +124,7 @@ module BOAST
       s = ""
       s += BOAST::indent
       s += end_string
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 

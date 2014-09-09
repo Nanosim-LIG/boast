@@ -27,11 +27,11 @@ module BOAST
     end
 
     def decl
-      return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::get_lang == FORTRAN
+      return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::lang == FORTRAN
       if not @signed then
-        return "size_t" if [C, CL, CUDA].include?( BOAST::get_lang )
+        return "size_t" if [C, CL, CUDA].include?( BOAST::lang )
       else
-        return "ptrdiff_t" if [C, CL, CUDA].include?( BOAST::get_lang )
+        return "ptrdiff_t" if [C, CL, CUDA].include?( BOAST::lang )
       end
     end
 
@@ -94,11 +94,11 @@ module BOAST
     end
 
     def decl
-      return "real(kind=#{@size})" if BOAST::get_lang == FORTRAN
-      if [C, CL, CUDA].include?( BOAST::get_lang ) and @vector_length == 1 then
+      return "real(kind=#{@size})" if BOAST::lang == FORTRAN
+      if [C, CL, CUDA].include?( BOAST::lang ) and @vector_length == 1 then
         return "float" if @size == 4
         return "double" if @size == 8
-      elsif BOAST::get_lang == C and @vector_length > 1 then
+      elsif BOAST::lang == C and @vector_length > 1 then
         if BOAST::get_architecture == BOAST::X86 then
           return "__m#{@total_size*8}" if @size == 4
           return "__m#{@total_size*8}d" if @size == 8
@@ -109,7 +109,7 @@ module BOAST
         else
           raise "Unsupported architecture!"
         end
-      elsif [CL, CUDA].include?( BOAST::get_lang ) and @vector_length > 1 then
+      elsif [CL, CUDA].include?( BOAST::lang ) and @vector_length > 1 then
         return "float#{@vector_length}" if @size == 4
         return "double#{@vector_length}" if @size == 8
       end
@@ -171,8 +171,8 @@ module BOAST
     end
 
     def decl
-      return "integer(kind=#{@size})" if BOAST::get_lang == FORTRAN
-      if BOAST::get_lang == C then
+      return "integer(kind=#{@size})" if BOAST::lang == FORTRAN
+      if BOAST::lang == C then
         if @vector_length == 1 then
           s = ""
           s += "u" if not @signed
@@ -187,7 +187,7 @@ module BOAST
             raise "Unsupported architecture!"
           end
         end
-      elsif BOAST::get_lang == CL then
+      elsif BOAST::lang == CL then
         #char="cl_"
         char=""
         char += "u" if not @signed
@@ -207,7 +207,7 @@ module BOAST
           char += "#{@vector_length}"
         end
         return char
-      elsif BOAST::get_lang == CUDA then
+      elsif BOAST::lang == CUDA then
         if @vector_length > 1 then
           char=""
           char += "u" if not @signed
@@ -253,55 +253,55 @@ module BOAST
     end
 
     def decl_c
-      return "struct #{@name}" if [C, CL, CUDA].include?( BOAST::get_lang )
+      return "struct #{@name}" if [C, CL, CUDA].include?( BOAST::lang )
     end
 
     def decl_fortran
-      return "TYPE(#{@name})" if BOAST::get_lang == FORTRAN
+      return "TYPE(#{@name})" if BOAST::lang == FORTRAN
     end
 
     def decl
-      return decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
-      return decl_fortran if BOAST::get_lang == FORTRAN
+      return decl_c if [C, CL, CUDA].include?( BOAST::lang )
+      return decl_fortran if BOAST::lang == FORTRAN
     end
 
     def finalize
        s = ""
-       s += ";" if [C, CL, CUDA].include?( BOAST::get_lang )
+       s += ";" if [C, CL, CUDA].include?( BOAST::lang )
        s+="\n"
        return s
     end
 
     def define
-      return define_c if [C, CL, CUDA].include?( BOAST::get_lang )
-      return define_fortran if BOAST::get_lang == FORTRAN
+      return define_c if [C, CL, CUDA].include?( BOAST::lang )
+      return define_fortran if BOAST::lang == FORTRAN
     end
 
     def define_c
       s = BOAST::indent
       s += decl_c + " {"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       @members_array.each { |value|
          value.decl
       }
       s = BOAST::indent
       s += "}"
       s += finalize
-      BOAST::get_output.print s
+      BOAST::output.print s
       return self
     end
     
     def define_fortran
       s = BOAST::indent
       s += "TYPE :: #{@name}\n"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       @members_array.each { |value|
          value.decl
       }
       s = BOAST::indent
       s += "END TYPE #{@name}"
       s += finalize
-      BOAST::get_output.print s
+      BOAST::output.print s
       return self
     end
 
@@ -320,7 +320,7 @@ module BOAST
       @total_size = @vector_length*@size
     end
     def decl
-      return "#{@name}" if [C, CL, CUDA].include?( BOAST::get_lang )
+      return "#{@name}" if [C, CL, CUDA].include?( BOAST::lang )
     end
   end
 

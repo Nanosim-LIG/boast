@@ -25,7 +25,7 @@ module BOAST
       headers.each { |h|
         s += "#include <#{h}>\n"
       }
-      if BOAST::get_lang == CL then
+      if BOAST::lang == CL then
         s += "__kernel "
         wgs = @properties[:reqd_work_group_size]
         if wgs then
@@ -61,21 +61,21 @@ module BOAST
     def boast_header(lang=C)
       s = boast_header_s(lang)
       s += ";\n"
-      BOAST::get_output.print s
+      BOAST::output.print s
       return self
     end
 
     def call(*parameters)
       prefix = ""
-      prefix += "call " if BOAST::get_lang==FORTRAN
+      prefix += "call " if BOAST::lang==FORTRAN
       f = FuncCall::new(@name, *parameters)
       f.prefix = prefix
       return f
     end
 
     def close
-      return close_fortran if BOAST::get_lang==FORTRAN
-      return close_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return close_fortran if BOAST::lang==FORTRAN
+      return close_c if [C, CL, CUDA].include?( BOAST::lang )
     end
 
     def close_c
@@ -83,7 +83,7 @@ module BOAST
       s = ""
       s += "  return #{@properties[:return]};\n" if @properties[:return]
       s += "}"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 
@@ -96,7 +96,7 @@ module BOAST
       else
         s += "END SUBROUTINE #{@name}"
       end
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 
@@ -110,8 +110,8 @@ module BOAST
     end
 
     def decl
-      return decl_fortran if BOAST::get_lang==FORTRAN
-      return decl_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return decl_fortran if BOAST::lang==FORTRAN
+      return decl_c if [C, CL, CUDA].include?( BOAST::lang )
     end
 
     def decl_fortran
@@ -120,7 +120,7 @@ module BOAST
 
     def decl_c_s
       s = ""
-      if BOAST::get_lang == CL then
+      if BOAST::lang == CL then
         if @properties[:local] then
           s += "static "
         else
@@ -130,7 +130,7 @@ module BOAST
             s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
           end
         end
-      elsif BOAST::get_lang == CUDA then
+      elsif BOAST::lang == CUDA then
         if @properties[:local] then
           s += "static __device__ "
         else
@@ -162,18 +162,18 @@ module BOAST
 
     def decl_c
       s = decl_c_s + ";"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       return self
     end
 
     def open
-      return open_fortran if BOAST::get_lang==FORTRAN
-      return open_c if [C, CL, CUDA].include?( BOAST::get_lang )
+      return open_fortran if BOAST::lang==FORTRAN
+      return open_c if [C, CL, CUDA].include?( BOAST::lang )
     end
 
     def to_s
-      return decl_c_s if [C, CL, CUDA].include?( BOAST::get_lang )
-      return to_s_fortran if BOAST::get_lang==FORTRAN
+      return decl_c_s if [C, CL, CUDA].include?( BOAST::lang )
+      return to_s_fortran if BOAST::lang==FORTRAN
     end
 
     def to_s_fortran
@@ -190,7 +190,7 @@ module BOAST
 
     def open_c
       s = decl_c_s + "{"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       BOAST::increment_indent_level
       constants.each { |c|
         c.decl
@@ -203,7 +203,7 @@ module BOAST
       s += "\n"
       BOAST::increment_indent_level
       s += BOAST::indent + "integer, parameter :: wp=kind(1.0d0)"
-      BOAST::get_output.puts s
+      BOAST::output.puts s
       constants.each { |c|
         c.decl
       }
