@@ -1,17 +1,42 @@
 module BOAST
+  
+  module_function
+  def functorize(klass)
+    name = klass.name.split('::').last
+    s = <<EOF
+  def #{name}(*args,&block)
+     #{name}::new(*args,&block)
+  end
+
+  module_function :#{name}
+EOF
+    eval s
+  end
+
+  def var_functorize(klass)
+    name = klass.name.split('::').last
+    s = <<EOF
+  def #{name}(*args,&block)
+     Variable::new(args[0],#{name},*args[1..-1], &block)
+  end
+
+  module_function :#{name}
+EOF
+    eval s
+  end
 
   module Functor
 
-    def parens(*args,&block)
-      return self::new(*args,&block)
+    def self.extended(mod)
+      BOAST::functorize(mod)
     end
 
   end
 
   module VarFunctor
 
-    def parens(*args,&block)
-      return Variable::new(args[0], self, *args[1..-1], &block)
+    def self.extended(mod)
+      BOAST::var_functorize(mod)
     end
 
   end
