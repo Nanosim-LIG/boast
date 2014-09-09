@@ -36,7 +36,7 @@ module BOAST
     "icpc" => "-openmp"
   }
 
-  def self.read_boast_config
+  def read_boast_config
     home_config_dir = ENV["XDG_CONFIG_HOME"]
     home_config_dir = "#{Dir.home}/.config" if not home_config_dir
     Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
@@ -70,32 +70,40 @@ module BOAST
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
   end
 
+  extend self
+
   BOAST::read_boast_config
 
-  def self.get_openmp_flags
+  def get_openmp_flags
     return @@openmp_default_flags.clone
   end
 
-  def self.get_compiler_options
+  def get_compiler_options
     return @@compiler_default_options.clone
   end
 
-  def self.verbose
+  def verbose
     return @@verbose
   end
 
 
-  def self.get_verbose
+  def get_verbose
     return @@verbose
   end
 
-  def self.verbose=(verbose)
+  def verbose?
+    return !!@@verbose
+  end
+
+  def verbose=(verbose)
     @@verbose = verbose
   end
 
-  def self.set_verbose(verbose)
+  def set_verbose(verbose)
     @@verbose = verbose
   end
+
+  extend self
 
   class CKernel
     include Rake::DSL
@@ -129,7 +137,7 @@ module BOAST
       end
     end
 
-    def print
+    def pr
       @code.rewind
       puts @code.read
     end
@@ -502,7 +510,7 @@ EOF
       compiler_options.update(options)
       return build_opencl(compiler_options) if @lang == BOAST::CL
 
-      linker, ldflags = self.setup_compilers(compiler_options)
+      linker, ldflags = setup_compilers(compiler_options)
 
       extension = @@extensions[@lang]
 
@@ -610,13 +618,13 @@ EOF
         if not param.dimension then
           case param.type
             when Int 
-              BOAST::print param === FuncCall::new("NUM2INT", argv[i]) if param.type.size == 4
-              BOAST::print param === FuncCall::new("NUM2LONG", argv[i]) if param.type.size == 8
+              BOAST::pr param === FuncCall::new("NUM2INT", argv[i]) if param.type.size == 4
+              BOAST::pr param === FuncCall::new("NUM2LONG", argv[i]) if param.type.size == 8
             when Real
-              BOAST::print param === FuncCall::new("NUM2DBL", argv[i])
+              BOAST::pr param === FuncCall::new("NUM2DBL", argv[i])
           end
         else
-          BOAST::print rb_ptr === argv[i]
+          BOAST::pr rb_ptr === argv[i]
           if @lang == BOAST::CUDA then
             module_file.print <<EOF
   if ( IsNArray(rb_ptr) ) {
@@ -814,8 +822,8 @@ EOF
 
     def method_missing(meth, *args, &block)
      if meth.to_s == "run" then
-       self.build
-       self.run(*args,&block)
+       build
+       run(*args,&block)
      else
        super
      end

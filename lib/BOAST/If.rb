@@ -77,7 +77,7 @@ module BOAST
       return self
     end
 
-    def print(*args)
+    def pr(*args)
       if @blocks.size > 0 then
         BOAST::increment_indent_level
         @blocks.each_index { |indx|

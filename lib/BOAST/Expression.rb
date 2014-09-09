@@ -1,8 +1,10 @@
 module BOAST
 
-  def self.Return(value)
+  def Return(value)
     return Expression("return",nil, value)
   end
+
+  extend self
 
   class Expression
     include BOAST::Arithmetic
@@ -76,10 +78,10 @@ module BOAST
       return BOAST::Expression::to_s_base(op1, op2, oper, r_t)
     end
 
-    def print
+    def pr
       s=""
       s += BOAST::indent
-      s += self.to_s
+      s += to_s
       s += ";" if [C, CL, CUDA].include?( BOAST::lang ) 
       BOAST::output.puts s
       return self

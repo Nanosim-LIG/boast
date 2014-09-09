@@ -44,7 +44,7 @@ module BOAST
       return self
     end
 
-    def print(*args)
+    def pr(*args)
       open
       if @block then
         @block.call(*args)

@@ -9,20 +9,22 @@ module BOAST
   X86 = 1
   ARM = 2
 
-  def self.get_default_lang
-    lang = BOAST::const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
+  def get_default_lang
+    lang = const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
     return lang if lang
-    return BOAST::FORTRAN
+    return FORTRAN
   end
 
-  def self.get_default_debug
+  def get_default_debug
     debug = false
     debug = ENV["DEBUG"] if ENV["DEBUG"]
     return debug
   end
 
+  extend self
+
   @@output = STDOUT
-  @@lang = BOAST::get_default_lang
+  @@lang = get_default_lang
   @@replace_constants = true
   @@default_int_size = 4
   @@default_int_signed = true
@@ -32,11 +34,11 @@ module BOAST
   @@array_start = 1
   @@chain_code = false
   @@architecture = X86
-  @@debug = BOAST::get_default_debug
+  @@debug = get_default_debug
 
   @@env = Hash::new{|h, k| h[k] = []}
 
-  def self.push_env(vars = {})
+  def push_env(vars = {})
     vars.each { |key,value|
       var = nil
       begin
@@ -49,7 +51,7 @@ module BOAST
     }
   end
 
-  def self.pop_env(*vars)
+  def pop_env(*vars)
     vars.each { |key|
       raise "Unknown module variable #{key}!" unless @@env.has_key?(key)
       ret = @@env[key].pop
@@ -58,201 +60,205 @@ module BOAST
     }
   end
 
-  def self.print(a)
-    a.print
+  def pr(a)
+    a.pr
   end
 
-  def self.decl(*a)
+  def print(a)
+    a.pr
+  end
+
+  def decl(*a)
     a.each { |d|
       d.decl
     }
   end
 
-  def self.close(a)
+  def close(a)
     a.close
   end
 
-  def self.open(a)
+  def open(a)
     a.open
   end
 
-  def self.debug=(debug)
+  def debug=(debug)
     @@debug = debug
   end
 
-  def self.debug
+  def debug
     return @@debug
   end
 
-  def self.debug?
+  def debug?
     return !!@@debug
   end
 
-  def self.architecture=(arch)
+  def architecture=(arch)
     @@architecture = arch
   end
 
-  def self.set_architecture(arch)
+  def set_architecture(arch)
     @@architecture = arch
   end
 
-  def self.architecture
+  def architecture
     return @@architecture
   end
 
-  def self.get_architecture
+  def get_architecture
     return @@architecture
   end
 
-  def self.indent_level=(level)
+  def indent_level=(level)
     @@indent_level = level
   end
 
-  def self.set_indent_level(level)
+  def set_indent_level(level)
     @@indent_level = level
   end
 
-  def self.indent_level
+  def indent_level
     return @@indent_level
   end
 
-  def self.get_indent_level
+  def get_indent_level
     return @@indent_level
   end
 
-  def self.indent_increment
+  def indent_increment
     return @@indent_increment
   end
 
-  def self.get_indent_increment
+  def get_indent_increment
     return @@indent_increment
   end
 
-  def self.increment_indent_level(increment = @@indent_increment)
+  def increment_indent_level(increment = @@indent_increment)
     @@indent_level += increment
   end
   
-  def self.decrement_indent_level(increment = @@indent_increment)
+  def decrement_indent_level(increment = @@indent_increment)
     @@indent_level -= increment
   end
 
-  def self.indent
+  def indent
      return " "*BOAST::get_indent_level
   end
   
-  def self.set_replace_constants(replace_constants)
+  def set_replace_constants(replace_constants)
     @@replace_constants = replace_constants
   end
 
-  def self.replace_constants?
+  def replace_constants?
     return !!@@replace_constants
   end
 
-  def self.get_replace_constants
+  def get_replace_constants
     return @@replace_constants
   end
 
-  def self.default_int_signed=(signed)
+  def default_int_signed=(signed)
     @@default_int_signed = signed
   end
 
-  def self.set_default_int_signed(signed)
+  def set_default_int_signed(signed)
     @@default_int_signed = signed
   end
 
-  def self.default_int_signed?
+  def default_int_signed?
     return !!@@default_int_signed
   end
 
-  def self.get_default_int_signed
+  def get_default_int_signed
     return @@default_int_signed
   end
 
-  def self.default_int_size=(size)
+  def default_int_size=(size)
     @@default_int_size = size
   end
 
-  def self.set_default_int_size(size)
+  def set_default_int_size(size)
     @@default_int_size = size
   end
 
-  def self.default_int_size
+  def default_int_size
     return @@default_int_size
   end
 
-  def self.get_default_int_size
+  def get_default_int_size
     return @@default_int_size
   end
 
-  def self.default_real_size=(size)
+  def default_real_size=(size)
     @@default_real_size = size
   end
 
-  def self.set_default_real_size(size)
+  def set_default_real_size(size)
     @@default_real_size = size
   end
 
-  def self.default_real_size
+  def default_real_size
     return @@default_real_size
   end
 
-  def self.get_default_real_size
+  def get_default_real_size
     return @@default_real_size
   end
 
-  def self.lang=(lang)
+  def lang=(lang)
     @@lang = lang
   end
 
-  def self.set_lang(lang)
+  def set_lang(lang)
     @@lang = lang
   end
 
-  def self.lang
+  def lang
     return @@lang
   end
 
-  def self.get_lang
+  def get_lang
     return @@lang
   end
 
-  def self.output=(output)
+  def output=(output)
     @@output = output
   end
 
-  def self.set_output(output)
+  def set_output(output)
     @@output = output
   end
 
-  def self.output
+  def output
     return @@output
   end
 
-  def self.get_output
+  def get_output
     return @@output
   end
 
-  def self.set_chain_code(chain_code)
+  def set_chain_code(chain_code)
     @@chain_code = chain_code
   end
 
-  def self.get_chain_code
+  def get_chain_code
     return @@chain_code
   end
 
-  def self.array_start=(array_start)
+  def array_start=(array_start)
     @@array_start = array_start
   end
 
-  def self.set_array_start(array_start)
+  def set_array_start(array_start)
     @@array_start = array_start
   end
 
-  def self.array_start
+  def array_start
     return @@array_start
   end
 
-  def self.get_array_start
+  def get_array_start
     return @@array_start
   end
 
@@ -267,7 +273,9 @@ module BOAST
   set_transition(Sizet, Sizet, :default, Sizet)
   set_transition(Sizet, Int, :default, Sizet)
   set_transition(Int, Sizet, :default, Sizet)
-  
+
+  extend self
+ 
 end
 
 ConvolutionGenerator = BOAST

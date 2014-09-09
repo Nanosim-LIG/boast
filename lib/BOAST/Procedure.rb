@@ -100,7 +100,7 @@ module BOAST
       return self
     end
 
-    def print
+    def pr
       open
       if @block then
         @block.call

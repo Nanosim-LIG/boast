@@ -112,7 +112,7 @@ module BOAST
       return s
     end
 
-    def print
+    def pr
       s=""
       s += BOAST::indent
       s += to_s

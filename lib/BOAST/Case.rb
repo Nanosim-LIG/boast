@@ -82,7 +82,7 @@ module BOAST
       return self
     end
 
-    def print(*args)
+    def pr(*args)
       open
       if @blocks.size > 0 then
         @blocks.each_index { |indx|

@@ -87,7 +87,7 @@ module BOAST
       rescue Exception => ex
         if not ( start and e and step ) then
           BOAST::pop_env( :replace_constants )
-          return print(*args) if not ( start and e and step )
+          return pr(*args) if not ( start and e and step )
         end
       end
       BOAST::pop_env( :replace_constants )
@@ -110,7 +110,7 @@ module BOAST
       return self
     end 
 
-    def print(*args)
+    def pr(*args)
       open
       if @block then
         @block.call(*args)

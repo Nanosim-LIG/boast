@@ -428,7 +428,7 @@ module BOAST
       s += "(#{@operand1} ? #{@operand2} : #{@operand3})"
     end
 
-    def print
+    def pr
       s=""
       s += BOAST::indent
       s += to_s

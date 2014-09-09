@@ -51,7 +51,7 @@ module BOAST
       s += "#{func_name}(#{@args.join(", ")})"
     end
 
-    def print
+    def pr
       s=""
       s += BOAST::indent
       s += to_s

@@ -87,10 +87,11 @@ module BOAST
     alias_method :orig_method_missing, :method_missing
 
     def method_missing(m, *a, &b)
-      return struct_reference(type.members[m.to_s]) if type.members[m.to_s]
-#      return self.get_element(m.to_s) if type.getters[m.to_s]
-#      return self.set_element(m.to_s) if type.setters[m.to_s]
-      return orig_method_missing(m, *a, &b)
+      if @type.methods.include?(:members) and @type.members[m.to_s] then
+        return struct_reference(type.members[m.to_s])
+      else
+        return orig_method_missing(m, *a, &b)
+      end
     end
 
     attr_reader :name

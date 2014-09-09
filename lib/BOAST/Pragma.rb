@@ -25,7 +25,7 @@ module BOAST
       return s
     end
 
-    def print
+    def pr
       s=""
       s += to_s
       BOAST::output.puts s
