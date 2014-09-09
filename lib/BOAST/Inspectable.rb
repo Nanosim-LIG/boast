@@ -8,6 +8,10 @@ module BOAST
     return @@inspect
   end
 
+  def set_inspect(val)
+    @@inspect = val
+  end
+
   def inspect=(val)
     @@inspect = val
   end
