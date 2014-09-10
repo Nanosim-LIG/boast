@@ -86,6 +86,7 @@ module BOAST
       BOAST::output.puts s
       return self
     end
+
   end
 
 end

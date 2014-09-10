@@ -1,6 +1,7 @@
 module BOAST
 
   class Operator
+
     def Operator.inspect
       return "#{name}"
     end
@@ -108,6 +109,7 @@ module BOAST
         raise "Unsupported architecture!"
       end
     end
+
   end
 
   class BasicBinaryOperator < BOAST::Operator
@@ -159,6 +161,7 @@ module BOAST
         return basic_usage( arg1, arg2 )
       end
     end
+
   end
 
   class Set < BOAST::Operator
@@ -203,9 +206,11 @@ module BOAST
     def Set.basic_usage(arg1, arg2)
       return "(#{arg1} = #{arg2})"
     end
+
   end
 
   class Different < BOAST::Operator
+
     def Different.to_s(arg1, arg2, return_type)
       return basic_usage(arg1, arg2)
     end
@@ -214,9 +219,11 @@ module BOAST
       return "#{arg1} /= #{arg2}" if BOAST::lang == BOAST::FORTRAN
       return "#{arg1} != #{arg2}"
     end
+
   end
 
   class Affectation < BOAST::Operator
+
     def Affectation.to_s(arg1, arg2, return_type)
       if BOAST::lang == BOAST::C then
         if arg1.class == BOAST::Variable and arg1.type.vector_length > 1 then
@@ -301,9 +308,11 @@ module BOAST
     def Affectation.basic_usage(arg1, arg2)
       return "#{arg1} = #{arg2}"
     end
+
   end
 
   class Multiplication < BOAST::BasicBinaryOperator
+
     class << self
 
       def symbol
@@ -323,9 +332,11 @@ module BOAST
       end
   
     end
+
   end
 
   class Addition < BOAST::BasicBinaryOperator
+
     class << self
 
       def symbol
@@ -345,9 +356,11 @@ module BOAST
       end
   
     end
+
   end
 
   class Substraction < BOAST::BasicBinaryOperator
+
     class << self
 
       def symbol
@@ -367,9 +380,11 @@ module BOAST
       end
   
     end
+
   end
 
   class Division < BOAST::BasicBinaryOperator
+
     class << self
 
       def symbol
@@ -389,18 +404,23 @@ module BOAST
       end
   
     end
+
   end
 
   class Minus < BOAST::Operator
+
     def Minus.to_s(arg1, arg2, return_type)
       return " -(#{arg2})"
     end
+
   end
 
   class Not < BOAST::Operator
+
     def Not.to_s(arg1, arg2, return_type)
       return " ! #{arg2}"
     end
+
   end
 
   class Ternary
@@ -436,5 +456,7 @@ module BOAST
       BOAST::output.puts s
       return self
     end
+
   end
+
 end

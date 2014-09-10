@@ -10,7 +10,7 @@ module BOAST
         variables = instance_variables.map{ |v|
           instance_variable_get(v) ? "#{v}=#{instance_variable_get(v).inspect}" : nil
         }.reject{ |v| v.nil? }.join(", ")
-        "#<#{self.class}:#{(self.object_id<<1).to_s(16)}#{variables == "" ? "" : " #{variables}" }>" 
+        "#<#{self.class}:0x#{(self.object_id<<1).to_s(16)}#{variables == "" ? "" : " #{variables}" }>" 
       else
         to_s
       end

@@ -1,4 +1,5 @@
 module BOAST
+
   OCL_CUDA_DIM_ASSOC = { 0 => "x", 1 => "y", 2 => "z" }
 
   CUDA_THREADIDX = CStruct("threadIdx",:type_name => "cuda_trheadIdx", :members => [Int("x", :signed => false),Int("y", :signed => false),Int("z", :signed => false)])
@@ -9,7 +10,7 @@ module BOAST
   module_function
 
   def barrier(*locality)
-    if BOAST::lang == CL then
+    if lang == CL then
       loc=""
       if locality.include?(:local) and locality.include?(:global) then
         return FuncCall::new("barrier","CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE")
@@ -20,7 +21,7 @@ module BOAST
       else
         raise "Unsupported locality"
       end
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       return FuncCall::new("__syncthreads")
     else
       raise "Unsupported language!"
@@ -29,7 +30,7 @@ module BOAST
 
 
   def get_work_dim
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_work_dim", :returns => Int("wd", :signed => false))
     else
       raise "Unsupported language!"
@@ -37,9 +38,9 @@ module BOAST
   end
   
   def get_global_size(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_global_size", dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_GRIDDIM.#{d}*CUDA_BLOCKDIM.#{d}"
@@ -49,9 +50,9 @@ module BOAST
   end
 
   def get_global_id(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_global_id",dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_THREADIDX.#{d}+CUDA_BLOCKIDX.#{d}*CUDA_BLOCKDIM.#{d}"
@@ -61,9 +62,9 @@ module BOAST
   end
 
   def get_local_size(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_local_size",dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_BLOCKDIM.#{d}"
@@ -73,9 +74,9 @@ module BOAST
   end
 
   def get_local_id(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_local_id",dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_THREADIDX.#{d}"
@@ -85,9 +86,9 @@ module BOAST
   end
   
   def get_num_groups(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_num_groups",dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_GRIDDIM.#{d}"
@@ -97,9 +98,9 @@ module BOAST
   end
 
   def get_group_id(dim)
-    if BOAST::lang == CL then
+    if lang == CL then
       return FuncCall::new("get_group_id",dim, :returns => Sizet)
-    elsif BOAST::lang == CUDA then
+    elsif lang == CUDA then
       d = OCL_CUDA_DIM_ASSOC[dim]
       raise "Unsupported dimension!" if not d
       return eval "CUDA_BLOCKIDX.#{d}"

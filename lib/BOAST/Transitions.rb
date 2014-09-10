@@ -1,6 +1,8 @@
 module BOAST
+
   module TypeTransition
     @@transitions = Hash::new { |hash, key| hash[key] = Hash::new }
+
     def get_transition(type1, type2, operator)
       #STDERR.puts @@transitions.inspect
       ops = @@transitions[[type1,type2]]
@@ -38,5 +40,7 @@ module BOAST
          return [var2, operator]
        end
      end
+
   end
+
 end

@@ -6,6 +6,7 @@ module BOAST
     attr_reader :signed
     attr_reader :size
     attr_reader :vector_length
+
     def initialize(hash={})
       if hash[:signed] != nil then
         @signed = hash[:signed]
@@ -36,7 +37,7 @@ module BOAST
     end
 
     def signed?
-      return signed
+      return !!signed
     end
 
   end
@@ -78,7 +79,7 @@ module BOAST
     end
 
     def signed?
-      return signed
+      return !!signed
     end
 
     def to_hash
@@ -167,7 +168,7 @@ module BOAST
     end
 
     def signed?
-      return @signed
+      return !!@signed
     end
 
     def decl
@@ -319,9 +320,11 @@ module BOAST
       @vector_length = 1 if @vector_length.nil?
       @total_size = @vector_length*@size
     end
+
     def decl
       return "#{@name}" if [C, CL, CUDA].include?( BOAST::lang )
     end
+
   end
 
 end

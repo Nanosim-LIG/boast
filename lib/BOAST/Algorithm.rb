@@ -52,12 +52,12 @@ module BOAST
     vars.each { |key,value|
       var = nil
       begin
-        var = BOAST::class_variable_get("@@"+key.to_s)
+        var = class_variable_get("@@"+key.to_s)
       rescue
         raise "Unknown module variable #{key}!"
       end
       @@env[key].push(var)
-      BOAST::class_variable_set("@@"+key.to_s, value)
+      class_variable_set("@@"+key.to_s, value)
     }
   end
 
@@ -66,7 +66,7 @@ module BOAST
       raise "Unknown module variable #{key}!" unless @@env.has_key?(key)
       ret = @@env[key].pop
       raise "No stored value for #{key}!" if ret.nil?
-      BOAST::class_variable_set("@@"+key.to_s, ret)
+      class_variable_set("@@"+key.to_s, ret)
     }
   end
 
