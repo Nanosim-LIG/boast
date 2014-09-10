@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
                 lib/BOAST/Functors.rb
                 lib/BOAST/ControlStructure.rb
                 lib/BOAST/Print.rb
+                lib/BOAST/State.rb
               )
   s.has_rdoc = true
   s.license = 'BSD'

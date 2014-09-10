@@ -9,6 +9,16 @@ module BOAST
   X86 = 1
   ARM = 2
 
+  state_accessor :output, :lang, :architecture
+  state_accessor :default_int_size, :default_real_size
+  state_accessor :array_start
+  state_accessor :indent_level, :indent_increment
+
+  boolean_state_accessor :replace_constants
+  boolean_state_accessor :default_int_signed
+  boolean_state_accessor :chain_code
+  boolean_state_accessor :debug
+
   module_function
 
   def get_default_lang
@@ -78,190 +88,18 @@ module BOAST
     a.open
   end
 
-  def set_debug(debug)
-    @@debug = debug
-  end
-
-  def debug=(debug)
-    @@debug = debug
-  end
-
-  def debug
-    return @@debug
-  end
-
-  def debug?
-    return !!@@debug
-  end
-
-  def architecture=(arch)
-    @@architecture = arch
-  end
-
-  def set_architecture(arch)
-    @@architecture = arch
-  end
-
-  def architecture
-    return @@architecture
-  end
-
-  def get_architecture
-    return @@architecture
-  end
-
-  def indent_level=(level)
-    @@indent_level = level
-  end
-
-  def set_indent_level(level)
-    @@indent_level = level
-  end
-
-  def indent_level
-    return @@indent_level
-  end
-
-  def get_indent_level
-    return @@indent_level
-  end
-
-  def indent_increment
-    return @@indent_increment
-  end
-
-  def get_indent_increment
-    return @@indent_increment
-  end
-
-  def increment_indent_level(increment = @@indent_increment)
-    @@indent_level += increment
+  def increment_indent_level(increment = get_indent_increment)
+    set_indent_level( get_indent_level + increment )
   end
   
-  def decrement_indent_level(increment = @@indent_increment)
-    @@indent_level -= increment
+  def decrement_indent_level(increment = get_indent_increment)
+    set_indent_level( get_indent_level - increment )
   end
 
   def indent
-     return " "*BOAST::get_indent_level
+     return " "*get_indent_level
   end
   
-  def set_replace_constants(replace_constants)
-    @@replace_constants = replace_constants
-  end
-
-  def replace_constants?
-    return !!@@replace_constants
-  end
-
-  def get_replace_constants
-    return @@replace_constants
-  end
-
-  def default_int_signed=(signed)
-    @@default_int_signed = signed
-  end
-
-  def set_default_int_signed(signed)
-    @@default_int_signed = signed
-  end
-
-  def default_int_signed?
-    return !!@@default_int_signed
-  end
-
-  def get_default_int_signed
-    return @@default_int_signed
-  end
-
-  def default_int_size=(size)
-    @@default_int_size = size
-  end
-
-  def set_default_int_size(size)
-    @@default_int_size = size
-  end
-
-  def default_int_size
-    return @@default_int_size
-  end
-
-  def get_default_int_size
-    return @@default_int_size
-  end
-
-  def default_real_size=(size)
-    @@default_real_size = size
-  end
-
-  def set_default_real_size(size)
-    @@default_real_size = size
-  end
-
-  def default_real_size
-    return @@default_real_size
-  end
-
-  def get_default_real_size
-    return @@default_real_size
-  end
-
-  def lang=(lang)
-    @@lang = lang
-  end
-
-  def set_lang(lang)
-    @@lang = lang
-  end
-
-  def lang
-    return @@lang
-  end
-
-  def get_lang
-    return @@lang
-  end
-
-  def output=(output)
-    @@output = output
-  end
-
-  def set_output(output)
-    @@output = output
-  end
-
-  def output
-    return @@output
-  end
-
-  def get_output
-    return @@output
-  end
-
-  def set_chain_code(chain_code)
-    @@chain_code = chain_code
-  end
-
-  def get_chain_code
-    return @@chain_code
-  end
-
-  def array_start=(array_start)
-    @@array_start = array_start
-  end
-
-  def set_array_start(array_start)
-    @@array_start = array_start
-  end
-
-  def array_start
-    return @@array_start
-  end
-
-  def get_array_start
-    return @@array_start
-  end
-
   alias :Var :Variable
   alias :Dim :Dimension
   alias :Call :FuncCall

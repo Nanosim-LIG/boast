@@ -8,7 +8,6 @@ require 'yaml'
 require 'pathname'
 
 module BOAST
-  @@verbose = false
   @@compiler_default_options = {
     :FC => 'gfortran',
     :FCFLAGS => '-O2 -Wall',
@@ -35,6 +34,9 @@ module BOAST
     "g++" => "-fopenmp",
     "icpc" => "-openmp"
   }
+
+  boolean_state_accessor :verbose
+  @@verbose = false
 
   module_function
 
@@ -80,27 +82,6 @@ module BOAST
 
   def get_compiler_options
     return @@compiler_default_options.clone
-  end
-
-  def verbose
-    return @@verbose
-  end
-
-
-  def get_verbose
-    return @@verbose
-  end
-
-  def verbose?
-    return !!@@verbose
-  end
-
-  def verbose=(verbose)
-    @@verbose = verbose
-  end
-
-  def set_verbose(verbose)
-    @@verbose = verbose
   end
 
   class CKernel
