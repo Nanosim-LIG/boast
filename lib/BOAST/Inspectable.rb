@@ -1,20 +1,7 @@
 module BOAST
 
+  boolean_state_accessor :inspect
   @@inspect = false
-
-  module_function
-
-  def inspect?
-    return @@inspect
-  end
-
-  def set_inspect(val)
-    @@inspect = val
-  end
-
-  def inspect=(val)
-    @@inspect = val
-  end
 
   module Inspectable
 
