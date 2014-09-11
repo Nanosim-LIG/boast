@@ -2,63 +2,63 @@ module BOAST
   module Arithmetic
 
     def ===(x)
-      return BOAST::Expression::new(BOAST::Affectation,self,x)
+      return Expression::new(Affectation,self,x)
     end
 
     def !
-      return BOAST::Expression::new(BOAST::Not,nil,self)
+      return Expression::new(Not,nil,self)
     end
 
     def ==(x)
-      return BOAST::Expression::new("==",self,x)
+      return Expression::new("==",self,x)
     end
 
     def !=(x)
-      return BOAST::Expression::new(BOAST::Different,self,x)
+      return Expression::new(Different,self,x)
     end
 
     def >(x)
-      return BOAST::Expression::new(">",self,x)
+      return Expression::new(">",self,x)
     end
  
     def <(x)
-      return BOAST::Expression::new("<",self,x)
+      return Expression::new("<",self,x)
     end
  
     def >=(x)
-      return BOAST::Expression::new(">=",self,x)
+      return Expression::new(">=",self,x)
     end
  
     def <=(x)
-      return BOAST::Expression::new("<=",self,x)
+      return Expression::new("<=",self,x)
     end
  
     def +(x)
-      return BOAST::Expression::new(BOAST::Addition,self,x)
+      return Expression::new(Addition,self,x)
     end
 
     def -(x)
-      return BOAST::Expression::new(BOAST::Substraction,self,x)
+      return Expression::new(Substraction,self,x)
     end
  
     def *(x)
-      return BOAST::Expression::new(BOAST::Multiplication,self,x)
+      return Expression::new(Multiplication,self,x)
     end
 
     def /(x)
-      return BOAST::Expression::new(BOAST::Division,self,x)
+      return Expression::new(Division,self,x)
     end
  
     def -@
-      return BOAST::Expression::new(BOAST::Minus,nil,self)
+      return Expression::new(Minus,nil,self)
     end
 
     def address
-      return BOAST::Expression::new("&",nil,self)
+      return Expression::new("&",nil,self)
     end
    
     def dereference
-      return BOAST::Expression::new("*",nil,self)
+      return Expression::new("*",nil,self)
     end
 
   end

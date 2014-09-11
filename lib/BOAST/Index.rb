@@ -1,7 +1,6 @@
 module BOAST
 
   class Index < Expression
-    include BOAST::Inspectable
     attr_reader :source
     attr_reader :indexes
 
@@ -16,8 +15,8 @@ module BOAST
     end
 
     def to_s
-      return to_s_fortran if BOAST::lang == FORTRAN
-      return to_s_c if [C, CL, CUDA].include?( BOAST::lang )
+      return to_s_fortran if lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
     def to_s_fortran
@@ -27,7 +26,7 @@ module BOAST
     end
 
     def to_s_texture
-      raise "Unsupported language #{BOAST::lang} for texture!" if not [CL, CUDA].include?( BOAST::lang )
+      raise "Unsupported language #{lang} for texture!" if not [CL, CUDA].include?( lang )
       raise "Write is unsupported for textures!" if not ( @source.constant or @source.direction == :in )
       dim_number = 1
       if @source.dimension then
@@ -35,7 +34,7 @@ module BOAST
       end
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
       s = ""
-      if BOAST::lang == CL then
+      if lang == CL then
         s += "as_#{@source.type.decl}("
         s += "read_imageui(#{@source}, #{@source.sampler}, "
         if dim_number == 1 then
@@ -78,7 +77,7 @@ module BOAST
       if dim.val2 then
         start = dim.val1
       else
-        start = BOAST::get_array_start
+        start = get_array_start
       end
       sub = "#{@indexes.first} - (#{start})"
       i=1
@@ -95,12 +94,12 @@ module BOAST
         if dim.val2 then
           start = dim.val1
         else
-          start = BOAST::get_array_start
+          start = get_array_start
         end
         sub += " + (#{@indexes[i]} - (#{start}))"+ss
         i+=1
       }
-      if BOAST::get_replace_constants then
+      if get_replace_constants then
         begin
 #         puts sub
          indx = eval(sub)
@@ -116,10 +115,10 @@ module BOAST
 
     def pr
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      s += ";" if [C, CL, CUDA].include?( BOAST::lang )
-      BOAST::output.puts s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
       return self
     end
 

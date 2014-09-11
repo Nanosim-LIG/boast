@@ -1,8 +1,9 @@
 module BOAST
 
   class Pragma
-    include BOAST::Inspectable
-    extend BOAST::Functor
+    include PrivateStateAccessor
+    include Inspectable
+    extend Functor
 
     attr_reader :name
     attr_reader :options
@@ -14,7 +15,7 @@ module BOAST
 
     def to_s
       s = ""
-      if BOAST::lang == FORTRAN then
+      if lang == FORTRAN then
         s += "$!"
       else
         s += "#pragma"
@@ -28,7 +29,7 @@ module BOAST
     def pr
       s=""
       s += to_s
-      BOAST::output.puts s
+      output.puts s
       return self
     end
   end

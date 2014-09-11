@@ -5,7 +5,7 @@ module BOAST
   def register_funccall(name)
     s =<<EOF
     def self.#{name}(*args)
-      return BOAST::FuncCall("#{name}", *args)
+      return FuncCall("#{name}", *args)
     end
 EOF
     eval s

@@ -1,16 +1,17 @@
 module BOAST
 
   class Operator
+    extend PrivateStateAccessor
 
     def Operator.inspect
       return "#{name}"
     end
 
     def Operator.get_vector_name(type)
-      case BOAST::get_architecture
+      case get_architecture
       when X86
         case type
-        when BOAST::Int
+        when Int
           size = "#{type.size*8}"
           name = ""
           if type.total_size*8 > 64
@@ -27,7 +28,7 @@ module BOAST
             name += "u"
           end
           return name += size
-        when BOAST::Real
+        when Real
           case type.size
           when 4
             return "ps" if type.vector_length > 1
@@ -39,13 +40,13 @@ module BOAST
         else
           raise "Undefined vector type!"
         end
-      when BOAST::ARM
+      when ARM
         case type
-        when BOAST::Int
+        when Int
           name = "#{ type.signed ? "s" : "u" }"
           name += "#{ type.size * 8}"
           return name
-        when BOAST::Real
+        when Real
           return "f#{type.size*8}"
         else
           raise "Undefined vector type!"
@@ -56,8 +57,8 @@ module BOAST
     end
 
     def Operator.convert(arg, type)
-      case BOAST::get_architecture
-      when BOAST::X86
+      case get_architecture
+      when X86
         s1 = arg.type.total_size*8
         s2 = type.total_size*8
         n1 = get_vector_name(arg.type)
@@ -69,14 +70,14 @@ module BOAST
         elsif [s1, s2].max <= 512 then
           return "_mm512_cvt#{n1}_#{n2}( #{arg} )"
         end
-      when BOAST::ARM
+      when ARM
         if type.class != arg.type.class then
           if type.size == arg.type.size then
             s = type.total_size*8
             n1 = get_vector_name(arg.type)
             n2 = get_vector_name(type)
             return "vcvt#{ s == 128 ? "q" : "" }_#{n2}_#{n1}( #{arg} )"
-          elsif type.class == BOAST::Real then
+          elsif type.class == Real then
             intr = convert(arg, arg.type.copy(:size=>type.size))
             return convert(arg.copy(intr, :size => type.size ), type)
           else
@@ -85,9 +86,9 @@ module BOAST
             t2 = type.copy(:size => arg.type.size)
             n2 = get_vector_name( t2 )
             intr = "vcvt#{ s == 128 ? "q" : "" }_#{n2}_#{n1}( #{arg} )"
-            return convert(BOAST::Variable::from_type(intr, t2), type)
+            return convert(Variable::from_type(intr, t2), type)
           end
-        elsif type.class != BOAST::Real then
+        elsif type.class != Real then
           n = get_vector_name(arg.type)
           if type.size == arg.type.size then
             if type.signed == arg.type.signed then
@@ -112,17 +113,17 @@ module BOAST
 
   end
 
-  class BasicBinaryOperator < BOAST::Operator
+  class BasicBinaryOperator < Operator
 
     def BasicBinaryOperator.to_s(arg1, arg2, return_type)
       #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
-      if BOAST::lang == BOAST::C and (arg1.class == BOAST::Variable and arg2.class == BOAST::Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+      if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
         #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
 	return_name = get_vector_name(return_type.type)
         size = return_type.type.total_size * 8
-        case BOAST::get_architecture
-        when BOAST::X86
+        case get_architecture
+        when X86
           if arg1.type != return_type.type
             a1 = convert(arg1, return_type.type)
           else
@@ -139,7 +140,7 @@ module BOAST
           end
           intr_name += "_#{intr_name_X86}_#{return_name}"
           return "#{intr_name}( #{a1}, #{a2} )"
-        when BOAST::ARM
+        when ARM
           if arg1.type.class != return_type.type.class then
             a1 = convert(arg1, return_type.type)
           else
@@ -164,30 +165,30 @@ module BOAST
 
   end
 
-  class Set < BOAST::Operator
+  class Set < Operator
 
     def Set.to_s(arg1, arg2, return_type)
-      if BOAST::lang == BOAST::C then
-        if arg1.class == BOAST::Variable and arg1.type.vector_length > 1 then
+      if lang == C then
+        if arg1.class == Variable and arg1.type.vector_length > 1 then
           if arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
           elsif arg1.type.vector_length == arg2.type.vector_length then
             return "(#{arg1} = #{convert(arg2, arg1.type)})"
           elsif arg2.type.vector_length == 1 then
             size = arg1.type.total_size*8
-            case BOAST::get_architecture
-            when BOAST::ARM
+            case get_architecture
+            when ARM
               intr_name = "vmov"
               intr_name += "q" if size == 128
               intr_name += "_n_#{get_vector_name(arg1.type)}"
-            when BOAST::X86
-              return "(#{arg1} = _m_from_int64( #{a2} ))" if arg1.type.class == BOAST::Int and arg1.type.size == 8 and size == 64
+            when X86
+              return "(#{arg1} = _m_from_int64( #{a2} ))" if arg1.type.class == Int and arg1.type.size == 8 and size == 64
               intr_name = "_mm"
               if size > 128 then
                 intr_name += "#{size}"
               end
               intr_name += "_set1_#{get_vector_name(arg1.type).gsub("u","")}"
-              intr_name += "x" if arg1.type.class == BOAST::Int and arg1.type.size == 8
+              intr_name += "x" if arg1.type.class == Int and arg1.type.size == 8
             else
               raise "Unsupported architecture!"
             end
@@ -209,24 +210,24 @@ module BOAST
 
   end
 
-  class Different < BOAST::Operator
+  class Different < Operator
 
     def Different.to_s(arg1, arg2, return_type)
       return basic_usage(arg1, arg2)
     end
 
     def Different.basic_usage(arg1, arg2)
-      return "#{arg1} /= #{arg2}" if BOAST::lang == BOAST::FORTRAN
+      return "#{arg1} /= #{arg2}" if lang == FORTRAN
       return "#{arg1} != #{arg2}"
     end
 
   end
 
-  class Affectation < BOAST::Operator
+  class Affectation < Operator
 
     def Affectation.to_s(arg1, arg2, return_type)
-      if BOAST::lang == BOAST::C then
-        if arg1.class == BOAST::Variable and arg1.type.vector_length > 1 then
+      if lang == C then
+        if arg1.class == Variable and arg1.type.vector_length > 1 then
           #puts "#{arg1.type.vector_length} #{arg2.type.vector_length}"
           if arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
@@ -240,13 +241,13 @@ module BOAST
             else
               a2 = a2[1..-1]
             end
-            case BOAST::get_architecture
-            when BOAST::ARM
+            case get_architecture
+            when ARM
               intr_name = "vldl"
               intr_name += "q" if size == 128
               intr_name += "_#{get_vector_name(arg1.type)}"
-            when BOAST::X86
-              if arg1.type.class == BOAST::Int and size == 64 then
+            when X86
+              if arg1.type.class == Int and size == 64 then
                 return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )"
               end
               intr_name = "_mm"
@@ -254,7 +255,7 @@ module BOAST
                 intr_name += "#{size}"
               end
               intr_name += "_load_"
-              if arg1.type.class == BOAST::Int then
+              if arg1.type.class == Int then
                 intr_name += "si#{size}"
               else
                 intr_name += "#{get_vector_name(arg1.type)}"
@@ -266,7 +267,7 @@ module BOAST
           else
             raise "Unknown convertion between vectors of different length!"
           end
-        elsif arg2.class == BOAST::Variable and arg2.type.vector_length > 1 then
+        elsif arg2.class == Variable and arg2.type.vector_length > 1 then
           size = arg2.type.total_size*8
           a1 = "#{arg1}"
           if a1[0] != "*" then
@@ -274,13 +275,13 @@ module BOAST
           else
             a1 = a1[1..-1]
           end
-          case BOAST::get_architecture
-          when BOAST::ARM
+          case get_architecture
+          when ARM
             intr_name = "vstl"
             intr_name += "q" if size == 128
             intr_name += "_#{get_vector_name(arg2.type)}"
-          when BOAST::X86
-            if arg2.type.class == BOAST::Int and size == 64 then
+          when X86
+            if arg2.type.class == Int and size == 64 then
               return " *((int64_t * ) #{a1}) = _m_to_int64( #{arg2} )"
             end
             intr_name = "_mm"
@@ -288,7 +289,7 @@ module BOAST
               intr_name += "#{size}"
             end
             intr_name += "_store_"
-            if arg2.type.class == BOAST::Int then
+            if arg2.type.class == Int then
               intr_name += "si#{size}"
             else
               intr_name += "#{get_vector_name(arg2.type)}"
@@ -311,7 +312,7 @@ module BOAST
 
   end
 
-  class Multiplication < BOAST::BasicBinaryOperator
+  class Multiplication < BasicBinaryOperator
 
     class << self
 
@@ -335,7 +336,7 @@ module BOAST
 
   end
 
-  class Addition < BOAST::BasicBinaryOperator
+  class Addition < BasicBinaryOperator
 
     class << self
 
@@ -359,7 +360,7 @@ module BOAST
 
   end
 
-  class Substraction < BOAST::BasicBinaryOperator
+  class Substraction < BasicBinaryOperator
 
     class << self
 
@@ -383,7 +384,7 @@ module BOAST
 
   end
 
-  class Division < BOAST::BasicBinaryOperator
+  class Division < BasicBinaryOperator
 
     class << self
 
@@ -407,7 +408,7 @@ module BOAST
 
   end
 
-  class Minus < BOAST::Operator
+  class Minus < Operator
 
     def Minus.to_s(arg1, arg2, return_type)
       return " -(#{arg2})"
@@ -415,7 +416,7 @@ module BOAST
 
   end
 
-  class Not < BOAST::Operator
+  class Not < Operator
 
     def Not.to_s(arg1, arg2, return_type)
       return " ! #{arg2}"
@@ -424,9 +425,10 @@ module BOAST
   end
 
   class Ternary
-    extend BOAST::Functor
-    include BOAST::Arithmetic
-    include BOAST::Inspectable
+    extend Functor
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
 
     attr_reader :operand1
     attr_reader :operand2
@@ -439,8 +441,8 @@ module BOAST
     end
 
     def to_s
-      raise "Ternary operator unsupported in FORTRAN!" if BOAST::lang == BOAST::FORTRAN
-      return to_s_c if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::lang )
+      raise "Ternary operator unsupported in FORTRAN!" if lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
     def to_s_c
@@ -450,10 +452,10 @@ module BOAST
 
     def pr
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      s += ";" if [BOAST::C, BOAST::CL, BOAST::CUDA].include?( BOAST::lang )
-      BOAST::output.puts s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
       return self
     end
 

@@ -1,9 +1,10 @@
 module BOAST
 
   class FuncCall
-    include BOAST::Arithmetic
-    include BOAST::Inspectable
-    extend BOAST::Functor
+    include PrivateStateAccessor
+    include Arithmetic
+    include Inspectable
+    extend Functor
 
     @return_type
     @options
@@ -35,8 +36,8 @@ module BOAST
     end
       
     def to_s
-      return to_s_fortran if BOAST::lang == FORTRAN
-      return to_s_c if [C, CL, CUDA].include?( BOAST::lang )
+      return to_s_fortran if lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
     def to_s_fortran
@@ -53,10 +54,10 @@ module BOAST
 
     def pr
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      s += ";" if [C, CL, CUDA].include?( BOAST::lang )
-      BOAST::output.puts s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
       return self
     end
   end

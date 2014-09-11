@@ -9,6 +9,41 @@ module BOAST
   X86 = 1
   ARM = 2
 
+  module PrivateStateAccessor
+
+    private_state_accessor :output, :lang, :architecture
+    private_state_accessor :default_int_size, :default_real_size
+    private_state_accessor :array_start
+    private_state_accessor :indent_level, :indent_increment
+
+    private_boolean_state_accessor :replace_constants
+    private_boolean_state_accessor :default_int_signed
+    private_boolean_state_accessor :chain_code
+    private_boolean_state_accessor :debug
+
+    private
+    def push_env(*args)
+      BOAST::push_env(*args)
+    end
+
+    def pop_env(*args)
+      BOAST::pop_env(*args)
+    end
+
+    def increment_indent_level(*args)
+      BOAST::increment_indent_level(*args)
+    end
+
+    def decrement_indent_level(*args)
+      BOAST::decrement_indent_level(*args)
+    end
+
+    def indent
+      BOAST::indent
+    end
+
+  end
+
   state_accessor :output, :lang, :architecture
   state_accessor :default_int_size, :default_real_size
   state_accessor :array_start
@@ -70,6 +105,18 @@ module BOAST
     }
   end
 
+  def increment_indent_level(increment = get_indent_increment)
+    set_indent_level( get_indent_level + increment )
+  end
+  
+  def decrement_indent_level(increment = get_indent_increment)
+    set_indent_level( get_indent_level - increment )
+  end
+
+  def indent
+     return " "*get_indent_level
+  end
+
   def pr(a)
     a.pr
   end
@@ -88,18 +135,6 @@ module BOAST
     a.open
   end
 
-  def increment_indent_level(increment = get_indent_increment)
-    set_indent_level( get_indent_level + increment )
-  end
-  
-  def decrement_indent_level(increment = get_indent_increment)
-    set_indent_level( get_indent_level - increment )
-  end
-
-  def indent
-     return " "*get_indent_level
-  end
-  
   alias :Var :Variable
   alias :Dim :Dimension
   alias :Call :FuncCall

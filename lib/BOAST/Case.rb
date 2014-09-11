@@ -1,8 +1,6 @@
 module BOAST
 
-  class Case < BOAST::ControlStructure
-    include BOAST::Inspectable
-    extend BOAST::Functor
+  class Case < ControlStructure
 
     attr_reader :expression
     attr_reader :constants_list
@@ -44,10 +42,10 @@ module BOAST
     }
 
     @@strings = {
-      BOAST::C => @@c_strings,
-      BOAST::CL => @@c_strings,
-      BOAST::CUDA => @@c_strings,
-      BOAST::FORTRAN => @@f_strings
+      C => @@c_strings,
+      CL => @@c_strings,
+      CUDA => @@c_strings,
+      FORTRAN => @@f_strings
     }
 
     eval token_string_generator( * %w{switch expr})
@@ -60,25 +58,25 @@ module BOAST
       s = ""
       if block_number then
         if block_number != 0 then
-          s += BOAST::indent + break_string + "\n" if break_string
-          BOAST::decrement_indent_level
+          s += indent + break_string + "\n" if break_string
+          decrement_indent_level
         end
-        s += BOAST::indent
+        s += indent
         if @constants_list[block_number] and @constants_list[block_number].size > 0 then
           s += case_string(@constants_list[block_number])
         else
           s += default_string
         end
       else
-        s += BOAST::indent
+        s += indent
         s += switch_string(@expression)
       end
-      BOAST::increment_indent_level
+      increment_indent_level
       return s
     end
 
     def open
-      BOAST::output.puts to_s
+      output.puts to_s
       return self
     end
 
@@ -87,7 +85,7 @@ module BOAST
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
           s = to_s(indx)
-          BOAST::output.puts s
+          output.puts s
           @blocks[indx].call(*args)
         }
         close
@@ -97,12 +95,12 @@ module BOAST
 
     def close
       s = ""
-      s += BOAST::indent + break_string + "\n" if break_string
-      BOAST::decrement_indent_level      
-      s += BOAST::indent
+      s += indent + break_string + "\n" if break_string
+      decrement_indent_level      
+      s += indent
       s += end_string
-      BOAST::decrement_indent_level      
-      BOAST::output.puts s
+      decrement_indent_level      
+      output.puts s
       return self
     end
 

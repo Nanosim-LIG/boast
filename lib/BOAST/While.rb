@@ -1,8 +1,6 @@
 module BOAST
 
-  class While < BOAST::ControlStructure
-    include BOAST::Inspectable
-    extend BOAST::Functor
+  class While < ControlStructure
 
     attr_reader :condition
 
@@ -22,10 +20,10 @@ module BOAST
     }
 
     @@strings = {
-      BOAST::C => @@c_strings,
-      BOAST::CL => @@c_strings,
-      BOAST::CUDA => @@c_strings,
-      BOAST::FORTRAN => @@f_strings
+      C => @@c_strings,
+      CL => @@c_strings,
+      CUDA => @@c_strings,
+      FORTRAN => @@f_strings
     }
 
     eval token_string_generator( * %w{while cond} )
@@ -37,10 +35,10 @@ module BOAST
 
     def open
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      BOAST::output.puts s
-      BOAST::increment_indent_level
+      output.puts s
+      increment_indent_level
       return self
     end
 
@@ -54,11 +52,11 @@ module BOAST
     end
 
     def close
-      BOAST::decrement_indent_level      
+      decrement_indent_level      
       s = ""
-      s += BOAST::indent
+      s += indent
       s += end_string
-      BOAST::output.puts s
+      output.puts s
       return self
     end
 

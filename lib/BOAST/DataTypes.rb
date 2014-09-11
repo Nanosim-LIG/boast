@@ -1,7 +1,16 @@
 module BOAST
 
-  class Sizet
-    extend BOAST::VarFunctor
+  class DataType
+
+    include PrivateStateAccessor
+
+    def self.inherited(child)
+      child.extend( VarFunctor)
+    end
+
+  end
+
+  class Sizet < DataType
 
     attr_reader :signed
     attr_reader :size
@@ -28,11 +37,11 @@ module BOAST
     end
 
     def decl
-      return "integer(kind=#{BOAST::get_default_int_size})" if BOAST::lang == FORTRAN
+      return "integer(kind=#{get_default_int_size})" if lang == FORTRAN
       if not @signed then
-        return "size_t" if [C, CL, CUDA].include?( BOAST::lang )
+        return "size_t" if [C, CL, CUDA].include?( lang )
       else
-        return "ptrdiff_t" if [C, CL, CUDA].include?( BOAST::lang )
+        return "ptrdiff_t" if [C, CL, CUDA].include?( lang )
       end
     end
 
@@ -42,8 +51,7 @@ module BOAST
 
   end
  
-  class Real
-    extend BOAST::VarFunctor
+  class Real < DataType
 
     attr_reader :size
     attr_reader :signed
@@ -61,7 +69,7 @@ module BOAST
       if hash[:size] then
         @size = hash[:size]
       else
-        @size = BOAST::get_default_real_size
+        @size = get_default_real_size
       end
 #      @getters = {}
 #      @setters = {}
@@ -95,30 +103,29 @@ module BOAST
     end
 
     def decl
-      return "real(kind=#{@size})" if BOAST::lang == FORTRAN
-      if [C, CL, CUDA].include?( BOAST::lang ) and @vector_length == 1 then
+      return "real(kind=#{@size})" if lang == FORTRAN
+      if [C, CL, CUDA].include?( lang ) and @vector_length == 1 then
         return "float" if @size == 4
         return "double" if @size == 8
-      elsif BOAST::lang == C and @vector_length > 1 then
-        if BOAST::get_architecture == BOAST::X86 then
+      elsif lang == C and @vector_length > 1 then
+        if get_architecture == X86 then
           return "__m#{@total_size*8}" if @size == 4
           return "__m#{@total_size*8}d" if @size == 8
-        elsif BOAST::get_architecture == BOAST::ARM then
+        elsif get_architecture == ARM then
           raise "Unsupported data type in NEON: double!" if @size == 8
           raise "Unsupported vector length in NEON: #{@total_size} (#{@size} x 8 x #{@vector_length})!" if @total_size * 8 != 64 or @total_size * 8 != 128
           return "float#{@size*8}x#{@vector_length}_t"
         else
           raise "Unsupported architecture!"
         end
-      elsif [CL, CUDA].include?( BOAST::lang ) and @vector_length > 1 then
+      elsif [CL, CUDA].include?( lang ) and @vector_length > 1 then
         return "float#{@vector_length}" if @size == 4
         return "double#{@vector_length}" if @size == 8
       end
     end
   end
 
-  class Int
-    extend BOAST::VarFunctor
+  class Int < DataType
 
     attr_reader :size
     attr_reader :signed
@@ -134,12 +141,12 @@ module BOAST
       if hash[:size] then
         @size = hash[:size]
       else
-        @size = BOAST::get_default_int_size
+        @size = get_default_int_size
       end
       if hash[:signed] != nil then
         @signed = hash[:signed]
       else
-        @signed = BOAST::get_default_int_signed
+        @signed = get_default_int_signed
       end
 #      @getters = {}
 #      @setters = {}
@@ -172,23 +179,23 @@ module BOAST
     end
 
     def decl
-      return "integer(kind=#{@size})" if BOAST::lang == FORTRAN
-      if BOAST::lang == C then
+      return "integer(kind=#{@size})" if lang == FORTRAN
+      if lang == C then
         if @vector_length == 1 then
           s = ""
           s += "u" if not @signed
           return s+"int#{8*@size}_t"
         elsif @vector_length > 1 then
-          if BOAST::get_architecture == BOAST::X86 then
+          if get_architecture == X86 then
             return "__m#{@total_size*8}#{@total_size*8>64 ? "i" : ""}"
-          elsif BOAST::get_architecture == BOAST::ARM then
+          elsif get_architecture == ARM then
             raise "Unsupported vector length in NEON: #{@total_size*8} (#{@size} x 8 x #{@vector_length})!" if @total_size * 8 != 64 and @total_size * 8 != 128
             return "#{ @signed ? "" : "u"}int#{@size*8}x#{@vector_length}_t"
           else
             raise "Unsupported architecture!"
           end
         end
-      elsif BOAST::lang == CL then
+      elsif lang == CL then
         #char="cl_"
         char=""
         char += "u" if not @signed
@@ -208,7 +215,7 @@ module BOAST
           char += "#{@vector_length}"
         end
         return char
-      elsif BOAST::lang == CUDA then
+      elsif lang == CUDA then
         if @vector_length > 1 then
           char=""
           char += "u" if not @signed
@@ -237,8 +244,7 @@ module BOAST
     end
   end
 
-  class CStruct
-    extend BOAST::VarFunctor
+  class CStruct < DataType
 
     attr_reader :name, :members, :members_array
 
@@ -254,62 +260,61 @@ module BOAST
     end
 
     def decl_c
-      return "struct #{@name}" if [C, CL, CUDA].include?( BOAST::lang )
+      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
     end
 
     def decl_fortran
-      return "TYPE(#{@name})" if BOAST::lang == FORTRAN
+      return "TYPE(#{@name})" if lang == FORTRAN
     end
 
     def decl
-      return decl_c if [C, CL, CUDA].include?( BOAST::lang )
-      return decl_fortran if BOAST::lang == FORTRAN
+      return decl_c if [C, CL, CUDA].include?( lang )
+      return decl_fortran if lang == FORTRAN
     end
 
     def finalize
        s = ""
-       s += ";" if [C, CL, CUDA].include?( BOAST::lang )
+       s += ";" if [C, CL, CUDA].include?( lang )
        s+="\n"
        return s
     end
 
     def define
-      return define_c if [C, CL, CUDA].include?( BOAST::lang )
-      return define_fortran if BOAST::lang == FORTRAN
+      return define_c if [C, CL, CUDA].include?( lang )
+      return define_fortran if lang == FORTRAN
     end
 
     def define_c
-      s = BOAST::indent
+      s = indent
       s += decl_c + " {"
-      BOAST::output.puts s
+      output.puts s
       @members_array.each { |value|
          value.decl
       }
-      s = BOAST::indent
+      s = indent
       s += "}"
       s += finalize
-      BOAST::output.print s
+      output.print s
       return self
     end
     
     def define_fortran
-      s = BOAST::indent
+      s = indent
       s += "TYPE :: #{@name}\n"
-      BOAST::output.puts s
+      output.puts s
       @members_array.each { |value|
          value.decl
       }
-      s = BOAST::indent
+      s = indent
       s += "END TYPE #{@name}"
       s += finalize
-      BOAST::output.print s
+      output.print s
       return self
     end
 
   end
 
-  class CustomType
-    extend BOAST::VarFunctor
+  class CustomType < DataType
 
     attr_reader :size, :name, :vector_length
     def initialize(hash={})
@@ -322,7 +327,7 @@ module BOAST
     end
 
     def decl
-      return "#{@name}" if [C, CL, CUDA].include?( BOAST::lang )
+      return "#{@name}" if [C, CL, CUDA].include?( lang )
     end
 
   end

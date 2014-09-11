@@ -1,8 +1,6 @@
 module BOAST
 
   class For < ControlStructure
-    include BOAST::Inspectable
-    extend BOAST::Functor
 
     attr_reader :iterator
     attr_reader :begin
@@ -17,7 +15,7 @@ module BOAST
       @operator = "<="
       @block = block
       begin
-        BOAST::push_env( :replace_constants => true )
+        push_env( :replace_constants => true )
         if @step.kind_of?(Variable) then
           step = @step.constant
         elsif @step.kind_of?(Expression) then
@@ -27,9 +25,9 @@ module BOAST
         end
         @operator = ">=" if step < 0
       rescue
-        STDERR.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( BOAST::lang ) and BOAST::debug?
+        STDERR.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
       ensure
-        BOAST::pop_env( :replace_constants )
+        pop_env( :replace_constants )
       end
     end
 
@@ -44,10 +42,10 @@ module BOAST
     }
 
     @@strings = {
-      BOAST::C => @@c_strings,
-      BOAST::CL => @@c_strings,
-      BOAST::CUDA => @@c_strings,
-      BOAST::FORTRAN => @@f_strings
+      C => @@c_strings,
+      CL => @@c_strings,
+      CUDA => @@c_strings,
+      FORTRAN => @@f_strings
     }
 
     eval token_string_generator( * %w{for i b e s o})
@@ -60,7 +58,7 @@ module BOAST
 
     def unroll(*args)
       raise "Block not given!" if not @block
-      BOAST::push_env( :replace_constants => true )
+      push_env( :replace_constants => true )
       begin
         if @begin.kind_of?(Variable) then
           start = @begin.constant
@@ -86,11 +84,11 @@ module BOAST
         raise "Invalid bounds (not constants)!" if not ( start and e and step )
       rescue Exception => ex
         if not ( start and e and step ) then
-          BOAST::pop_env( :replace_constants )
+          pop_env( :replace_constants )
           return pr(*args) if not ( start and e and step )
         end
       end
-      BOAST::pop_env( :replace_constants )
+      pop_env( :replace_constants )
       range = start..e
       @iterator.force_replace_constant = true
       range.step(step) { |i|
@@ -103,10 +101,10 @@ module BOAST
 
     def open
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      BOAST::output.puts s
-      BOAST::increment_indent_level      
+      output.puts s
+      increment_indent_level      
       return self
     end 
 
@@ -120,11 +118,11 @@ module BOAST
     end
 
     def close
-      BOAST::decrement_indent_level      
+      decrement_indent_level      
       s = ""
-      s += BOAST::indent
+      s += indent
       s += end_string
-      BOAST::output.puts s
+      output.puts s
       return self
     end
 

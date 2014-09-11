@@ -1,8 +1,6 @@
 module BOAST
 
-  class If < BOAST::ControlStructure
-    include BOAST::Inspectable
-    extend BOAST::Functor
+  class If < ControlStructure
 
     attr_reader :conditions
 
@@ -43,10 +41,10 @@ module BOAST
     }
 
     @@strings = {
-      BOAST::C => @@c_strings,
-      BOAST::CL => @@c_strings,
-      BOAST::CUDA => @@c_strings,
-      BOAST::FORTRAN => @@f_strings
+      C => @@c_strings,
+      CL => @@c_strings,
+      CUDA => @@c_strings,
+      FORTRAN => @@f_strings
     }
 
     eval token_string_generator( * %w{if cond} )
@@ -70,23 +68,23 @@ module BOAST
 
     def open
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      BOAST::output.puts s
-      BOAST::increment_indent_level
+      output.puts s
+      increment_indent_level
       return self
     end
 
     def pr(*args)
       if @blocks.size > 0 then
-        BOAST::increment_indent_level
+        increment_indent_level
         @blocks.each_index { |indx|
-          BOAST::decrement_indent_level
+          decrement_indent_level
           s=""
-          s += BOAST::indent
+          s += indent
           s += to_s(indx)
-          BOAST::output.puts s
-          BOAST::increment_indent_level
+          output.puts s
+          increment_indent_level
           @blocks[indx].call(*args)
         }
         close
@@ -97,11 +95,11 @@ module BOAST
     end
 
     def close
-      BOAST::decrement_indent_level
+      decrement_indent_level
       s = ""
-      s += BOAST::indent
+      s += indent
       s += end_string
-      BOAST::output.puts s
+      output.puts s
       return self
     end
 

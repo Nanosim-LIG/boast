@@ -35,6 +35,10 @@ module BOAST
     "icpc" => "-openmp"
   }
 
+  module PrivateStateAccessor
+    private_boolean_state_accessor :verbose
+  end
+
   boolean_state_accessor :verbose
   @@verbose = false
 
@@ -74,7 +78,7 @@ module BOAST
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
   end
 
-  BOAST::read_boast_config
+  read_boast_config
 
   def get_openmp_flags
     return @@openmp_default_flags.clone
@@ -86,7 +90,10 @@ module BOAST
 
   class CKernel
     include Rake::DSL
-    include BOAST::Inspectable
+    include Inspectable
+    include PrivateStateAccessor
+    include TypeTransition
+
     attr_accessor :code
     attr_accessor :procedure
     attr_accessor :lang
@@ -97,13 +104,13 @@ module BOAST
     def initialize(options={})
       if options[:code] then
         @code = options[:code]
-      elsif BOAST::get_chain_code
-        @code = BOAST::output
+      elsif get_chain_code
+        @code = get_output
         @code.seek(0,SEEK_END)
       else
         @code = StringIO::new
       end
-      BOAST::output = @code
+      set_output(@code)
       if options[:kernels] then
         @kernels = options[:kernels]
       else
@@ -112,7 +119,7 @@ module BOAST
       if options[:lang] then
         @lang = options[:lang]
       else
-        @lang = BOAST::lang
+        @lang = get_lang
       end
     end
 
@@ -166,7 +173,7 @@ module BOAST
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
-      if options[:openmp] and @lang == BOAST::C then
+      if options[:openmp] and @lang == C then
           openmp_cflags = get_openmp_flags(c_compiler)
           raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
           cflags += " #{openmp_cflags}"
@@ -182,7 +189,7 @@ module BOAST
       cxx_compiler = options[:CXX]
       cxxflags = options[:CXXFLAGS]
       cxxflags += " -fPIC #{includes}"
-      if options[:openmp] and @lang == BOAST::C then
+      if options[:openmp] and @lang == C then
           openmp_cxxflags = get_openmp_flags(cxx_compiler)
           raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxxflags
           cxxflags += " #{openmp_cxxflags}"
@@ -199,7 +206,7 @@ module BOAST
       fcflags = options[:FCFLAGS]
       fcflags += " -fPIC"
       fcflags += " -fno-second-underscore" if f_compiler == 'g95'
-      if options[:openmp] and @lang == BOAST::FORTRAN then
+      if options[:openmp] and @lang == FORTRAN then
           openmp_fcflags = get_openmp_flags(f_compiler)
           raise "unkwown openmp flags for: #{f_compiler}" if not openmp_fcflags
           fcflags += " #{openmp_fcflags}"
@@ -225,7 +232,7 @@ module BOAST
     def setup_linker(options)
       ldflags = options[:LDFLAGS]
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
-      ldflags += " -lcudart" if @lang == BOAST::CUDA
+      ldflags += " -lcudart" if @lang == CUDA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
@@ -242,7 +249,7 @@ module BOAST
     def setup_compilers(options = {})
       Rake::Task::clear
       verbose = options[:verbose]
-      verbose = BOAST::get_verbose if not verbose
+      verbose = get_verbose if not verbose
       Rake::verbose(verbose)
       Rake::FileUtilsExt.verbose_flag=verbose
 
@@ -342,12 +349,12 @@ module BOAST
         puts e.to_s
         puts program.build_status
         puts program.build_log
-        if options[:verbose] or BOAST::get_verbose then
+        if options[:verbose] or get_verbose then
           puts @code.string
         end
         raise "OpenCL Failed to build #{@procedure.name}"
       end
-      if options[:verbose] or BOAST::get_verbose then
+      if options[:verbose] or get_verbose then
         program.build_log.each {|dev,log|
           puts "#{device.name}: #{log}"
         }
@@ -434,9 +441,9 @@ EOF
     end
 
     @@extensions = {
-      BOAST::C => ".c",
-      BOAST::CUDA => ".cu",
-      BOAST::FORTRAN => ".f90"
+      C => ".c",
+      CUDA => ".cu",
+      FORTRAN => ".f90"
     }
 
     def get_sub_kernels
@@ -451,19 +458,19 @@ EOF
     end
 
     def create_module_source(path)
-      previous_lang = BOAST::lang
-      previous_output = BOAST::output
-      BOAST::lang = BOAST::C
+      previous_lang = get_lang
+      previous_output = get_output
+      set_lang( C )
       module_file_name = File::split(path.chomp(File::extname(path)))[0] + "/Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
-      BOAST::output = module_file
+      set_output( module_file )
       fill_module(module_file, module_name)
       module_file.rewind
      #puts module_file.read
       module_file.close
-      BOAST::lang = previous_lang
-      BOAST::output = previous_output
+      set_lang( previous_lang )
+      set_output( previous_output )
       return [module_file_name, module_name]
     end
 
@@ -487,7 +494,7 @@ EOF
     def build(options = {})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
-      return build_opencl(compiler_options) if @lang == BOAST::CL
+      return build_opencl(compiler_options) if @lang == CL
 
       linker, ldflags = setup_compilers(compiler_options)
 
@@ -525,13 +532,13 @@ EOF
 
     def fill_code(source_file)
       @code.rewind
-      source_file.puts "#include <inttypes.h>" if @lang == BOAST::C or @lang == BOAST::CUDA
-      source_file.puts "#include <cuda.h>" if @lang == BOAST::CUDA
+      source_file.puts "#include <inttypes.h>" if @lang == C or @lang == CUDA
+      source_file.puts "#include <cuda.h>" if @lang == CUDA
       source_file.write @code.read
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         source_file.write <<EOF
 extern "C" {
-  #{@procedure.boast_header_s(BOAST::CUDA)}{
+  #{@procedure.boast_header_s(CUDA)}{
     dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
     dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
     cudaEvent_t __start, __stop;
@@ -560,7 +567,7 @@ EOF
 #include "narray.h"
 #endif
 EOF
-      if( @lang == BOAST::CUDA ) then
+      if( @lang == CUDA ) then
         module_file.print "#include <cuda_runtime.h>\n"
       end
     end
@@ -578,7 +585,7 @@ EOF
     end
 
     def check_args(module_file)
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         module_file.print <<EOF
   if( argc < #{@procedure.parameters.length} || argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
@@ -596,15 +603,15 @@ EOF
         param = @procedure.parameters[i]
         if not param.dimension then
           case param.type
-            when Int 
-              BOAST::pr param === FuncCall::new("NUM2INT", argv[i]) if param.type.size == 4
-              BOAST::pr param === FuncCall::new("NUM2LONG", argv[i]) if param.type.size == 8
-            when Real
-              BOAST::pr param === FuncCall::new("NUM2DBL", argv[i])
+          when Int 
+            (param === FuncCall::new("NUM2INT", argv[i])).pr if param.type.size == 4
+            (param === FuncCall::new("NUM2LONG", argv[i])).pr if param.type.size == 8
+          when Real
+            (param === FuncCall::new("NUM2DBL", argv[i])).pr
           end
         else
-          BOAST::pr rb_ptr === argv[i]
-          if @lang == BOAST::CUDA then
+          (rb_ptr === argv[i]).pr
+          if @lang == CUDA then
             module_file.print <<EOF
   if ( IsNArray(rb_ptr) ) {
     struct NARRAY *n_ary;
@@ -637,7 +644,7 @@ EOF
         param_copy = param.copy
         param_copy.constant = nil
         param_copy.direction = nil
-        BOAST::decl param_copy
+        param_copy.decl
       }
       module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE stats = rb_hash_new();\n"
@@ -683,17 +690,17 @@ EOF
     end
 
     def create_procedure_call(module_file)
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         module_file.print "  duration = "
       elsif @procedure.properties[:return] then
         module_file.print "  ret = "
       end
       module_file.print "  #{@procedure.name}"
-      module_file.print "_" if @lang == BOAST::FORTRAN
-      module_file.print "_wrapper" if @lang == BOAST::CUDA
+      module_file.print "_" if @lang == FORTRAN
+      module_file.print "_wrapper" if @lang == CUDA
       module_file.print "("
       params = []
-      if(@lang == BOAST::FORTRAN) then
+      if(@lang == FORTRAN) then
         @procedure.parameters.each { |param|
           if param.dimension then
             params.push( param.name )
@@ -712,7 +719,7 @@ EOF
           end
         }
       end
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         params.push( "block_number", "block_size" )
       end
       module_file.print params.join(", ")
@@ -720,11 +727,11 @@ EOF
     end
 
     def get_results(module_file, argv, rb_ptr)
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
           if param.dimension then
-            (rb_ptr === argv[i]).print
+            (rb_ptr === argv[i]).pr
             module_file.print <<EOF
   if ( IsNArray(rb_ptr) ) {
 EOF
@@ -749,7 +756,7 @@ EOF
     end
 
     def store_result(module_file)
-      if @lang != BOAST::CUDA then
+      if @lang != CUDA then
         module_file.print "  duration = (unsigned long long int)stop.tv_sec * (unsigned long long int)1000000000 + stop.tv_nsec;\n"
         module_file.print "  duration -= (unsigned long long int)start.tv_sec * (unsigned long long int)1000000000 + start.tv_nsec;\n"
       end
@@ -772,16 +779,16 @@ EOF
       check_args(module_file)
 
       argc = @procedure.parameters.length
-      argv = BOAST::CustomType("argv", :type_name => "VALUE", :dimension => [ BOAST::Dim(0,argc-1) ] )
-      rb_ptr = BOAST::CustomType("rb_ptr", :type_name => "VALUE")
-      BOAST::set_transition("VALUE", "VALUE", :default,  BOAST::CustomType::new(:type_name => "VALUE"))
-      BOAST::decl rb_ptr
+      argv = Variable::new("argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
+      rb_ptr = Variable::new("rb_ptr", CustomType, :type_name => "VALUE")
+      set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
+      rb_ptr.decl
 
       decl_module_params(module_file)
 
       get_params_value(module_file, argv, rb_ptr)
 
-      if @lang == BOAST::CUDA then
+      if @lang == CUDA then
         module_file.print get_cuda_launch_bounds(module_file)
       end
 
@@ -839,17 +846,17 @@ EOF
     end
 
     def get_array_type(param)
-      if param.type.class == BOAST::Real then
+      if param.type.class == Real then
         case param.type.size
         when 4
           type = NArray::SFLOAT
         when 8
           type = NArray::FLOAT
         else
-          STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+          STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
         end
-      elsif param.type.class == BOAST::Int then
+      elsif param.type.class == Int then
         case param.type.size
         when 1
           type = NArray::BYTE
@@ -858,18 +865,18 @@ EOF
         when 4
           type = NArray::SINT
         else
-          STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if BOAST::debug
+          STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
         end
       else
-        STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if BOAST::debug
+        STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if debug?
         type = NArray::BYTE
       end
       return type
     end
 
     def get_scalar_type(param)
-      if param.type.class == BOAST::Real then
+      if param.type.class == Real then
         case param.type.size
         when 4
           type = "f"
@@ -878,7 +885,7 @@ EOF
         else
           raise "Unsupported Real scalar size: #{param.type.size}!"
         end
-      elsif param.type.class == BOAST::Int then
+      elsif param.type.class == Int then
         case param.type.size
         when 1
           type = "C"
@@ -926,7 +933,7 @@ EOF
       global_dim = global_dim.pop.split(",").collect!{ |e| e.to_i }
       (local_dim.length..2).each{ |i| local_dim[i] = 1 }
       (global_dim.length..2).each{ |i| global_dim[i] = 1 }
-      if @lang == BOAST::CL then
+      if @lang == CL then
         local_dim.each_index { |indx| global_dim[indx] *= local_dim[indx] }
         res = { :global_work_size => global_dim, :local_work_size => local_dim }
       else
@@ -950,7 +957,7 @@ EOF
         @procedure.parameters.collect { |param|
           res.push read_param(param, d, suffix, intent)
         }
-        if @lang == BOAST::CUDA or @lang == BOAST::CL then
+        if @lang == CUDA or @lang == CL then
           res.push get_gpu_dim(d)
         end
         res_h[d] =  res

@@ -7,9 +7,11 @@ module BOAST
   end
 
   class Expression
-    include BOAST::Arithmetic
-    include BOAST::Inspectable
-    extend BOAST::Functor
+    include PrivateStateAccessor
+    include Arithmetic
+    include Inspectable
+    extend Functor
+    include TypeTransition
 
     attr_reader :operator
     attr_reader :operand1
@@ -20,7 +22,7 @@ module BOAST
       @operand2 = operand2
     end
 
-    def Expression.to_s_base(op1, op2, oper, return_type = nil)
+    def to_s_base(op1, op2, oper, return_type = nil)
       return oper.to_s(op1, op2, return_type) if not oper.kind_of?(String)
       s = ""
       if op1 then
@@ -29,7 +31,7 @@ module BOAST
         s += ")" if (oper == "*" or oper == "/") 
       end        
       s += " " unless oper == "++" or oper == "."
-      s += oper unless ( oper == "&" and BOAST::lang == BOAST::FORTRAN )
+      s += oper unless ( oper == "&" and lang == FORTRAN )
       s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
       if op2 then
         s += "(" if (oper == "*" or oper == "/" or oper == "-") 
@@ -45,14 +47,14 @@ module BOAST
       op2 = nil
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       if op1 and op2 then
-        r_t, oper = BOAST::transition(op1, op2, @operator)
-        res_exp = BOAST::Expression::to_s_base(op1, op2, oper, r_t)
+        r_t, oper = transition(op1, op2, @operator)
+        res_exp = to_s_base(op1, op2, oper, r_t)
         return r_t.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op2
-        res_exp = BOAST::Expression::to_s_base(@operand1, op2, @operator)
+        res_exp = to_s_base(@operand1, op2, @operator)
         return op2.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       elsif op1
-        res_exp = BOAST::Expression::to_s_base(op1, @operand2, @operator)
+        res_exp = to_s_base(op1, @operand2, @operator)
         return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
@@ -67,7 +69,7 @@ module BOAST
       op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
       r_t = nil
       if op1 and op2 then
-        r_t, oper = BOAST::transition(op1, op2, @operator)
+        r_t, oper = transition(op1, op2, @operator)
       else
         oper = @operator
       end
@@ -75,15 +77,15 @@ module BOAST
       op1 = @operand1 if op1.nil?
       op2 = @operand2 if op2.nil?
 
-      return BOAST::Expression::to_s_base(op1, op2, oper, r_t)
+      return to_s_base(op1, op2, oper, r_t)
     end
 
     def pr
       s=""
-      s += BOAST::indent
+      s += indent
       s += to_s
-      s += ";" if [C, CL, CUDA].include?( BOAST::lang ) 
-      BOAST::output.puts s
+      s += ";" if [C, CL, CUDA].include?( lang ) 
+      output.puts s
       return self
     end
 
