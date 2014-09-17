@@ -10,35 +10,25 @@ module BOAST
     attr_reader :size
 
     def initialize(v1=nil,v2=nil)
-      @size = nil
-      @val1 = nil
-      @val2 = nil
-      if v2.nil? and v1 then
-        @val1 = get_array_start
-        @val2 = v1 + get_array_start - 1
-        @size = v1
+      if v1 then
+        if v2 then
+          @size = Expression::new(Substraction, v2, v1) + 1
+        else
+          @size = v1
+        end
       else
-        @val1 = v1
-        @val2 = v2
+        @size = nil
       end
+      @val1 = v1
+      @val2 = v2
     end
 
     def to_s
-      s = ""
-      if @val2 then
-        if lang == FORTRAN then
-          s += @val1.to_s
-          s += ":"
-          s += @val2.to_s
-        elsif [C, CL, CUDA].include?( lang ) then
-          s += (@val2 - @val1 + 1).to_s
-        end
-      elsif @val1.nil? then
-        return nil
+      if lang == FORTRAN and @val2 then
+        return "#{@val1}:#{@val2}"
       else
-        s += @val1.to_s
-      end
-      return s
+        return @size
+      end 
     end
   end
 
@@ -92,6 +82,14 @@ module BOAST
     def method_missing(m, *a, &b)
       if @type.methods.include?(:members) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
+      elsif @type.methods.include?(:vector_length) and @type.vector_length > 1 and m.to_s[0] == 's' and lang == CL then
+        required_set = m_to_s[1..-1].chars.to_a
+        existing_set = [*('0'..'9'),*('a'..'z')].first(@type.vector_length)
+        if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
+          return self.copy(name+m.to_s, :vector_length => m_to_s[1..-1].length)
+        else
+          return orig_method_missing(m, *a, &b)
+        end
       else
         return orig_method_missing(m, *a, &b)
       end
@@ -284,7 +282,7 @@ module BOAST
       end
       if dimension? and ((local? and not device) or (allocate? and not constant?)) then
          s +="["
-         s += @dimension.reverse.join("*")
+         s += @dimension.collect{ |d| d.to_s }.reverse.join("*")
          s +="]"
       end 
       s += " = #{@constant}" if constant?

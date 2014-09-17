@@ -71,40 +71,41 @@ module BOAST
       return s
     end
 
+    def to_s_c_reversed
+      indxs = @indexes.reverse
+      dims = @source.dimension.reverse
+      ss = nil
+      (0...dims.length).each { |indx|
+        s = ""
+        dim = dims[indx]
+        s += "#{indxs[indx]}"
+        if dim.val2 then
+          s += " - (#{dim.val1})"
+        elsif 0 != get_array_start then
+          s += " - (#{get_array_start})"
+        end
+        if ss then
+          if dim.size then
+            s += " + (#{dim.size}) * "
+          elsif dim.val2 then
+            s += " + (#{dim.val2} - (#{dim.val1}) + 1) * "
+          else
+            raise "Unkwown dimension size!"
+          end
+          s += "(#{ss})"
+        end
+        ss = s
+      }
+      return ss
+    end
+
     def to_s_c
       return to_s_texture if @source.texture
-      dim = @source.dimension.first
-      if dim.val2 then
-        start = dim.val1
-      else
-        start = get_array_start
-      end
-      sub = "#{@indexes.first} - (#{start})"
-      i=1
-      ss = ""
-      @source.dimension[0..-2].each{ |d|
-        if d.size then
-          ss += " * (#{d.size})"
-        elsif d.val2 then
-          ss += " * (#{d.val2} - (#{d.val1}) + 1)"
-        else
-          raise "Unkwown dimension size!"
-        end
-        dim = @source.dimension[i]
-        if dim.val2 then
-          start = dim.val1
-        else
-          start = get_array_start
-        end
-        sub += " + (#{@indexes[i]} - (#{start}))"+ss
-        i+=1
-      }
+      sub = to_s_c_reversed
       if get_replace_constants then
         begin
-#         puts sub
          indx = eval(sub)
          indx = indx.to_i
-#         puts indx
          return "#{@source.constant[indx]}"
         rescue Exception => e
         end
