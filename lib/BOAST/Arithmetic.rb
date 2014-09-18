@@ -61,5 +61,18 @@ module BOAST
       return Expression::new("*",nil,self)
     end
 
+    def and(x)
+      return Expression::new("&&", self, x)
+    end
+
+    def or(x)
+      return Expression::new("||", self, x)
+    end
+
+    def components( range )
+      existing_set = [*('0'..'9'),*('a'..'z')].first(self.type.vector_length)
+      eval "self.s#{existing_set[range].join("")}"
+    end
+
   end
 end

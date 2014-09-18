@@ -83,10 +83,10 @@ module BOAST
       if @type.methods.include?(:members) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
       elsif @type.methods.include?(:vector_length) and @type.vector_length > 1 and m.to_s[0] == 's' and lang == CL then
-        required_set = m_to_s[1..-1].chars.to_a
+        required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(@type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
-          return self.copy(name+m.to_s, :vector_length => m_to_s[1..-1].length)
+          return self.copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length)
         else
           return orig_method_missing(m, *a, &b)
         end
