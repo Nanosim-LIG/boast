@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'BOAST'
-  s.version = "0.9997"
+  s.version = "0.9998"
   s.author = "Brice Videau"
   s.email = "brice.videau@imag.fr"
   s.homepage = "https://forge.imag.fr/projects/boast/"
