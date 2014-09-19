@@ -4,4 +4,8 @@ module BOAST
      a.pr
    end
 
+   def self.open(a)
+     a.open
+   end
+
 end

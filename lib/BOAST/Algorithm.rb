@@ -131,7 +131,7 @@ module BOAST
     a.close
   end
 
-  def open(a)
+  def opn(a)
     a.open
   end
 
