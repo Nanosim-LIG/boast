@@ -301,6 +301,30 @@ module BOAST
         else
           return basic_usage(arg1, arg2)
         end
+      elsif lang == CL then
+        if arg1.class == Variable and arg1.type.vector_length > 1 then
+          if arg2.class == Variable and arg2.type.vector_length == arg1.type.vector_length then
+            return "#{arg1} = convert_#{arg1.type.decl}(#{arg2})"
+          else
+            a2 = "#{arg2}"
+            if a2[0] != "*" then
+              a2 = "&" + a2
+            else
+              a2 = a2[1..-1]
+            end
+            return "#{arg1} = vload#{arg1.type.vector_length}(0, #{a2})"
+          end
+        elsif arg2.class == Variable and arg2.type.vector_length > 1 then
+          a1 = "#{arg1}"
+          if a1[0] != "*" then
+            a1 = "&" + a1
+          else
+            a1 = a1[1..-1]
+          end
+          return "vstore#{arg2.type.vector_length}(#{arg2}, 0, #{a1})"
+        else
+          return basic_usage(arg1, arg2)
+        end
       else
         return basic_usage(arg1, arg2)
       end
