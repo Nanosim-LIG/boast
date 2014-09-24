@@ -332,7 +332,7 @@ module BOAST
         s += ", dimension("
         dim = @dimension[0].to_s
         if dim then
-          s += dim
+          s += dim.to_s
           @dimension[1..-1].each { |d|
              s += ", #{d}"
           }
