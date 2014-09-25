@@ -281,9 +281,9 @@ module BOAST
         s += "[]"
       end
       if dimension? and ((local? and not device) or (allocate? and not constant?)) then
-         s +="["
-         s += @dimension.collect{ |d| d.to_s }.reverse.join("*")
-         s +="]"
+         s +="[("
+         s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
+         s +="])"
       end 
       s += " = #{@constant}" if constant?
       return s
@@ -330,15 +330,14 @@ module BOAST
       s += ", parameter" if constant?
       if dimension? then
         s += ", dimension("
-        dim = @dimension[0].to_s
-        if dim then
-          s += dim.to_s
-          @dimension[1..-1].each { |d|
-             s += ", #{d}"
-          }
-        else
-          s += "*"
-        end
+        s += @dimension.collect { |d|
+          dim = d.to_s
+          if dim then
+            dim.to_s
+          else
+            "*"
+          end
+        }.join(", ")
         s += ")"
       end
       s += " :: #{@name}"
