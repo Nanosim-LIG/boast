@@ -283,7 +283,7 @@ module BOAST
       if dimension? and ((local? and not device) or (allocate? and not constant?)) then
          s +="[("
          s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
-         s +="])"
+         s +=")]"
       end 
       s += " = #{@constant}" if constant?
       return s
