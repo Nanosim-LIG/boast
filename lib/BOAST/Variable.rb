@@ -51,10 +51,10 @@ module BOAST
       return s if first.nil?
       s += "(/ &\n"
       s += first.to_s
-      s += "_wp" if @type and @type.size == 8
+      s += @type.suffix if @type
       self[1..-1].each { |v|
         s += ", &\n"+v.to_s
-        s += "_wp" if @type and @type.size == 8
+        s += @type.suffix if @type
       }
       s += " /)"
     end
@@ -63,9 +63,11 @@ module BOAST
       s = ""
       return s if first.nil?
       s += "{\n"
-      s += first.to_s 
+      s += first.to_s
+      s += @type.suffix if @type 
       self[1..-1].each { |v|
         s += ",\n"+v.to_s
+        s += @type.suffix if @type
       }
       s += "}"
     end
@@ -191,8 +193,7 @@ module BOAST
   
     def to_s
       if force_replace_constant? or ( replace_constant? and constant? and replace_constants? and not dimension? ) then
-        s = @constant.to_s 
-        s += "_wp" if lang == FORTRAN and @type and @type.size == 8
+        s = @constant.to_s + @type.suffix
         return s
       end
       if @scalar_output and [C, CL, CUDA].include?( lang ) then
@@ -343,7 +344,7 @@ module BOAST
       s += " :: #{@name}"
       if constant? then
         s += " = #{@constant}"
-        s += "_wp" if not dimension? and @type and @type.size == 8
+        s += @type.suffix if not dimension? and @type
       end
       s += finalize
       output.print s

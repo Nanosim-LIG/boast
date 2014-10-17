@@ -15,6 +15,27 @@ module BOAST
     end
 
     def to_s
+      if get_replace_constants then
+        begin
+          const = @source.constant
+          indxs = @indexes.reverse
+          dims = @source.dimension.reverse
+          (0...dims.length).each { |indx|
+            dim = dims[indx]
+            s = "#{indxs[indx]}"
+            if dim.val2 then
+              s += " - (#{dim.val1})"
+            elsif 0 != get_array_start then
+              s += " - (#{get_array_start})"
+            end
+            ind = eval(s)
+            ind = ind.to_i
+            const = const[ind]
+          }
+          return "#{const}#{@source.type.suffix}"
+        rescue Exception => e
+        end
+      end
       return to_s_fortran if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
@@ -102,14 +123,6 @@ module BOAST
     def to_s_c
       return to_s_texture if @source.texture
       sub = to_s_c_reversed
-      if get_replace_constants then
-        begin
-         indx = eval(sub)
-         indx = indx.to_i
-         return "#{@source.constant[indx]}"
-        rescue Exception => e
-        end
-      end
       s = "#{@source}[" + sub + "]"
       return s
     end

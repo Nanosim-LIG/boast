@@ -49,6 +49,15 @@ module BOAST
       return !!signed
     end
 
+    def suffix
+      s = ""
+#      if [C, CL, CUDA].include?( lang ) then
+#        s += "U" if not @signed
+#        s += "LL" if @size == 8
+#      end
+      return s
+    end
+
   end
  
   class Real < DataType
@@ -123,6 +132,17 @@ module BOAST
         return "double#{@vector_length}" if @size == 8
       end
     end
+
+    def suffix
+      s = ""
+      if [C, CL, CUDA].include?( lang ) then
+        s += "f" if @size == 4
+      elsif lang == FORTRAN then
+        s += "_wp" if @size == 8
+      end
+      return s
+    end
+
   end
 
   class Int < DataType
@@ -242,6 +262,12 @@ module BOAST
         end
       end
     end
+
+    def suffix
+      s = ""
+      return s
+    end
+
   end
 
   class CStruct < DataType
