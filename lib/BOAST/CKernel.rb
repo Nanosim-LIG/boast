@@ -41,6 +41,7 @@ module BOAST
 
   boolean_state_accessor :verbose
   @@verbose = false
+  FORTRAN_LINE_LENGTH = 72
 
   module_function
 
@@ -534,7 +535,28 @@ EOF
       @code.rewind
       source_file.puts "#include <inttypes.h>" if @lang == C or @lang == CUDA
       source_file.puts "#include <cuda.h>" if @lang == CUDA
-      source_file.write @code.read
+      # check for too long FORTRAN lines
+      if @lang == FORTRAN then
+        @code.each_line { |line|
+          # check for omp pragmas
+          if line.match(/^\s*!\$/) then
+            if line.match(/^\s*!\$(omp|OMP)/) then
+              chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-7}}/)
+              source_file.puts chunks.join("&\n!$omp&")
+            else
+              chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-4}}/)
+              source_file.puts chunks.join("&\n!$&")
+            end
+          elsif line.match(/^\w*!/) then
+            source_file.write line
+          else
+            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-2}}/)
+            source_file.puts chunks.join("&\n&")
+          end
+        }
+      else
+        source_file.write @code.read
+      end
       if @lang == CUDA then
         source_file.write <<EOF
 extern "C" {
