@@ -3,13 +3,13 @@ module BOAST
   def BOAST::SimpleLoop(unroll)
     i = Variable::new('i', Int)
     sum = Variable::new('sum', Int)
-    data = Variable::new("data",Int,{:dimension => [ Dimension::new(10)]})
-    (sum === 0).print
-    For::new(i, 0, 9, unroll) {
+    data = Variable::new("data",Int, :dimension => [ Dimension::new(10)])
+    pr sum === 0
+    pr For::new(i, 0, 9, step: unroll) {
         1.upto(unroll) { |index|
-          (sum === sum + data[i + index]).print
+          pr sum === sum + data[i + index]
         }
-    }.print
+    }
   end
 end
 

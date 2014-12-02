@@ -7,11 +7,13 @@ module BOAST
     attr_reader :end
     attr_reader :step
 
-    def initialize(i, b, e, s=1, &block)
+    def initialize(i, b, e, options={}, &block)
+      default_options = {:step => 1}
+      default_options.update( options )
       @iterator = i
       @begin = b
       @end = e
-      @step = s
+      @step = default_options[:step]
       @operator = "<="
       @block = block
       begin
