@@ -33,6 +33,7 @@ Gem::Specification.new do |s|
                 lib/BOAST/Print.rb
                 lib/BOAST/State.rb
                 lib/BOAST/Optimization.rb
+                lib/BOAST/OpenMP.rb
               )
   s.has_rdoc = true
   s.license = 'BSD'
