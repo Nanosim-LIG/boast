@@ -51,7 +51,7 @@ module BOAST
           s += " copyin(#{[@openmp_clauses[:copyin]].flatten.join(", ")})"
         end
         if @openmp_clauses[:reduction] then
-          options[:reduction].each { |identifier, list|
+          @openmp_clauses[:reduction].each { |identifier, list|
             s += " reduction(#{identifier}: #{list.join(", ")})"
           }
         end
