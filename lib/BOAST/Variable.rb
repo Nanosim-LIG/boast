@@ -242,12 +242,24 @@ module BOAST
       s += "const " if constant? or @direction == :in
       s += @type.decl
       if dimension? then
-        s += " *"
+        s += " *" unless use_vla?
       end
       if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout ) then
         s += " *"
       end
       s += " #{@name}"
+      if dimension? and use_vla? then
+        s += "["
+        s += @dimension.reverse.collect { |d|
+          dim = d.to_s
+          if dim then
+            dim.to_s
+          else
+            ""
+          end
+        }.join("][")
+        s += "]"
+      end
       return s
     end
 
@@ -264,28 +276,41 @@ module BOAST
       s += "__local " if local? and lang == CL
       s += "__shared__ " if local? and not device and lang == CUDA
       s += @type.decl
-      if dimension? and not constant? and not allocate? and (not local? or (local? and device)) then
-        s += " *"
-        if restrict? then
-          if lang == CL
-            s += " restrict"
+      if use_vla? and dimension? and not decl_module? then
+        s += " #{@name}["
+        s += @dimension.reverse.collect { |d|
+          dim = d.to_s
+          if dim then
+            dim.to_s
           else
-            s += " __restrict__"
+            ""
+          end
+        }.join("][")
+        s += "]"
+      else
+        if dimension? and not constant? and not allocate? and (not local? or (local? and device)) then
+          s += " *"
+          if restrict? and not decl_module? then
+            if lang == CL
+              s += " restrict"
+            else
+              s += " __restrict__" unless use_vla?
+            end
           end
         end
+        if not dimension? and ( @direction == :out or @direction == :inout ) then
+          s += " *"
+        end
+        s += " #{@name}"
+        if dimension? and constant? then
+          s += "[]"
+        end
+        if dimension? and ((local? and not device) or (allocate? and not constant?)) then
+          s +="[("
+          s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
+          s +=")]"
+        end 
       end
-      if not dimension? and ( @direction == :out or @direction == :inout ) then
-        s += " *"
-      end
-      s += " #{@name}"
-      if dimension? and constant? then
-        s += "[]"
-      end
-      if dimension? and ((local? and not device) or (allocate? and not constant?)) then
-         s +="[("
-         s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
-         s +=")]"
-      end 
       s += " = #{@constant}" if constant?
       return s
     end

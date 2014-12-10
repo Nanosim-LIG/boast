@@ -20,6 +20,8 @@ module BOAST
     private_boolean_state_accessor :default_int_signed
     private_boolean_state_accessor :chain_code
     private_boolean_state_accessor :debug
+    private_boolean_state_accessor :use_vla
+    private_boolean_state_accessor :decl_module
 
     private
     def push_env(*args)
@@ -53,6 +55,8 @@ module BOAST
   boolean_state_accessor :default_int_signed
   boolean_state_accessor :chain_code
   boolean_state_accessor :debug
+  boolean_state_accessor :use_vla
+  boolean_state_accessor :decl_module
 
   module_function
 
@@ -68,6 +72,12 @@ module BOAST
     return debug
   end
 
+  def get_default_use_vla
+    use_vla = false
+    use_vla = ENV["USE_VLA"] if ENV["USE_VLA"]
+    return use_vla
+  end
+
   @@output = STDOUT
   @@lang = get_default_lang
   @@replace_constants = true
@@ -80,6 +90,8 @@ module BOAST
   @@chain_code = false
   @@architecture = X86
   @@debug = get_default_debug
+  @@use_vla = get_default_use_vla
+  @@decl_module = false
 
   @@env = Hash::new{|h, k| h[k] = []}
 

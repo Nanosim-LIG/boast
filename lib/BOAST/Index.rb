@@ -92,6 +92,22 @@ module BOAST
       return s
     end
 
+    def to_s_use_vla
+      indxs = @indexes.reverse
+      dims = @source.dimension.reverse
+      t = (0...dims.length).collect { |indx|
+        s = "#{indxs[indx]}"
+        dim = dims[indx]
+        if dim.val2 then
+          s += " - (#{dim.val1})"
+        elsif 0 != get_array_start then
+          s += " - (#{get_array_start})"
+        end
+        s
+      }
+      return t.join("][")
+    end
+
     def to_s_c_reversed
       indxs = @indexes.reverse
       dims = @source.dimension.reverse
@@ -122,7 +138,11 @@ module BOAST
 
     def to_s_c
       return to_s_texture if @source.texture
-      sub = to_s_c_reversed
+      if use_vla? then
+        sub = to_s_use_vla
+      else
+        sub = to_s_c_reversed
+      end
       s = "#{@source}[" + sub + "]"
       return s
     end

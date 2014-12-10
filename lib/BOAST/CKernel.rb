@@ -662,12 +662,14 @@ EOF
     end
 
     def decl_module_params(module_file)
+      set_decl_module(true)
       @procedure.parameters.each { |param| 
         param_copy = param.copy
         param_copy.constant = nil
         param_copy.direction = nil
         param_copy.decl
       }
+      set_decl_module(false)
       module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE stats = rb_hash_new();\n"
       module_file.print "  struct timespec start, stop;\n"
