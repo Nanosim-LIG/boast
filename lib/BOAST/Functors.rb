@@ -28,7 +28,7 @@ EOF
   module Functor
 
     def self.extended(mod)
-      BOAST::functorize(mod)
+      eval "#{mod.name.split('::')[-2]}::functorize(mod)"
     end
 
   end
@@ -36,7 +36,7 @@ EOF
   module VarFunctor
 
     def self.extended(mod)
-      BOAST::var_functorize(mod)
+      eval "#{mod.name.split('::')[-2]}::var_functorize(mod)"
     end
 
   end
