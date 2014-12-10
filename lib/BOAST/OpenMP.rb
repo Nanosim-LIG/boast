@@ -55,6 +55,11 @@ module BOAST
             s += " reduction(#{identifier}: #{list.join(", ")})"
           }
         end
+        if @openmp_clauses[:depend] then
+          @openmp_clauses[:depend].each { |type, list|
+            s += " depend(#{type}: #{list.join(", ")})"
+          }
+        end
         if @openmp_clauses[:schedule] then
           s += " schedule(#{@openmp_clauses[:schedule].join(", ")})"
         end
