@@ -1,7 +1,6 @@
 module BOAST
 
   class For < ControlStructure
-    include OpenMP::Pragma
 
     attr_reader :iterator
     attr_reader :begin
@@ -18,10 +17,12 @@ module BOAST
       @operator = "<="
       @block = block
       @openmp = default_options[:openmp]
-      if @openmp and @openmp.kind_of?(Hash) then
-        @openmp_clauses = @openmp
-      else
-        @openmp_clauses = {}
+      if @openmp then
+        if @openmp.kind_of?(Hash) then
+          @openmp = OpenMP::For(@openmp)
+        else
+          @openmp = OpenMP::For({})
+        end
       end
       begin
         push_env( :replace_constants => true )
@@ -63,8 +64,6 @@ module BOAST
 
     eval token_string_generator( * %w{for i b e s o})
     eval token_string_generator( * %w{end})
-    eval token_string_generator( * %w{openmp_for c})
-    eval token_string_generator( * %w{openmp_end c})
 
     def to_s
       s = for_string(@iterator, @begin, @end, @step, @operator)
@@ -115,7 +114,7 @@ module BOAST
     end
 
     def open
-      output.puts openmp_for_string(openmp_clauses_to_s) if @openmp
+      @openmp.open if @openmp
       s=""
       s += indent
       s += to_s
@@ -139,7 +138,8 @@ module BOAST
       s += indent
       s += end_string
       output.puts s
-      output.puts openmp_end_string(openmp_end_clauses_to_s) if @openmp and openmp_end_string(openmp_end_clauses_to_s) != ""
+      @openmp.close if @openmp
+      return self
     end
 
   end

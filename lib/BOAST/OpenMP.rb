@@ -107,13 +107,14 @@ EOF
         @openmp_clauses = options
         @block = block
       end
+
       @@c_strings = {
-        :parallel => '"#pragma omp parallel #{c}\n{"',
+        :begin => '"#pragma omp parallel #{c}\n{"',
         :end => '"}"',
       }
 
       @@f_strings = {
-        :parallel => '"!$omp parallel #{c}"',
+        :begin => '"!$omp parallel #{c}"',
         :end => '"!$omp end parallel #{c}"',
       }
 
@@ -122,15 +123,16 @@ EOF
         FORTRAN => @@f_strings
       }
 
-      eval token_string_generator( * %w{parallel c})
+      eval token_string_generator( * %w{begin c})
       eval token_string_generator( * %w{end c})
 
       def to_s
-        return parallel_string(openmp_clauses_to_s)
+        return begin_string(openmp_clauses_to_s)
       end
 
       def open
         output.puts to_s
+        return self
       end
 
       def pr(*args)
@@ -144,6 +146,58 @@ EOF
 
       def close
         output.puts end_string(openmp_end_clauses_to_s) 
+        return self
+      end
+
+    end
+
+    class For < ControlStructure
+      include OpenMP::Pragma
+
+      def initialize(options = {}, &block)
+        @openmp_clauses = options
+        @block = block
+      end
+
+      @@c_strings = {
+        :begin => '"#pragma omp for #{c}"',
+        :end => '""',
+      }
+
+      @@f_strings = {
+        :begin => '"!$omp do #{c}"',
+        :end => '"!$omp end do #{c}"',
+      }
+
+      @@strings = {
+        C => @@c_strings,
+        FORTRAN => @@f_strings
+      }
+
+      eval token_string_generator( * %w{begin c})
+      eval token_string_generator( * %w{end c})
+
+      def to_s
+        return begin_string(openmp_clauses_to_s)
+      end
+
+      def open
+        output.puts to_s
+        return self
+      end
+
+      def pr(*args)
+        open
+        if @block then
+          @block.call(*args)
+          close
+        end
+        return self
+      end
+
+      def close
+        output.puts end_string(openmp_end_clauses_to_s)
+        return self
       end
 
     end
