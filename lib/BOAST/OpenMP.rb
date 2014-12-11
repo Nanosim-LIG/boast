@@ -99,29 +99,19 @@ module BOAST
 EOF
       eval s
     end
-  
-    class Parallel < ControlStructure
+ 
+    class OpenMPControlStructure < ControlStructure
       include OpenMP::Pragma
+
+      def get_strings
+        return { C => get_c_strings,
+                 FORTRAN => get_fortran_strings }
+      end
 
       def initialize(options = {}, &block)
         @openmp_clauses = options
         @block = block
       end
-
-      @@c_strings = {
-        :begin => '"#pragma omp parallel #{c}\n{"',
-        :end => '"}"',
-      }
-
-      @@f_strings = {
-        :begin => '"!$omp parallel #{c}"',
-        :end => '"!$omp end parallel #{c}"',
-      }
-
-      @@strings = {
-        C => @@c_strings,
-        FORTRAN => @@f_strings
-      }
 
       eval token_string_generator( * %w{begin c})
       eval token_string_generator( * %w{end c})
@@ -148,56 +138,33 @@ EOF
         output.puts end_string(openmp_end_clauses_to_s) 
         return self
       end
+     
+    end
+ 
+    class Parallel < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp parallel #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp parallel #{c}"',
+                 :end => '"!$omp end parallel #{c}"' }
+      end
 
     end
 
-    class For < ControlStructure
-      include OpenMP::Pragma
+    class For < OpenMPControlStructure
 
-      def initialize(options = {}, &block)
-        @openmp_clauses = options
-        @block = block
+      def get_c_strings
+        return { :begin => '"#pragma omp for #{c}"',
+                 :end => '""' }
       end
 
-      @@c_strings = {
-        :begin => '"#pragma omp for #{c}"',
-        :end => '""',
-      }
-
-      @@f_strings = {
-        :begin => '"!$omp do #{c}"',
-        :end => '"!$omp end do #{c}"',
-      }
-
-      @@strings = {
-        C => @@c_strings,
-        FORTRAN => @@f_strings
-      }
-
-      eval token_string_generator( * %w{begin c})
-      eval token_string_generator( * %w{end c})
-
-      def to_s
-        return begin_string(openmp_clauses_to_s)
-      end
-
-      def open
-        output.puts to_s
-        return self
-      end
-
-      def pr(*args)
-        open
-        if @block then
-          @block.call(*args)
-          close
-        end
-        return self
-      end
-
-      def close
-        output.puts end_string(openmp_end_clauses_to_s)
-        return self
+      def get_fortran_strings
+        return { :begin => '"!$omp do #{c}"',
+                 :end => '"!$omp end do #{c}"' }
       end
 
     end

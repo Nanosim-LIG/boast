@@ -25,28 +25,24 @@ module BOAST
       end
     end
 
-    @@c_strings = {
-      :switch => '"switch (#{expr}) {"',
-      :case => '"case #{constants.join(" : case")} :"',
-      :default => '"default :"',
-      :break => '"break;"',
-      :end => '"}"'
-    }
+    def get_c_strings
+      return { :switch => '"switch (#{expr}) {"',
+               :case => '"case #{constants.join(" : case")} :"',
+               :default => '"default :"',
+               :break => '"break;"',
+               :end => '"}"' }
+    end
 
-    @@f_strings = {
-      :switch => '"select case (#{expr})"',
-      :case => '"case (#{constants.join(" : ")})"',
-      :default => '"case default"',
-      :break => 'nil',
-      :end => '"end select"'
-    }
+    def get_fortran_strings
+      return { :switch => '"select case (#{expr})"',
+               :case => '"case (#{constants.join(" : ")})"',
+               :default => '"case default"',
+               :break => 'nil',
+               :end => '"end select"' }
+    end
 
-    @@strings = {
-      C => @@c_strings,
-      CL => @@c_strings,
-      CUDA => @@c_strings,
-      FORTRAN => @@f_strings
-    }
+    alias get_cl_strings get_c_strings
+    alias get_cuda_strings get_c_strings
 
     eval token_string_generator( * %w{switch expr})
     eval token_string_generator( * %w{case constants})

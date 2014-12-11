@@ -9,22 +9,18 @@ module BOAST
       @block = block
     end
 
-    @@c_strings = {
-      :while => '"while (#{cond}) {"',
-      :end => '"}"'
-    }
+    def get_c_strings
+      return { :while => '"while (#{cond}) {"',
+               :end => '"}"' }
+    end
 
-    @@f_strings = {
-      :while => '"do while (#{cond})"',
-      :end => '"end do"'
-    }
+    def get_fortran_strings
+      return { :while => '"do while (#{cond})"',
+               :end => '"end do"' }
+    end
 
-    @@strings = {
-      C => @@c_strings,
-      CL => @@c_strings,
-      CUDA => @@c_strings,
-      FORTRAN => @@f_strings
-    }
+    alias get_cl_strings get_c_strings
+    alias get_cuda_strings get_c_strings
 
     eval token_string_generator( * %w{while cond} )
     eval token_string_generator( * %w{end} )

@@ -26,26 +26,22 @@ module BOAST
       end
     end
 
-    @@c_strings = {
-      :if => '"if (#{cond}) {"',
-      :else_if => '"} else if (#{cond}) {"',
-      :else => '"} else {"',
-      :end => '"}"'
-    }
+    def get_c_strings
+      return { :if => '"if (#{cond}) {"',
+               :else_if => '"} else if (#{cond}) {"',
+               :else => '"} else {"',
+               :end => '"}"' }
+    end
 
-    @@f_strings = {
-      :if => '"if (#{cond}) then"',
-      :elsif => '"else if (#{cond}) then"',
-      :else => '"else"',
-      :end => '"end if"'
-    }
+    def get_fortran_strings
+      return { :if => '"if (#{cond}) then"',
+               :elsif => '"else if (#{cond}) then"',
+               :else => '"else"',
+               :end => '"end if"' }
+    end
 
-    @@strings = {
-      C => @@c_strings,
-      CL => @@c_strings,
-      CUDA => @@c_strings,
-      FORTRAN => @@f_strings
-    }
+    alias get_cl_strings get_c_strings
+    alias get_cuda_strings get_c_strings
 
     eval token_string_generator( * %w{if cond} )
     eval token_string_generator( * %w{elsif cond} )

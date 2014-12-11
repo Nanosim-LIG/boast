@@ -41,26 +41,18 @@ module BOAST
       end
     end
 
-    @@c_strings = {
-      :for => '"for (#{i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
-      :end => '"}"',
-      :openmp_for => '"#pragma omp for #{c}"',
-      :openmp_end => '""'
-    }
+    def get_c_strings
+      return { :for => '"for (#{i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
+               :end => '"}"' }
+    end
 
-    @@f_strings = {
-      :for => '"do #{i} = #{b}, #{e}, #{s}"',
-      :end => '"end do"',
-      :openmp_for => '"!$omp do #{c}"',
-      :openmp_end => '"!$omp end do #{c}"'
-    }
+    def get_fortran_strings
+      return { :for => '"do #{i} = #{b}, #{e}, #{s}"',
+               :end => '"end do"' }
+    end
 
-    @@strings = {
-      C => @@c_strings,
-      CL => @@c_strings,
-      CUDA => @@c_strings,
-      FORTRAN => @@f_strings
-    }
+    alias get_cl_strings get_c_strings
+    alias get_cuda_strings get_c_strings
 
     eval token_string_generator( * %w{for i b e s o})
     eval token_string_generator( * %w{end})
