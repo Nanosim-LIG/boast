@@ -212,6 +212,26 @@ EOF
 
     end
 
+    class ParallelFor < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp parallel for #{c}"',
+                 :end => '""' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp parallel do #{c}"',
+                 :end => '"!$omp end parallel do"' }
+      end
+
+      def get_open_clauses
+        return (For.get_open_clauses + Parallel.get_open_clauses).uniq
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
     end
 
   end
