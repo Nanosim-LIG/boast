@@ -31,7 +31,14 @@ module BOAST
             length = Expression::new(Substraction, finish, start) + 1
             slices_to_c.push("#{start_c}:#{length}")
           end
-        elsif slice
+        elsif slice.kind_of?(Range) then
+          start = slice.first
+          finish = slice.last
+          start_c = Expression::new(Substraction, start, dims[indx].start)
+          length = Expression::new(Substraction, finish, start)
+          length = length + 1 unless slice.exclude_end?
+          slices_to_c.push("#{start_c}:#{length}")
+        elsif slice then
           slices_to_c.push("#{Expression::new(Substraction, slice, dims[indx].start)}")
         else
           slices_to_c.push(":")
@@ -43,11 +50,15 @@ module BOAST
     def to_s_fortran
       slices_to_fortran = @slices.collect { |slice|
         if slice then
-          sl = [slice].flatten
-          if sl.length > 0 then
-            sl.join(":")
+          if slice.kind_of?(Range) then
+            "#{slice.first}:#{slice.last}#{slice.exclude_end? ? " - 1" : "" }"
           else
-            ":"
+            sl = [slice].flatten
+            if sl.length > 0 then
+              sl.join(":")
+            else
+              ":"
+            end
           end
         else
           ":"
