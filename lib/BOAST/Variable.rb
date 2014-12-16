@@ -30,6 +30,17 @@ module BOAST
         return @size
       end 
     end
+
+    def start
+      if @val2 then
+        return @val1
+      elsif 0 != get_array_start then
+        return get_array_start
+      else
+        return nil
+      end
+    end
+
   end
 
   class ConstArray < Array

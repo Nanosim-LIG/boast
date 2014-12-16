@@ -23,10 +23,8 @@ module BOAST
           (0...dims.length).each { |indx|
             dim = dims[indx]
             s = "#{indxs[indx]}"
-            if dim.val2 then
-              s += " - (#{dim.val1})"
-            elsif 0 != get_array_start then
-              s += " - (#{get_array_start})"
+            if dim.start then
+              s += " - (#{dim.start})"
             end
             ind = eval(s)
             ind = ind.to_i
@@ -98,10 +96,8 @@ module BOAST
       t = (0...dims.length).collect { |indx|
         s = "#{indxs[indx]}"
         dim = dims[indx]
-        if dim.val2 then
-          s += " - (#{dim.val1})"
-        elsif 0 != get_array_start then
-          s += " - (#{get_array_start})"
+        if dim.start then
+          s += " - (#{dim.start})"
         end
         s
       }
@@ -116,16 +112,12 @@ module BOAST
         s = ""
         dim = dims[indx]
         s += "#{indxs[indx]}"
-        if dim.val2 then
-          s += " - (#{dim.val1})"
-        elsif 0 != get_array_start then
-          s += " - (#{get_array_start})"
+        if dim.start then
+          s += " - (#{dim.start})"
         end
         if ss then
           if dim.size then
             s += " + (#{dim.size}) * "
-          elsif dim.val2 then
-            s += " + (#{dim.val2} - (#{dim.val1}) + 1) * "
           else
             raise "Unkwown dimension size!"
           end
