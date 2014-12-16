@@ -34,8 +34,24 @@ module BOAST
     def start
       if @val2 then
         return @val1
-      elsif 0 != get_array_start then
+      else
         return get_array_start
+      end
+    end
+
+    def finish
+      if @val2 then
+        return @val2
+      elsif @size
+        if 0.equal?(get_array_start) then
+          if 1.equal?(get_array_start) then
+            return Expression::new(Addition, @size, get_array_start) - 1
+          else
+            return @size
+          end
+        else
+          return Expression::new(Substraction, @size, 1)
+        end
       else
         return nil
       end

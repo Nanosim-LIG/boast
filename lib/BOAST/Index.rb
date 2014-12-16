@@ -23,9 +23,7 @@ module BOAST
           (0...dims.length).each { |indx|
             dim = dims[indx]
             s = "#{indxs[indx]}"
-            if dim.start then
-              s += " - (#{dim.start})"
-            end
+            s += " - (#{dim.start})" unless 0.equal?(dim.start)
             ind = eval(s)
             ind = ind.to_i
             const = const[ind]
@@ -96,9 +94,7 @@ module BOAST
       t = (0...dims.length).collect { |indx|
         s = "#{indxs[indx]}"
         dim = dims[indx]
-        if dim.start then
-          s += " - (#{dim.start})"
-        end
+        s += " - (#{dim.start})" unless 0.equal?(dim.start)
         s
       }
       return t.join("][")
@@ -112,9 +108,7 @@ module BOAST
         s = ""
         dim = dims[indx]
         s += "#{indxs[indx]}"
-        if dim.start then
-          s += " - (#{dim.start})"
-        end
+        s += " - (#{dim.start})" unless 0.equal?(dim.start)
         if ss then
           if dim.size then
             s += " + (#{dim.size}) * "
