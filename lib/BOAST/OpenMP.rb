@@ -53,10 +53,17 @@ EOF
 
       register_clause(:nowait,       :none)
       register_clause(:ordered,      :none)
+      register_clause(:untied,       :none)
+      register_clause(:mergeable,    :none)
+      register_clause(:inbranch,     :none)
+      register_clause(:notinbranch,  :none)
       register_clause(:if,           :simple)
       register_clause(:num_threads,  :simple)
       register_clause(:default,      :simple)
       register_clause(:collapse,     :simple)
+      register_clause(:safelen,      :simple)
+      register_clause(:simdlen,      :simple)
+      register_clause(:device,       :simple)
       register_clause(:private,      :list)
       register_clause(:shared,       :list)
       register_clause(:firstprivate, :list)
@@ -64,8 +71,14 @@ EOF
       register_clause(:copyprivate,  :list)
       register_clause(:copyin,       :list)
       register_clause(:schedule,     :list)
+      register_clause(:linear,       :list)
+      register_clause(:aligned,      :list)
+      register_clause(:uniform,      :list)
+      register_clause(:to,           :list)
+      register_clause(:from,         :list)
       register_clause(:reduction,    :multilist)
       register_clause(:depend,       :multilist)
+      register_clause(:map,          :multilist)
 
       def openmp_open_clauses_to_s
         s = ""
@@ -155,7 +168,7 @@ EOF
 
       def get_fortran_strings
         return { :begin => '"!$omp parallel #{c}"',
-                 :end => '"!$omp end parallel #{c}"' }
+                 :end => '"!$omp end parallel"' }
       end
 
       def self.get_open_clauses
@@ -206,8 +219,266 @@ EOF
         return For.get_open_clauses
       end
 
+      def self.get_end_clauses
+        return [ :nowait ]
+      end
+
+      def get_end_clauses
+        return For.get_end_clauses
+      end
+
+    end
+
+    class Sections < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp sections #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp sections #{c}"',
+                 :end => '"!$omp end sections #{c}"' }
+      end
+
+      def get_open_clauses
+        return [ :private,
+                 :firstprivate,
+                 :lastprivate,
+                 :reduction ]
+      end
+
       def get_end_clauses
         return [ :nowait ]
+      end
+
+    end
+
+    class Section < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp section\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp section"',
+                 :end => '""' }
+      end
+
+      def get_open_clauses
+        return [ ]
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class Single < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp single #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp single #{c}"',
+                 :end => '"!$omp end single #{c}"' }
+      end
+
+      def get_open_clauses
+        return [ :private,
+                 :firstprivate ]
+      end
+
+      def get_end_clauses
+        return [ :copyprivate,
+                 :nowait ]
+      end
+
+    end
+
+    class Simd < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp simd #{c}"',
+                 :end => '""' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp simd #{c}"',
+                 :end => '"!$omp end single"' }
+      end
+
+      def self.get_open_clauses
+        return [ :safelen,
+                 :linear,
+                 :aligned,
+                 :private,
+                 :lastprivate,
+                 :reduction,
+                 :collapse ]
+      end
+
+      def get_open_clauses
+        return Simd.get_open_clauses
+      end
+
+      def self.get_end_clauses
+        return [ ]
+      end
+
+      def get_end_clauses
+        return Simd.get_end_clauses
+      end
+
+    end
+
+    class DeclareSimd < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp declare simd #{c}"',
+                 :end => '""' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp declare simd #{c}"',
+                 :end => '""' }
+      end
+
+      def get_open_clauses
+        return [ :simdlen,
+                 :linear,
+                 :aligned,
+                 :uniform,
+                 :inbranch,
+                 :notinbranch ]
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class ForSimd < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp for simd #{c}"',
+                 :end => '""' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp do simd #{c}"',
+                 :end => '"!$omp end do simd #{c}"' }
+      end
+
+      def get_open_clauses
+        return (For.get_open_clauses + Simd.get_open_clauses).uniq
+      end
+
+      def get_end_clauses
+        return (For.get_end_clauses + Simd.get_end_clauses).uniq
+      end
+
+    end
+
+    class TargetData < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp target data #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp target data #{c}"',
+                 :end => '"!$omp end target data"' }
+      end
+
+      def get_open_clauses
+        return [ :device,
+                 :map,
+                 :if ]
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class Target < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp target #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp target #{c}"',
+                 :end => '"!$omp end target"' }
+      end
+
+      def get_open_clauses
+        return [ :device,
+                 :map,
+                 :if ]
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class TargetUpdate < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp target update #{c}"',
+                 :end => '""' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp target update #{c}"',
+                 :end => '""' }
+      end
+
+      def get_open_clauses
+        return [ :to,
+                 :from,
+                 :device,
+                 :if ]
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class DeclareTarget < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp declare target"',
+                 :end => '"#pragma omp end declare target"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp declare target"',
+                 :end => '""' }
+      end
+
+      def get_open_clauses
+        return [ :to,
+                 :from,
+                 :device,
+                 :if ]
+      end
+
+      def get_end_clauses
+        return [ ]
       end
 
     end
@@ -226,6 +497,36 @@ EOF
 
       def get_open_clauses
         return (For.get_open_clauses + Parallel.get_open_clauses).uniq
+      end
+
+      def get_end_clauses
+        return [ ]
+      end
+
+    end
+
+    class Task < OpenMPControlStructure
+
+      def get_c_strings
+        return { :begin => '"#pragma omp task #{c}\n{"',
+                 :end => '"}"' }
+      end
+
+      def get_fortran_strings
+        return { :begin => '"!$omp task #{c}"',
+                 :end => '"!$omp end task"' }
+      end
+
+      def get_open_clauses
+        return [ :if,
+                 :final,
+                 :untied,
+                 :default,
+                 :mergeable,
+                 :private,
+                 :firstprivate,
+                 :shared,
+                 :depend ]
       end
 
       def get_end_clauses
