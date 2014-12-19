@@ -158,382 +158,158 @@ EOF
       end
      
     end
- 
-    class Parallel < OpenMPControlStructure
+
+    def self.register_openmp_construct( name, c_strings, fortran_strings, open_clauses = [], end_clauses = [] )
+      s = <<EOF
+    class #{name} < OpenMPControlStructure
 
       def get_c_strings
-        return { :begin => '"#pragma omp parallel #{c}\n{"',
-                 :end => '"}"' }
+        return { :begin => '#{c_strings[0]}',
+                 :end => '#{c_strings[1]}' }
       end
 
       def get_fortran_strings
-        return { :begin => '"!$omp parallel #{c}"',
-                 :end => '"!$omp end parallel"' }
+        return { :begin => '#{fortran_strings[0]}',
+                 :end => '#{fortran_strings[1]}' }
       end
 
       def self.get_open_clauses
-        return [ :if,
-                 :num_threads,
-                 :default,
-                 :private,
-                 :firstprivate,
-                 :shared,
-                 :copyin,
-                 :reduction,
-                 :proc_bind ]
-      end
-
-      def get_open_clauses
-        return Parallel.get_open_clauses
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class For < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp for #{c}"',
-                 :end => '""' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp do #{c}"',
-                 :end => '"!$omp end do #{c}"' }
-      end
-
-      def self.get_open_clauses
-        return [ :private,
-                 :firstprivate,
-                 :lastprivate,
-                 :reduction,
-                 :schedule,
-                 :collapse,
-                 :ordered ]
-      end
-
-      def get_open_clauses
-        return For.get_open_clauses
+        return [ #{open_clauses.collect { |c| ":#{c}" }.join(",\n                 ")} ]
       end
 
       def self.get_end_clauses
-        return [ :nowait ]
-      end
-
-      def get_end_clauses
-        return For.get_end_clauses
-      end
-
-    end
-
-    class Sections < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp sections #{c}\n{"',
-                 :end => '"}"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp sections #{c}"',
-                 :end => '"!$omp end sections #{c}"' }
+        return [ #{end_clauses.collect { |c| ":#{c}" }.join(",\n                 ")} ]
       end
 
       def get_open_clauses
-        return [ :private,
-                 :firstprivate,
-                 :lastprivate,
-                 :reduction ]
+        return #{name}.get_open_clauses
       end
 
       def get_end_clauses
-        return [ :nowait ]
+        return #{name}.get_end_clauses
       end
 
     end
-
-    class Section < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp section\n{"',
-                 :end => '"}"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp section"',
-                 :end => '""' }
-      end
-
-      def get_open_clauses
-        return [ ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
+EOF
+      eval s
     end
 
-    class Single < OpenMPControlStructure
+    register_openmp_construct( :Parallel, [ '"#pragma omp parallel #{c}\n{"', '"}"' ],
+                                          [ '"!$omp parallel #{c}"'         , '"!$omp end parallel"' ],
+                                          [ :if,
+                                            :num_threads,
+                                            :default,
+                                            :private,
+                                            :firstprivate,
+                                            :shared,
+                                            :copyin,
+                                            :reduction,
+                                            :proc_bind ] )
 
-      def get_c_strings
-        return { :begin => '"#pragma omp single #{c}\n{"',
-                 :end => '"}"' }
-      end
+    register_openmp_construct( :For, [ '"#pragma omp for #{c}"', '""' ],
+                                     [ '"!$omp do #{c}"',        '"!$omp end do #{c}"' ],
+                                     [ :private,
+                                       :firstprivate,
+                                       :lastprivate,
+                                       :reduction,
+                                       :schedule,
+                                       :collapse,
+                                       :ordered ],
+                                     [ :nowait ] )
 
-      def get_fortran_strings
-        return { :begin => '"!$omp single #{c}"',
-                 :end => '"!$omp end single #{c}"' }
-      end
+    register_openmp_construct( :Sections, [ '"#pragma omp sections #{c}\n{"', '"}"' ],
+                                          [ '"!$omp sections #{c}"',          '"!$omp end sections #{c}"' ],
+                                          [ :private,
+                                            :firstprivate,
+                                            :lastprivate,
+                                            :reduction ],
+                                          [ :nowait ] )
 
-      def get_open_clauses
-        return [ :private,
-                 :firstprivate ]
-      end
+    register_openmp_construct( :Section, [ '"#pragma omp section\n{"', '"}"' ],
+                                         [ '"!$omp section"',          '""' ] )
 
-      def get_end_clauses
-        return [ :copyprivate,
-                 :nowait ]
-      end
+    register_openmp_construct( :Single, [ '"#pragma omp single #{c}\n{"', '"}"' ],
+                                        [ '"!$omp single #{c}"',          '"!$omp end single #{c}"'],
+                                        [ :private,
+                                          :firstprivate ],
+                                        [ :copyprivate,
+                                          :nowait ] )
 
-    end
+    register_openmp_construct( :Simd, [ '"#pragma omp simd #{c}"', '""' ],
+                                      [ '"!$omp simd #{c}"',      '"!$omp end single"' ],
+                                      [ :safelen,
+                                        :linear,
+                                        :aligned,
+                                        :private,
+                                        :lastprivate,
+                                        :reduction,
+                                        :collapse ] )
 
-    class Simd < OpenMPControlStructure
+    register_openmp_construct( :DeclareSimd, [ '"#pragma omp declare simd #{c}"', '""' ],
+                                             [ '"!$omp declare simd #{c}"',       '""' ],
+                                             [ :simdlen,
+                                               :linear,
+                                               :aligned,
+                                               :uniform,
+                                               :inbranch,
+                                               :notinbranch ] )
+    register_openmp_construct( :ForSimd, [ '"#pragma omp for simd #{c}"', '""' ],
+                                         [ '"!$omp do simd #{c}"',        '"!$omp end do simd #{c}"' ],
+                                         (For.get_open_clauses + Simd.get_open_clauses).uniq,
+                                         (For.get_end_clauses + Simd.get_end_clauses).uniq )
 
-      def get_c_strings
-        return { :begin => '"#pragma omp simd #{c}"',
-                 :end => '""' }
-      end
+    register_openmp_construct( :TargetData, [ '"#pragma omp target data #{c}\n{"', '"}"' ],
+                                            [ '"!$omp target data #{c}"',          '"!$omp end target data"' ],
+                                            [ :device,
+                                              :map,
+                                              :if ] )
 
-      def get_fortran_strings
-        return { :begin => '"!$omp simd #{c}"',
-                 :end => '"!$omp end single"' }
-      end
+    register_openmp_construct( :Target, [ '"#pragma omp target #{c}\n{"', '"}"' ],
+                                        [ '"!$omp target #{c}"',          '"!$omp end target"' ],
+                                        [ :device,
+                                          :map,
+                                          :if ] )
+    register_openmp_construct( :TargetUpdate, [ '"#pragma omp target update #{c}"', '""' ],
+                                              [ '"!$omp target update #{c}"',       '""' ],
+                                              [ :to,
+                                                :from,
+                                                :device,
+                                                :if ] )
+    register_openmp_construct( :DeclareTarget, [ '"#pragma omp declare target"', '"#pragma omp end declare target"' ],
+                                               [ '"!$omp declare target ("',     '")"' ] )
 
-      def self.get_open_clauses
-        return [ :safelen,
-                 :linear,
-                 :aligned,
-                 :private,
-                 :lastprivate,
-                 :reduction,
-                 :collapse ]
-      end
+    register_openmp_construct( :Teams, [ '"#pragma omp teams #{c}\n{"', '"}"' ],
+                                       [ '"!$omp teams #{c}"',          '"!$omp end teams"' ],
+                                       [ :num_teams,
+                                         :thread_limit,
+                                         :default,
+                                         :private,
+                                         :firstprivate,
+                                         :shared,
+                                         :reduction ] )
 
-      def get_open_clauses
-        return Simd.get_open_clauses
-      end
+    register_openmp_construct( :Distribute, [ '"#pragma omp distribute #{c}"', '""' ],
+                                            [ '"!$omp distribute"',            '"!$omp end distribute"' ],
+                                            [ :private,
+                                              :firstprivate,
+                                              :collapse,
+                                              :dist_schedule ] )
 
-      def self.get_end_clauses
-        return [ ]
-      end
+    register_openmp_construct( :ParallelFor, [ '"#pragma omp parallel for #{c}"', '""' ],
+                                             [ '"!$omp parallel do #{c}"',        '"!$omp end parallel do"' ],
+                                             (For.get_open_clauses + Parallel.get_open_clauses).uniq )
 
-      def get_end_clauses
-        return Simd.get_end_clauses
-      end
-
-    end
-
-    class DeclareSimd < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp declare simd #{c}"',
-                 :end => '""' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp declare simd #{c}"',
-                 :end => '""' }
-      end
-
-      def get_open_clauses
-        return [ :simdlen,
-                 :linear,
-                 :aligned,
-                 :uniform,
-                 :inbranch,
-                 :notinbranch ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class ForSimd < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp for simd #{c}"',
-                 :end => '""' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp do simd #{c}"',
-                 :end => '"!$omp end do simd #{c}"' }
-      end
-
-      def get_open_clauses
-        return (For.get_open_clauses + Simd.get_open_clauses).uniq
-      end
-
-      def get_end_clauses
-        return (For.get_end_clauses + Simd.get_end_clauses).uniq
-      end
-
-    end
-
-    class TargetData < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp target data #{c}\n{"',
-                 :end => '"}"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp target data #{c}"',
-                 :end => '"!$omp end target data"' }
-      end
-
-      def get_open_clauses
-        return [ :device,
-                 :map,
-                 :if ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class Target < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp target #{c}\n{"',
-                 :end => '"}"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp target #{c}"',
-                 :end => '"!$omp end target"' }
-      end
-
-      def get_open_clauses
-        return [ :device,
-                 :map,
-                 :if ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class TargetUpdate < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp target update #{c}"',
-                 :end => '""' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp target update #{c}"',
-                 :end => '""' }
-      end
-
-      def get_open_clauses
-        return [ :to,
-                 :from,
-                 :device,
-                 :if ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class DeclareTarget < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp declare target"',
-                 :end => '"#pragma omp end declare target"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp declare target"',
-                 :end => '""' }
-      end
-
-      def get_open_clauses
-        return [ :to,
-                 :from,
-                 :device,
-                 :if ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class ParallelFor < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp parallel for #{c}"',
-                 :end => '""' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp parallel do #{c}"',
-                 :end => '"!$omp end parallel do"' }
-      end
-
-      def get_open_clauses
-        return (For.get_open_clauses + Parallel.get_open_clauses).uniq
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
-
-    class Task < OpenMPControlStructure
-
-      def get_c_strings
-        return { :begin => '"#pragma omp task #{c}\n{"',
-                 :end => '"}"' }
-      end
-
-      def get_fortran_strings
-        return { :begin => '"!$omp task #{c}"',
-                 :end => '"!$omp end task"' }
-      end
-
-      def get_open_clauses
-        return [ :if,
-                 :final,
-                 :untied,
-                 :default,
-                 :mergeable,
-                 :private,
-                 :firstprivate,
-                 :shared,
-                 :depend ]
-      end
-
-      def get_end_clauses
-        return [ ]
-      end
-
-    end
+    register_openmp_construct( :Task, [ '"#pragma omp task #{c}\n{"', '"}"' ],
+                                      [ '"!$omp task #{c}"',          '"!$omp end task"' ],
+                                      [ :if,
+                                        :final,
+                                        :untied,
+                                        :default,
+                                        :mergeable,
+                                        :private,
+                                        :firstprivate,
+                                        :shared,
+                                        :depend ] )
 
   end
 
