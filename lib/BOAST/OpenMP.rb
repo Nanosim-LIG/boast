@@ -295,9 +295,41 @@ EOF
                                               :collapse,
                                               :dist_schedule ] )
 
+    register_openmp_construct( :DistributeSimd, [ '"#pragma omp distribute simd #{c}"', '""' ],
+                                                [ '"!$omp distribute simd"',            '"!$omp end distribute simd"' ],
+                                                (Distribute.get_open_clauses + Simd.get_open_clauses).uniq )
+
+    register_openmp_construct( :DistributeParallelFor, [ '"#pragma omp distribute parallel for #{c}"', '""' ],
+                                                       [ '"!$omp distribute parallel do #{c}"',        '"!$omp end distribute parallel do"' ],
+                                                       (Distribute.get_open_clauses + Parallel.get_open_clauses + For.get_open_clauses).uniq )
+
+    register_openmp_construct( :DistributeParallelForSimd, [ '"#pragma omp distribute parallel for simd #{c}"', '""' ],
+                                                           [ '"!$omp distribute parallel do simd #{c}"',        '"!$omp end distribute parallel do simd"' ],
+                                                           (Distribute.get_open_clauses + Parallel.get_open_clauses + For.get_open_clauses + Simd.get_open_clauses).uniq )
+
     register_openmp_construct( :ParallelFor, [ '"#pragma omp parallel for #{c}"', '""' ],
                                              [ '"!$omp parallel do #{c}"',        '"!$omp end parallel do"' ],
-                                             (For.get_open_clauses + Parallel.get_open_clauses).uniq )
+                                             (Parallel.get_open_clauses + For.get_open_clauses).uniq )
+
+    register_openmp_construct( :ParallelSections, [ '"#pragma omp parallel sections #{c}\n{"', '"}"' ],
+                                                  [ '"!$omp parallel sections #{c}"',          '"!$omp end parallel sections"' ],
+                                                  (Parallel.get_open_clauses + For.get_open_clauses).uniq )
+
+    register_openmp_construct( :ParallelForSimd, [ '"#pragma omp parallel for simd #{c}"', '""' ],
+                                                 [ '"!$omp parallel do simd #{c}"',        '"!$omp end parallel do simd"' ],
+                                                 (Parallel.get_open_clauses + For.get_open_clauses + Simd.get_open_clauses).uniq )
+
+    register_openmp_construct( :TargetTeams, [ '"#pragma omp target teams #{c}\n{"', '"}"' ],
+                                             [ '"!$omp target teams #{c}"',          '"!$omp end target teams"' ],
+                                             (Target.get_open_clauses + Teams.get_open_clauses).uniq )
+
+    register_openmp_construct( :TeamsDistribute, [ '"#pragma omp teams distribute #{c}"', '""' ],
+                                                 [ '"!$omp teams distribute #{c}"',       '"!$omp end teams distribute"' ],
+                                                 (Teams.get_open_clauses + Distribute.get_open_clauses).uniq )
+
+    register_openmp_construct( :TeamsDistributeSimd, [ '"#pragma omp teams distribute simd #{c}"', '""' ],
+                                                     [ '"!$omp teams distribute simd #{c}"',       '"!$omp end teams distribute simd"' ],
+                                                     (Teams.get_open_clauses + Distribute.get_open_clauses + Simd.get_open_clauses).uniq )
 
     register_openmp_construct( :Task, [ '"#pragma omp task #{c}\n{"', '"}"' ],
                                       [ '"!$omp task #{c}"',          '"!$omp end task"' ],
