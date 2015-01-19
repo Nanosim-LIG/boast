@@ -26,6 +26,10 @@ EOF
           s += <<EOF
         return " #{name}"
 EOF
+        when :option
+          s += <<EOF
+        return " \#{c}"
+EOF
         when :simple
           s += <<EOF
         return " #{name}(\#{c})"
@@ -57,6 +61,12 @@ EOF
       register_clause(:mergeable,    :none)
       register_clause(:inbranch,     :none)
       register_clause(:notinbranch,  :none)
+      register_clause(:seq_cst,      :none)
+      register_clause(:read,         :none)
+      register_clause(:write,        :none)
+      register_clause(:update,       :none)
+      register_clause(:capture,      :none)
+      register_clause(:name,         :option)
       register_clause(:if,           :simple)
       register_clause(:num_threads,  :simple)
       register_clause(:default,      :simple)
@@ -159,18 +169,56 @@ EOF
      
     end
 
-    def self.register_openmp_construct( name, c_strings, fortran_strings, open_clauses = [], end_clauses = [] )
+    def self.register_openmp_construct( name, c_name, open_clauses, end_clauses = [], options = {} )
+      fortran_name = c_name
+      fortran_name = options[:fortran_name] if options[:fortran_name]
       s = <<EOF
     class #{name} < OpenMPControlStructure
 
+      def self.name
+        return "#{name}"
+      enda
+
+      def self.c_name
+        return "#{c_name}"
+      end
+
+      def self.fortran_name
+        return "#{fortran_name}"
+      end
+
+      def self.block
+        return #{options[:block] ? "true", "false"}
+      end
+
       def get_c_strings
-        return { :begin => '#{c_strings[0]}',
-                 :end => '#{c_strings[1]}' }
+        return { :begin => '#pragma omp #{c_name} #{ open_clauses.length + end_clauses.length > 0 ? "\#{c}" : "" }#{ options[:block] ? "\n{" : "" }',
+EOF
+      if options[:c_end] then
+        s += <<EOF
+                 :end => '#pragma omp end #{c_name}' }
+EOF
+      else
+        s += <<EOF
+                 :end => '#{ options[:block] ? "}" : "" }' }
+EOF
+      end
+        s += <<EOF
       end
 
       def get_fortran_strings
-        return { :begin => '#{fortran_strings[0]}',
-                 :end => '#{fortran_strings[1]}' }
+        return { :begin => '!$omp #{fortran_name} #{ open_clauses.length > 0 ? "\#{c}" : "" }',
+EOF
+      if options[:fortran_no_end] then
+        s += <<EOF
+                 :end => '#{ options[:fortran_block] ? ")" : "" }' }
+EOF
+      else
+        s += <<EOF
+                 :end => '!$omp end #{fortran_name} #{ end_clauses.length > 0 ? "\#{c}" : "" }' }
+EOF
+      end
+        s += <<EOF
       end
 
       def self.get_open_clauses
@@ -194,8 +242,15 @@ EOF
       eval s
     end
 
-    register_openmp_construct( :Parallel, [ '"#pragma omp parallel #{c}\n{"', '"}"' ],
-                                          [ '"!$omp parallel #{c}"'         , '"!$omp end parallel"' ],
+    def self.register_openmp_compound_construct( c1, c2, options = {} )
+      register_openmp_construct( c1.name+c2.name, "#{c1.c_name} #{c2.c_name}",
+                                                  (c1.get_open_clauses + c2.get_open_clauses).uniq,
+                                                  options[:no_end_clauses] ? [] : (c1.get_end_clauses + c2.get_end_clauses).uniq,
+                                                  :fortran_name => "#{c1.fortran_name} #{c2.fortran_name}",
+                                                  :block => options[:block] )
+    end
+
+    register_openmp_construct( :Parallel, "parallel",
                                           [ :if,
                                             :num_threads,
                                             :default,
@@ -204,10 +259,11 @@ EOF
                                             :shared,
                                             :copyin,
                                             :reduction,
-                                            :proc_bind ] )
+                                            :proc_bind ],
+                                          [],
+                                          :block => true )
 
-    register_openmp_construct( :For, [ '"#pragma omp for #{c}"', '""' ],
-                                     [ '"!$omp do #{c}"',        '"!$omp end do #{c}"' ],
+    register_openmp_construct( :For, "for",
                                      [ :private,
                                        :firstprivate,
                                        :lastprivate,
@@ -215,28 +271,29 @@ EOF
                                        :schedule,
                                        :collapse,
                                        :ordered ],
-                                     [ :nowait ] )
+                                     [ :nowait ],
+                                     :fortran_name => "do" )
 
-    register_openmp_construct( :Sections, [ '"#pragma omp sections #{c}\n{"', '"}"' ],
-                                          [ '"!$omp sections #{c}"',          '"!$omp end sections #{c}"' ],
+    register_openmp_construct( :Sections, "sections",
                                           [ :private,
                                             :firstprivate,
                                             :lastprivate,
                                             :reduction ],
-                                          [ :nowait ] )
+                                          [ :nowait ],
+                                          :block => true )
 
-    register_openmp_construct( :Section, [ '"#pragma omp section\n{"', '"}"' ],
-                                         [ '"!$omp section"',          '""' ] )
+    register_openmp_construct( :Section, "section", [], [],
+                                         :block => true,
+                                         :fortran_no_end => true )
 
-    register_openmp_construct( :Single, [ '"#pragma omp single #{c}\n{"', '"}"' ],
-                                        [ '"!$omp single #{c}"',          '"!$omp end single #{c}"'],
+    register_openmp_construct( :Single, "single",
                                         [ :private,
                                           :firstprivate ],
                                         [ :copyprivate,
-                                          :nowait ] )
+                                          :nowait ],
+                                        :block => true )
 
-    register_openmp_construct( :Simd, [ '"#pragma omp simd #{c}"', '""' ],
-                                      [ '"!$omp simd #{c}"',      '"!$omp end single"' ],
+    register_openmp_construct( :Simd, "simd",
                                       [ :safelen,
                                         :linear,
                                         :aligned,
@@ -245,94 +302,93 @@ EOF
                                         :reduction,
                                         :collapse ] )
 
-    register_openmp_construct( :DeclareSimd, [ '"#pragma omp declare simd #{c}"', '""' ],
-                                             [ '"!$omp declare simd #{c}"',       '""' ],
+    register_openmp_construct( :DeclareSimd, "declare simd",
                                              [ :simdlen,
                                                :linear,
                                                :aligned,
                                                :uniform,
                                                :inbranch,
                                                :notinbranch ] )
-    register_openmp_construct( :ForSimd, [ '"#pragma omp for simd #{c}"', '""' ],
-                                         [ '"!$omp do simd #{c}"',        '"!$omp end do simd #{c}"' ],
-                                         (For.get_open_clauses + Simd.get_open_clauses).uniq,
-                                         (For.get_end_clauses + Simd.get_end_clauses).uniq )
 
-    register_openmp_construct( :TargetData, [ '"#pragma omp target data #{c}\n{"', '"}"' ],
-                                            [ '"!$omp target data #{c}"',          '"!$omp end target data"' ],
+    register_openmp_compound_construct( For, Simd )
+
+    register_openmp_construct( :TargetData, "target data",
                                             [ :device,
                                               :map,
-                                              :if ] )
+                                              :if ],
+                                            [],
+                                            :block => true )
 
-    register_openmp_construct( :Target, [ '"#pragma omp target #{c}\n{"', '"}"' ],
-                                        [ '"!$omp target #{c}"',          '"!$omp end target"' ],
+    register_openmp_construct( :Target, "target",
                                         [ :device,
                                           :map,
-                                          :if ] )
-    register_openmp_construct( :TargetUpdate, [ '"#pragma omp target update #{c}"', '""' ],
-                                              [ '"!$omp target update #{c}"',       '""' ],
+                                          :if ],
+                                        [],
+                                        :block => true )
+
+    register_openmp_construct( :TargetUpdate, "target update",
                                               [ :to,
                                                 :from,
                                                 :device,
-                                                :if ] )
-    register_openmp_construct( :DeclareTarget, [ '"#pragma omp declare target"', '"#pragma omp end declare target"' ],
-                                               [ '"!$omp declare target ("',     '")"' ] )
+                                                :if ],
+                                              [],
+                                              :fortran_no_end => true )
 
-    register_openmp_construct( :Teams, [ '"#pragma omp teams #{c}\n{"', '"}"' ],
-                                       [ '"!$omp teams #{c}"',          '"!$omp end teams"' ],
+    register_openmp_construct( :DeclareTarget, "declare target",
+                                               [],
+                                               [],
+                                               :c_end => true,
+                                               :fortran_no_end => true,
+                                               :fortran_block => true )
+
+    register_openmp_construct( :Teams, "teams",
                                        [ :num_teams,
                                          :thread_limit,
                                          :default,
                                          :private,
                                          :firstprivate,
                                          :shared,
-                                         :reduction ] )
+                                         :reduction ],
+                                       [],
+                                       :block => true )
 
-    register_openmp_construct( :Distribute, [ '"#pragma omp distribute #{c}"', '""' ],
-                                            [ '"!$omp distribute"',            '"!$omp end distribute"' ],
+    register_openmp_construct( :Distribute, "distribute",
                                             [ :private,
                                               :firstprivate,
                                               :collapse,
                                               :dist_schedule ] )
 
-    register_openmp_construct( :DistributeSimd, [ '"#pragma omp distribute simd #{c}"', '""' ],
-                                                [ '"!$omp distribute simd"',            '"!$omp end distribute simd"' ],
-                                                (Distribute.get_open_clauses + Simd.get_open_clauses).uniq )
+    register_openmp_compound_construct( Distribute, Simd )
 
-    register_openmp_construct( :DistributeParallelFor, [ '"#pragma omp distribute parallel for #{c}"', '""' ],
-                                                       [ '"!$omp distribute parallel do #{c}"',        '"!$omp end distribute parallel do"' ],
-                                                       (Distribute.get_open_clauses + Parallel.get_open_clauses + For.get_open_clauses).uniq )
+    register_openmp_compound_construct( Parallel, For, :no_end_clauses => true )
 
-    register_openmp_construct( :DistributeParallelForSimd, [ '"#pragma omp distribute parallel for simd #{c}"', '""' ],
-                                                           [ '"!$omp distribute parallel do simd #{c}"',        '"!$omp end distribute parallel do simd"' ],
-                                                           (Distribute.get_open_clauses + Parallel.get_open_clauses + For.get_open_clauses + Simd.get_open_clauses).uniq )
+    register_openmp_compound_construct( Distribute, ParallelFor )
 
-    register_openmp_construct( :ParallelFor, [ '"#pragma omp parallel for #{c}"', '""' ],
-                                             [ '"!$omp parallel do #{c}"',        '"!$omp end parallel do"' ],
-                                             (Parallel.get_open_clauses + For.get_open_clauses).uniq )
+    register_openmp_compound_construct( Parallel, ForSimd, :no_end_clauses => true )
 
-    register_openmp_construct( :ParallelSections, [ '"#pragma omp parallel sections #{c}\n{"', '"}"' ],
-                                                  [ '"!$omp parallel sections #{c}"',          '"!$omp end parallel sections"' ],
-                                                  (Parallel.get_open_clauses + For.get_open_clauses).uniq )
+    register_openmp_compound_construct( Distribute, ParallelForSimd )
 
-    register_openmp_construct( :ParallelForSimd, [ '"#pragma omp parallel for simd #{c}"', '""' ],
-                                                 [ '"!$omp parallel do simd #{c}"',        '"!$omp end parallel do simd"' ],
-                                                 (Parallel.get_open_clauses + For.get_open_clauses + Simd.get_open_clauses).uniq )
+    register_openmp_compound_construct( Parallel, Sections, :no_end_clauses => true, :block => true )
 
-    register_openmp_construct( :TargetTeams, [ '"#pragma omp target teams #{c}\n{"', '"}"' ],
-                                             [ '"!$omp target teams #{c}"',          '"!$omp end target teams"' ],
-                                             (Target.get_open_clauses + Teams.get_open_clauses).uniq )
+    register_openmp_compound_construct( Target, Teams, :block => true )
 
-    register_openmp_construct( :TeamsDistribute, [ '"#pragma omp teams distribute #{c}"', '""' ],
-                                                 [ '"!$omp teams distribute #{c}"',       '"!$omp end teams distribute"' ],
-                                                 (Teams.get_open_clauses + Distribute.get_open_clauses).uniq )
+    register_openmp_compound_construct( Teams, Distribute )
 
-    register_openmp_construct( :TeamsDistributeSimd, [ '"#pragma omp teams distribute simd #{c}"', '""' ],
-                                                     [ '"!$omp teams distribute simd #{c}"',       '"!$omp end teams distribute simd"' ],
-                                                     (Teams.get_open_clauses + Distribute.get_open_clauses + Simd.get_open_clauses).uniq )
+    register_openmp_compound_construct( Teams, DistributeSimd )
 
-    register_openmp_construct( :Task, [ '"#pragma omp task #{c}\n{"', '"}"' ],
-                                      [ '"!$omp task #{c}"',          '"!$omp end task"' ],
+    register_openmp_compound_construct( Target, TeamsDistribute )
+
+    register_openmp_compound_construct( Target, TeamsDistributeSimd )
+
+    register_openmp_compound_construct( Teams, DistributeParallelFor )
+
+    register_openmp_compound_construct( Target, TeamsDistributeParallelFor )
+
+    register_openmp_compound_construct( Teams, DistributeParallelForSimd )
+
+    register_openmp_compound_construct( Target, TeamsDistributeParallelForSimd )
+
+    register_openmp_construct( :Task, "task",
                                       [ :if,
                                         :final,
                                         :untied,
@@ -341,8 +397,27 @@ EOF
                                         :private,
                                         :firstprivate,
                                         :shared,
-                                        :depend ] )
+                                        :depend ]
+                                      [],
+                                      :block => true )
 
+    register_openmp_construct( :Taskyield, "taskyield", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :Master, "master", [], [], :block => true )
+
+    register_openmp_construct( :Critical, "critical", [:name], [:name], :block => true )
+
+    register_openmp_construct( :Barrier, "barrier", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :Taskwait, "taskwait", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :Taskgroup, "taskgroup", [], [], :block => true )
+
+    register_openmp_construct( :Atomic, "atomic", [:read, :write, :update, :capture, :seq_cst], [], :block => true )
+
+    register_openmp_construct( :Flush, "flush", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :Ordered, "ordered", [], [], :block => true )
   end
 
 end
