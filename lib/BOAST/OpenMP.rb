@@ -177,7 +177,7 @@ EOF
 
       def self.name
         return "#{name}"
-      enda
+      end
 
       def self.c_name
         return "#{c_name}"
@@ -188,34 +188,34 @@ EOF
       end
 
       def self.block
-        return #{options[:block] ? "true", "false"}
+        return #{options[:block] ? "true" : "false"}
       end
 
       def get_c_strings
-        return { :begin => '#pragma omp #{c_name} #{ open_clauses.length + end_clauses.length > 0 ? "\#{c}" : "" }#{ options[:block] ? "\n{" : "" }',
+        return { :begin => '"#pragma omp #{c_name} #{ open_clauses.length + end_clauses.length > 0 ? "\#{c}" : "" }#{ options[:block] ? "\\n{" : "" }"',
 EOF
       if options[:c_end] then
         s += <<EOF
-                 :end => '#pragma omp end #{c_name}' }
+                 :end => '"#pragma omp end #{c_name}"' }
 EOF
       else
         s += <<EOF
-                 :end => '#{ options[:block] ? "}" : "" }' }
+                 :end => '"#{ options[:block] ? "}" : "" }"' }
 EOF
       end
         s += <<EOF
       end
 
       def get_fortran_strings
-        return { :begin => '!$omp #{fortran_name} #{ open_clauses.length > 0 ? "\#{c}" : "" }',
+        return { :begin => '"!$omp #{fortran_name}#{ open_clauses.length > 0 ? " \#{c}" : "" }#{ options[:fortran_block] ? "(" : "" }"',
 EOF
       if options[:fortran_no_end] then
         s += <<EOF
-                 :end => '#{ options[:fortran_block] ? ")" : "" }' }
+                 :end => '"#{ options[:fortran_block] ? ")" : "" }"' }
 EOF
       else
         s += <<EOF
-                 :end => '!$omp end #{fortran_name} #{ end_clauses.length > 0 ? "\#{c}" : "" }' }
+                 :end => '"!$omp end #{fortran_name} #{ end_clauses.length > 0 ? "\#{c}" : "" }"' }
 EOF
       end
         s += <<EOF
@@ -397,7 +397,7 @@ EOF
                                         :private,
                                         :firstprivate,
                                         :shared,
-                                        :depend ]
+                                        :depend ],
                                       [],
                                       :block => true )
 
