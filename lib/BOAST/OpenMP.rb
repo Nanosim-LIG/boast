@@ -16,7 +16,7 @@ module BOAST
         return s
       end
 
-      # Registers an openmp clause, arg_type can be :none, :simple, :list, :multilist
+      # Registers an openmp clause, arg_type can be :none, :option, :option_list, :simple, :list, :multilist
       def self.register_clause( name, arg_type )
         s = <<EOF
       def openmp_clause_#{name}(c)
@@ -29,6 +29,10 @@ EOF
         when :option
           s += <<EOF
         return " \#{c}"
+EOF
+        when :option_list
+          s += <<EOF
+        return " (\#{[c].flatten.join(", ")})"
 EOF
         when :simple
           s += <<EOF
@@ -62,11 +66,9 @@ EOF
       register_clause(:inbranch,     :none)
       register_clause(:notinbranch,  :none)
       register_clause(:seq_cst,      :none)
-      register_clause(:read,         :none)
-      register_clause(:write,        :none)
-      register_clause(:update,       :none)
-      register_clause(:capture,      :none)
       register_clause(:name,         :option)
+      register_clause(:flush_list,   :option_list)
+      register_clause(:threadprivate_list,   :option_list)
       register_clause(:if,           :simple)
       register_clause(:num_threads,  :simple)
       register_clause(:default,      :simple)
@@ -413,11 +415,36 @@ EOF
 
     register_openmp_construct( :Taskgroup, "taskgroup", [], [], :block => true )
 
-    register_openmp_construct( :Atomic, "atomic", [:read, :write, :update, :capture, :seq_cst], [], :block => true )
+    register_openmp_construct( :AtomicRead, "atomic read", [:seq_cst], [] )
 
-    register_openmp_construct( :Flush, "flush", [], [], :fortran_no_end => true )
+    register_openmp_construct( :AtomicWrite, "atomic write", [:seq_cst], [] )
+
+    register_openmp_construct( :AtomicUpdate, "atomic update", [:seq_cst], [] )
+
+    register_openmp_construct( :AtomicCapture, "atomic capture", [:seq_cst], [], :block => true )
+
+    register_openmp_construct( :Flush, "flush", [:flush_list], [], :fortran_no_end => true )
 
     register_openmp_construct( :Ordered, "ordered", [], [], :block => true )
+
+    register_openmp_construct( :CancelParallel, "cancel parallel", [:if], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancelSections, "cancel sections", [:if], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancelFor, "cancel for", [:if], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancelTaskgroup, "cancel taskgroup", [:if], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancellationPointParallel, "cancellation point parallel", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancellationPointSections, "cancellation point sections", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancellationPointFor, "cancellation point for", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :CancellationPointTaskgroup, "cancellation point taskgroup", [], [], :fortran_no_end => true )
+
+    register_openmp_construct( :Threadprivate, "threadprivate", [:threadprivate_list], [], :fortran_no_end => true )
+
   end
 
 end
