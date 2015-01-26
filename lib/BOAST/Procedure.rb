@@ -123,7 +123,9 @@ module BOAST
       s = ""
       if lang == CL then
         if @properties[:local] then
-          s += "static "
+          s += "#if __OPENCL_C_VERSION__ && __OPENCL_C_VERSION__ >= 120\n"
+          s += "static\n"
+          s += "#endif\n"
         else
           s += "__kernel "
           wgs = @properties[:reqd_work_group_size]
