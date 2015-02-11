@@ -290,6 +290,13 @@ module BOAST
       return s
     end
 
+    def decl_ffi
+      return :pointer if lang == FORTRAN
+      return :pointer if dimension?
+      return :pointer if @direction == :out or @direction == :inout
+      return @type.decl_ffi
+    end
+
     def decl
       return decl_fortran if lang == FORTRAN
       return decl_c if [C, CL, CUDA].include?( lang )

@@ -45,6 +45,10 @@ module BOAST
       end
     end
 
+    def decl_ffi
+      return :size_t
+    end
+
     def signed?
       return !!signed
     end
@@ -131,6 +135,11 @@ module BOAST
         return "float#{@vector_length}" if @size == 4
         return "double#{@vector_length}" if @size == 8
       end
+    end
+
+    def decl_ffi
+      return :float if @size == 4
+      return :double if @size == 8
     end
 
     def suffix
@@ -261,6 +270,14 @@ module BOAST
           return char += "long long" if @size==8
         end
       end
+    end
+
+    def decl_ffi
+      t = ""
+      t += "u" if not @signed
+      t += "int"
+      t += "#{@size*8}"
+      return t.to_sym
     end
 
     def suffix
