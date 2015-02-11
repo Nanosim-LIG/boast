@@ -37,9 +37,12 @@ module BOAST
 
   module PrivateStateAccessor
     private_boolean_state_accessor :verbose
+    private_boolean_state_accessor :ffi
   end
 
   boolean_state_accessor :verbose
+  boolean_state_accessor :ffi
+  @@ffi = false
   @@verbose = false
   FORTRAN_LINE_LENGTH = 72
 
@@ -77,6 +80,7 @@ module BOAST
     }
     @@compiler_default_options[:LD] = ENV["LD"] if ENV["LD"]
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
+    @@ffi = ENV["FFI"] if ENV["FFI"]
   end
 
   read_boast_config
@@ -503,28 +507,64 @@ EOF
 
       source_file, path, target = create_source
 
-      module_file_name, module_name = create_module_source(path)
-
-      module_target = module_file_name.chomp(File::extname(module_file_name))+".o"
-      module_final = module_file_name.chomp(File::extname(module_file_name))+".so"
-
+      if not @@ffi then
+        module_file_name, module_name = create_module_source(path)
+        module_target = module_file_name.chomp(File::extname(module_file_name))+".o"
+        module_final = module_file_name.chomp(File::extname(module_file_name))+".so"
+      else
+        module_final = path.chomp(File::extname(path))+".so"
+        module_name = "Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_")
+      end
 
       kernel_files = get_sub_kernels
 
-      file module_final => [module_target, target] do
-        #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-        sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+      if not @@ffi then
+        file module_final => [module_target, target] do
+          #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+          sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+        end
+        Rake::Task[module_final].invoke
+
+        require(module_final)
+      else
+        file module_final => [target] do
+          #puts "#{linker} -shared -o #{module_final} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+          sh "#{linker} -shared -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+        end
+        Rake::Task[module_final].invoke
+        s =<<EOF
+        require 'ffi'
+        require 'narray_ffi'
+        module #{module_name}
+          extend FFI:Library
+          ffi_lib "#{module_final}"
+          attach_function :#{@procedure.name}#{@lang == FORTRAN ? "_" : ""}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{properties[:return].type.decl_ffi}
+          def run(*args)
+            if args.lentgh < #{@procedure.parameters.length} || args.length > #{@procedure.parameters.length + 1} then
+              results = {}
+              start = Time::new
+              ret = #{@procedure.name}(*args[0...#{@procedure.parameters.length}])
+              stop = Time::new
+              return { :start => start, :stop => stop, :duration => stop - start, :return => ret }
+            else
+              raise "Wrong number of arguments for #{@procedure.name} (\#{args.lentgh} for #{@procedure.parameters.length})"
+            end
+          end
+        end
+EOF
       end
-      Rake::Task[module_final].invoke
-
-      require(module_final)
       eval "self.extend(#{module_name})"
-
       save_binary(target)
 
-      [target, module_target, module_file_name, module_final].each { |fn|
-        File::unlink(fn)
-      }
+      if not @@ffi then
+        [target, module_target, module_file_name, module_final].each { |fn|
+          File::unlink(fn)
+        }
+      else
+        [target, module_final].each { |fn|
+          File::unlink(fn)
+        }
+      end
       kernel_files.each { |f|
         f.unlink
       }
