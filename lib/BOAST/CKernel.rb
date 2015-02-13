@@ -507,7 +507,7 @@ EOF
 
       source_file, path, target = create_source
 
-      if not @@ffi then
+      if not ffi? then
         module_file_name, module_name = create_module_source(path)
         module_target = module_file_name.chomp(File::extname(module_file_name))+".o"
         module_final = module_file_name.chomp(File::extname(module_file_name))+".so"
@@ -518,7 +518,7 @@ EOF
 
       kernel_files = get_sub_kernels
 
-      if not @@ffi then
+      if not ffi? then
         file module_final => [module_target, target] do
           #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
           sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
@@ -536,27 +536,42 @@ EOF
         require 'ffi'
         require 'narray_ffi'
         module #{module_name}
-          extend FFI:Library
+          extend FFI::Library
           ffi_lib "#{module_final}"
-          attach_function :#{@procedure.name}#{@lang == FORTRAN ? "_" : ""}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{properties[:return].type.decl_ffi}
+          attach_function :#{@procedure.name}#{@lang == FORTRAN ? "_" : ""}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
           def run(*args)
-            if args.lentgh < #{@procedure.parameters.length} || args.length > #{@procedure.parameters.length + 1} then
+            if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
+              raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
+            else
+              t_args = []
+              if @lang == FORTRAN then
+                @procedure.parameters.each_with_index { |p, i|
+                  if p.decl_ffi(true) != :pointer then
+                    arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
+                    arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                    t_args.push(arg_p)
+                  else
+                    t_args.push( args[i] )
+                  end
+                }
+              else
+                t_args = args[0...@procedure.parameters.length]
+              end
               results = {}
               start = Time::new
-              ret = #{@procedure.name}(*args[0...#{@procedure.parameters.length}])
+              ret = #{@procedure.name}#{@lang == FORTRAN ? "_" : ""}(*t_args)
               stop = Time::new
               return { :start => start, :stop => stop, :duration => stop - start, :return => ret }
-            else
-              raise "Wrong number of arguments for #{@procedure.name} (\#{args.lentgh} for #{@procedure.parameters.length})"
             end
           end
         end
 EOF
+        eval s
       end
       eval "self.extend(#{module_name})"
       save_binary(target)
 
-      if not @@ffi then
+      if not ffi? then
         [target, module_target, module_file_name, module_final].each { |fn|
           File::unlink(fn)
         }
