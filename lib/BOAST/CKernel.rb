@@ -472,7 +472,7 @@ EOF
       set_output( module_file )
       fill_module(module_file, module_name)
       module_file.rewind
-     #puts module_file.read
+      #puts module_file.read
       module_file.close
       set_lang( previous_lang )
       set_output( previous_output )
@@ -494,6 +494,63 @@ EOF
       fill_code(source_file)
       source_file.close
       return [source_file, path, target]
+    end
+
+    def create_ffi_module(module_name, module_final)
+      s =<<EOF
+      require 'ffi'
+      require 'narray_ffi'
+      module #{module_name}
+        extend FFI::Library
+        ffi_lib "#{module_final}"
+        attach_function :#{@procedure.name}#{@lang == FORTRAN ? "_" : ""}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
+        def run(*args)
+          if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
+            raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
+          else
+            t_args = []
+            r_args = {}
+            if @lang == FORTRAN then
+              @procedure.parameters.each_with_index { |p, i|
+                if p.decl_ffi(true) != :pointer then
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
+                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                  t_args.push(arg_p)
+                  r_args[p] = arg_p if p.scalar_output?
+                else
+                  t_args.push( args[i] )
+                end
+              }
+            else
+              @procedure.parameters.each_with_index { |p, i|
+                if p.scalar_output? then
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
+                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                  t_args.push(arg_p)
+                  r_args[p] = arg_p
+                else
+                  t_args.push( args[i] )
+                end
+              }
+            end
+            results = {}
+            start = Time::new
+            ret = #{@procedure.name}#{@lang == FORTRAN ? "_" : ""}(*t_args)
+            stop = Time::new
+            results = { :start => start, :stop => stop, :duration => stop - start, :return => ret }
+            if r_args.length > 0 then
+              ref_return = {}
+              r_args.each { |p, p_arg|
+                ref_return[p.name.to_sym] = p_arg.send("read_\#{p.decl_ffi(true)}")
+              }
+              results[:reference_return] = ref_return
+            end
+            return results
+          end
+        end
+      end
+EOF
+      eval s
     end
 
     def build(options = {})
@@ -532,41 +589,7 @@ EOF
           sh "#{linker} -shared -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
         end
         Rake::Task[module_final].invoke
-        s =<<EOF
-        require 'ffi'
-        require 'narray_ffi'
-        module #{module_name}
-          extend FFI::Library
-          ffi_lib "#{module_final}"
-          attach_function :#{@procedure.name}#{@lang == FORTRAN ? "_" : ""}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
-          def run(*args)
-            if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
-              raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
-            else
-              t_args = []
-              if @lang == FORTRAN then
-                @procedure.parameters.each_with_index { |p, i|
-                  if p.decl_ffi(true) != :pointer then
-                    arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
-                    arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
-                    t_args.push(arg_p)
-                  else
-                    t_args.push( args[i] )
-                  end
-                }
-              else
-                t_args = args[0...@procedure.parameters.length]
-              end
-              results = {}
-              start = Time::new
-              ret = #{@procedure.name}#{@lang == FORTRAN ? "_" : ""}(*t_args)
-              stop = Time::new
-              return { :start => start, :stop => stop, :duration => stop - start, :return => ret }
-            end
-          end
-        end
-EOF
-        eval s
+        create_ffi_module(module_name, module_final)
       end
       eval "self.extend(#{module_name})"
       save_binary(target)
@@ -676,6 +699,7 @@ EOF
     end
 
     def get_params_value(module_file, argv, rb_ptr)
+      set_decl_module(true)
       @procedure.parameters.each_index do |i|
         param = @procedure.parameters[i]
         if not param.dimension then
@@ -714,6 +738,7 @@ EOF
           end
         end
       end
+      set_decl_module(true)
     end
 
     def decl_module_params(module_file)
@@ -727,6 +752,7 @@ EOF
       set_decl_module(false)
       module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE stats = rb_hash_new();\n"
+      module_file.print "  VALUE refs = rb_hash_new();\n"
       module_file.print "  struct timespec start, stop;\n"
       module_file.print "  unsigned long long int duration;\n"
     end
@@ -806,6 +832,7 @@ EOF
     end
 
     def get_results(module_file, argv, rb_ptr)
+      set_decl_module(true)
       if @lang == CUDA then
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
@@ -831,7 +858,25 @@ EOF
 EOF
           end
         end
+      else
+        first = true
+        @procedure.parameters.each_with_index do |param,i|
+          if param.scalar_output? then
+            if first then
+              module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"reference_return\")),refs);\n"
+              first = false
+            end
+            case param.type
+            when Int
+              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));\n" if param.type.signed?
+              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));\n" if not param.type.signed?
+            when Real
+              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((unsigned long long)#{param}));\n" if not param.type.signed?
+            end
+          end
+        end
       end
+      set_decl_module(false)
     end
 
     def store_result(module_file)

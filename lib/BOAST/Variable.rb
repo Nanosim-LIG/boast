@@ -169,6 +169,10 @@ module BOAST
       !!@dimension
     end
 
+    def scalar_output?
+      !!@scalar_output
+    end
+
     def initialize(name,type,hash={})
       @name = name.to_s
       @direction = hash[:direction] ? hash[:direction] : hash[:dir]
@@ -223,7 +227,7 @@ module BOAST
         s = @constant.to_s + @type.suffix
         return s
       end
-      if @scalar_output and [C, CL, CUDA].include?( lang ) then
+      if @scalar_output and [C, CL, CUDA].include?( lang ) and not decl_module? then
         return "(*#{name})"
       end
       return @name
@@ -293,7 +297,7 @@ module BOAST
     def decl_ffi(alloc = false)
       return :pointer if lang == FORTRAN and not alloc
       return :pointer if dimension?
-      return :pointer if @direction == :out or @direction == :inout
+      return :pointer if @direction == :out or @direction == :inout and not alloc
       return @type.decl_ffi
     end
 
