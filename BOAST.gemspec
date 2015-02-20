@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'BOAST'
-  s.version = "0.99997"
+  s.version = "0.99998"
   s.author = "Brice Videau"
   s.email = "brice.videau@imag.fr"
   s.homepage = "https://forge.imag.fr/projects/boast/"
@@ -42,4 +42,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'narray', '>=0.6.0.8'
   s.add_dependency 'opencl_ruby_ffi', '>=0.4'
   s.add_dependency 'systemu', '>=2.2.0'
+  s.add_dependency 'PAPI', '>=0.101'
 end

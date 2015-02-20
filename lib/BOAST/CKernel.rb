@@ -508,6 +508,15 @@ EOF
           if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
             raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
           else
+            ev_set = nil
+            if args.length == @procedure.parameters.length + 1 then
+              options = args.last
+              if options[:PAPI] then
+                require 'PAPI'
+                ev_set = PAPI::EventSet::new
+                ev_set.add_named(options[:PAPI])
+              end
+            end
             t_args = []
             r_args = {}
             if @lang == FORTRAN then
@@ -534,10 +543,21 @@ EOF
               }
             end
             results = {}
-            start = Time::new
-            ret = #{@procedure.name}#{@lang == FORTRAN ? "_" : ""}(*t_args)
-            stop = Time::new
+            counters = nil
+            ev_set.start if ev_set
+            begin
+              start = Time::new
+              ret = #{@procedure.name}#{@lang == FORTRAN ? "_" : ""}(*t_args)
+              stop = Time::new
+            ensure
+              if ev_set then
+                counters = ev_set.stop
+                ev_set.cleanup
+                ev_set.destroy
+              end
+            end
             results = { :start => start, :stop => stop, :duration => stop - start, :return => ret }
+            results[:PAPI] = Hash[[options[:PAPI]].flatten.zip(counters)] if ev_set
             if r_args.length > 0 then
               ref_return = {}
               r_args.each { |p, p_arg|
@@ -685,17 +705,19 @@ EOF
     end
 
     def check_args(module_file)
-      if @lang == CUDA then
-        module_file.print <<EOF
+      module_file.print <<EOF
+  VALUE rb_opts;
   if( argc < #{@procedure.parameters.length} || argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
+  rb_opts = Qnil;
+  if( argc == #{@procedure.parameters.length + 1} ) {
+    rb_opts = argv[argc -1];
+    if ( rb_opts != Qnil ) {
+      if (TYPE(rb_opts) != T_HASH)
+        rb_raise(rb_eArgError, "Cuda options should be passed as a hash");
+    }
+  }
 EOF
-      else
-        module_file.print <<EOF
-  if( argc != #{@procedure.parameters.length} )
-    rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
-EOF
-      end
     end
 
     def get_params_value(module_file, argv, rb_ptr)
@@ -759,35 +781,29 @@ EOF
 
     def get_cuda_launch_bounds(module_file)
       module_file.print <<EOF
-  VALUE rb_opts;
   size_t block_size[3] = {1,1,1};
   size_t block_number[3] = {1,1,1};
-  if( argc == #{@procedure.parameters.length + 1} ) {
-    rb_opts = argv[argc -1];
-    if ( rb_opts != Qnil ) {
-      VALUE rb_array_data = Qnil;
-      int i;
-      if (TYPE(rb_opts) != T_HASH)
-        rb_raise(rb_eArgError, "Cuda options should be passed as a hash");
-      rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_size")));
-      if( rb_ptr != Qnil ) {
-        if (TYPE(rb_ptr) != T_ARRAY)
-          rb_raise(rb_eArgError, "Cuda option block_size should be an array");
-        for(i=0; i<3; i++) {
-          rb_array_data = rb_ary_entry(rb_ptr, i);
-          if( rb_array_data != Qnil )
-            block_size[i] = (size_t) NUM2LONG( rb_array_data );
-        }
+  if( rb_opts != Qnil ) {
+    VALUE rb_array_data = Qnil;
+    int i;
+    rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_size")));
+    if( rb_ptr != Qnil ) {
+      if (TYPE(rb_ptr) != T_ARRAY)
+        rb_raise(rb_eArgError, "Cuda option block_size should be an array");
+      for(i=0; i<3; i++) {
+        rb_array_data = rb_ary_entry(rb_ptr, i);
+        if( rb_array_data != Qnil )
+          block_size[i] = (size_t) NUM2LONG( rb_array_data );
       }
-      rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_number")));
-      if( rb_ptr != Qnil ) {
-        if (TYPE(rb_ptr) != T_ARRAY)
-          rb_raise(rb_eArgError, "Cuda option block_number should be an array");
-        for(i=0; i<3; i++) {
-          rb_array_data = rb_ary_entry(rb_ptr, i);
-          if( rb_array_data != Qnil )
-            block_number[i] = (size_t) NUM2LONG( rb_array_data );
-        }
+    }
+    rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_number")));
+    if( rb_ptr != Qnil ) {
+      if (TYPE(rb_ptr) != T_ARRAY)
+        rb_raise(rb_eArgError, "Cuda option block_number should be an array");
+      for(i=0; i<3; i++) {
+        rb_array_data = rb_ary_entry(rb_ptr, i);
+        if( rb_array_data != Qnil )
+          block_number[i] = (size_t) NUM2LONG( rb_array_data );
       }
     }
   }
