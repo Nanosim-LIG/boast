@@ -714,7 +714,7 @@ EOF
     _boast_rb_opts = _boast_argv[_boast_argc -1];
     if ( _boast_rb_opts != Qnil ) {
       if (TYPE(_boast_rb_opts) != T_HASH)
-        rb_raise(rb_eArgError, "Cuda options should be passed as a hash");
+        rb_raise(rb_eArgError, "Options should be passed as a hash");
     }
   }
 EOF
@@ -807,6 +807,40 @@ EOF
           _boast_block_number[i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
     }
+  }
+EOF
+    end
+
+    def  get_PAPI_options(module_file)
+module_file.print <<EOF
+  if( _boast_rb_opts != Qnil ) {
+    VALUE _boast_rb_array_data = Qnil;
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("PAPI")));
+    if( _boast_rb_ptr != Qnil ) {
+      VALUE _boast_PAPI = Qnil;
+      VALUE _boast_EventSet = Qnil;
+      rb_require("PAPI");
+      _boast_PAPI =  rb_const_get(rb_cObject, rb_intern("PAPI"));
+      _boast_EventSet =  rb_const_get(_boast_PAPI, rb_intern("EventSet"));
+      _boast_event_set = rb_funcall(_boast_EventSet, rb_intern("new"), 0);
+      rb_funcall(_boast_event_set, rb_intern("add_named"), 1, _boast_rb_ptr);
+      rb_funcall(_boast_event_set, rb_intern("start"), 0);
+    }
+  }
+EOF
+    end
+
+    def get_PAPI_results(module_file)
+module_file.print <<EOF
+  if( _boast_event_set != Qnil) {
+    VALUE _boast_papi_results = Qnil;
+    VALUE _boast_papi_stats = Qnil;
+    _boast_papi_results = rb_funcall(_boast_event_set, rb_intern("stop"), 0);
+    _boast_papi_stats = rb_ary_new3(1,rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("PAPI"))));
+    _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("flatten"), 0);
+    _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("zip"), 1, _boast_papi_results);
+    _boast_papi_stats = rb_funcall(rb_const_get(rb_cObject, rb_intern("Hash")), rb_intern("send"), 2, ID2SYM(rb_intern("[]")), _boast_papi_stats );
+    rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"PAPI\")),_boast_papi_stats);
   }
 EOF
     end
@@ -933,11 +967,15 @@ EOF
         module_file.print get_cuda_launch_bounds(module_file)
       end
 
+      get_PAPI_options(module_file)
+
       module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
 
       create_procedure_call(module_file)
 
       module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+
+      get_PAPI_results(module_file)
 
       get_results(module_file, argv, rb_ptr)
 
