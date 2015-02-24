@@ -696,7 +696,7 @@ EOF
       module_file.print <<EOF
 VALUE #{module_name} = Qnil;
 void Init_#{module_name}();
-VALUE method_run(int argc, VALUE *argv, VALUE self);
+VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
   rb_define_method(#{module_name}, "run", method_run, -1);
@@ -706,14 +706,14 @@ EOF
 
     def check_args(module_file)
       module_file.print <<EOF
-  VALUE rb_opts;
-  if( argc < #{@procedure.parameters.length} || argc > #{@procedure.parameters.length + 1} )
-    rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", argc);
-  rb_opts = Qnil;
-  if( argc == #{@procedure.parameters.length + 1} ) {
-    rb_opts = argv[argc -1];
-    if ( rb_opts != Qnil ) {
-      if (TYPE(rb_opts) != T_HASH)
+  VALUE _boast_rb_opts;
+  if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
+    rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", _boast_argc);
+  _boast_rb_opts = Qnil;
+  if( _boast_argc == #{@procedure.parameters.length + 1} ) {
+    _boast_rb_opts = _boast_argv[_boast_argc -1];
+    if ( _boast_rb_opts != Qnil ) {
+      if (TYPE(_boast_rb_opts) != T_HASH)
         rb_raise(rb_eArgError, "Cuda options should be passed as a hash");
     }
   }
@@ -736,31 +736,31 @@ EOF
           (rb_ptr === argv[i]).pr
           if @lang == CUDA then
             module_file.print <<EOF
-  if ( IsNArray(rb_ptr) ) {
-    struct NARRAY *n_ary;
-    size_t array_size;
-    Data_Get_Struct(rb_ptr, struct NARRAY, n_ary);
-    array_size = n_ary->total * na_sizeof[n_ary->type];
-    cudaMalloc( (void **) &#{param.name}, array_size);
-    cudaMemcpy(#{param.name}, (void *) n_ary->ptr, array_size, cudaMemcpyHostToDevice);
+  if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    cudaMalloc( (void **) &#{param.name}, _boast_array_size);
+    cudaMemcpy(#{param.name}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
   } else
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
 EOF
           else
             module_file.print <<EOF
-  if (TYPE(rb_ptr) == T_STRING) {
-    #{param.name} = (void *) RSTRING_PTR(rb_ptr);
-  } else if ( IsNArray(rb_ptr) ) {
-    struct NARRAY *n_ary;
-    Data_Get_Struct(rb_ptr, struct NARRAY, n_ary);
-    #{param.name} = (void *) n_ary->ptr;
+  if (TYPE(_boast_rb_ptr) == T_STRING) {
+    #{param.name} = (void *) RSTRING_PTR(_boast_rb_ptr);
+  } else if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    #{param.name} = (void *) _boast_n_ary->ptr;
   } else
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
 EOF
           end
         end
       end
-      set_decl_module(true)
+      set_decl_module(false)
     end
 
     def decl_module_params(module_file)
@@ -772,38 +772,39 @@ EOF
         param_copy.decl
       }
       set_decl_module(false)
-      module_file.print "  #{@procedure.properties[:return].type.decl} ret;\n" if @procedure.properties[:return]
-      module_file.print "  VALUE stats = rb_hash_new();\n"
-      module_file.print "  VALUE refs = rb_hash_new();\n"
-      module_file.print "  struct timespec start, stop;\n"
-      module_file.print "  unsigned long long int duration;\n"
+      module_file.print "  #{@procedure.properties[:return].type.decl} _boast_ret;\n" if @procedure.properties[:return]
+      module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
+      module_file.print "  VALUE _boast_refs = rb_hash_new();\n"
+      module_file.print "  VALUE _boast_event_set = Qnil;\n"
+      module_file.print "  struct timespec _boast_start, _boast_stop;\n"
+      module_file.print "  unsigned long long int _boast_duration;\n"
     end
 
     def get_cuda_launch_bounds(module_file)
       module_file.print <<EOF
-  size_t block_size[3] = {1,1,1};
-  size_t block_number[3] = {1,1,1};
-  if( rb_opts != Qnil ) {
-    VALUE rb_array_data = Qnil;
-    int i;
-    rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_size")));
-    if( rb_ptr != Qnil ) {
-      if (TYPE(rb_ptr) != T_ARRAY)
+  size_t _boast_block_size[3] = {1,1,1};
+  size_t _boast_block_number[3] = {1,1,1};
+  if( _boast_rb_opts != Qnil ) {
+    VALUE _boast_rb_array_data = Qnil;
+    int _boast_i;
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_size")));
+    if( _boast_rb_ptr != Qnil ) {
+      if (TYPE(_boast_rb_ptr) != T_ARRAY)
         rb_raise(rb_eArgError, "Cuda option block_size should be an array");
-      for(i=0; i<3; i++) {
-        rb_array_data = rb_ary_entry(rb_ptr, i);
-        if( rb_array_data != Qnil )
-          block_size[i] = (size_t) NUM2LONG( rb_array_data );
+      for(_boast_i=0; _boast_i<3; _boast_i++) {
+        _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+        if( _boast_rb_array_data != Qnil )
+          _boast_block_size[i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
     }
-    rb_ptr = rb_hash_aref(rb_opts, ID2SYM(rb_intern("block_number")));
-    if( rb_ptr != Qnil ) {
-      if (TYPE(rb_ptr) != T_ARRAY)
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_number")));
+    if( _boast_rb_ptr != Qnil ) {
+      if (TYPE(_boast_rb_ptr) != T_ARRAY)
         rb_raise(rb_eArgError, "Cuda option block_number should be an array");
-      for(i=0; i<3; i++) {
-        rb_array_data = rb_ary_entry(rb_ptr, i);
-        if( rb_array_data != Qnil )
-          block_number[i] = (size_t) NUM2LONG( rb_array_data );
+      for(_boast_i=0; _boast_i<3; _boast_i++) {
+        _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+        if( _boast_rb_array_data != Qnil )
+          _boast_block_number[i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
     }
   }
@@ -841,7 +842,7 @@ EOF
         }
       end
       if @lang == CUDA then
-        params.push( "block_number", "block_size" )
+        params.push( "_boast_block_number", "_boast_block_size" )
       end
       module_file.print params.join(", ")
       module_file.print "  );\n"
@@ -855,15 +856,15 @@ EOF
           if param.dimension then
             (rb_ptr === argv[i]).pr
             module_file.print <<EOF
-  if ( IsNArray(rb_ptr) ) {
+  if ( IsNArray(_boast_rb_ptr) ) {
 EOF
             if param.direction == :out or param.direction == :inout then
             module_file.print <<EOF
-    struct NARRAY *n_ary;
-    size_t array_size;
-    Data_Get_Struct(rb_ptr, struct NARRAY, n_ary);
-    array_size = n_ary->total * na_sizeof[n_ary->type];
-    cudaMemcpy((void *) n_ary->ptr, #{param.name}, array_size, cudaMemcpyDeviceToHost);
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    cudaMemcpy((void *) _boast_n_ary->ptr, #{param.name}, _boast_array_size, cudaMemcpyDeviceToHost);
 EOF
             end
             module_file.print <<EOF
@@ -879,15 +880,15 @@ EOF
         @procedure.parameters.each_with_index do |param,i|
           if param.scalar_output? then
             if first then
-              module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"reference_return\")),refs);\n"
+              module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);\n"
               first = false
             end
             case param.type
             when Int
-              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));\n" if param.type.signed?
-              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));\n" if not param.type.signed?
+              module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));\n" if param.type.signed?
+              module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));\n" if not param.type.signed?
             when Real
-              module_file.print "  rb_hash_aset(refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((unsigned long long)#{param}));\n" if not param.type.signed?
+              module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((unsigned long long)#{param}));\n" if not param.type.signed?
             end
           end
         end
@@ -897,15 +898,15 @@ EOF
 
     def store_result(module_file)
       if @lang != CUDA then
-        module_file.print "  duration = (unsigned long long int)stop.tv_sec * (unsigned long long int)1000000000 + stop.tv_nsec;\n"
-        module_file.print "  duration -= (unsigned long long int)start.tv_sec * (unsigned long long int)1000000000 + start.tv_nsec;\n"
+        module_file.print "  _boast_duration = (unsigned long long int)_boast_stop.tv_sec * (unsigned long long int)1000000000 + _boast_stop.tv_nsec;\n"
+        module_file.print "  _boast_duration -= (unsigned long long int)_boast_start.tv_sec * (unsigned long long int)1000000000 + _boast_start.tv_nsec;\n"
       end
-      module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)duration*(double)1e-9));\n"
+      module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_duration*(double)1e-9));\n"
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
-        module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)ret));\n" if type_ret.kind_of?(Int) and type_ret.signed
-        module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
-        module_file.print "  rb_hash_aset(stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)ret));\n" if type_ret.kind_of?(Real)
+        module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_ret));\n" if type_ret.kind_of?(Int) and type_ret.signed
+        module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
+        module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));\n" if type_ret.kind_of?(Real)
       end
     end
 
@@ -914,13 +915,13 @@ EOF
       @procedure.boast_header(@lang)
       module_preamble(module_file, module_name)
 
-      module_file.puts "VALUE method_run(int argc, VALUE *argv, VALUE self) {"
+      module_file.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
 
       check_args(module_file)
 
       argc = @procedure.parameters.length
-      argv = Variable::new("argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
-      rb_ptr = Variable::new("rb_ptr", CustomType, :type_name => "VALUE")
+      argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
       rb_ptr.decl
 
@@ -932,17 +933,17 @@ EOF
         module_file.print get_cuda_launch_bounds(module_file)
       end
 
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &start);\n"
+      module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
 
       create_procedure_call(module_file)
 
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &stop);\n"
+      module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
 
       get_results(module_file, argv, rb_ptr)
 
       store_result(module_file)
 
-      module_file.print "  return stats;\n"
+      module_file.print "  return _boast_stats;\n"
       module_file.print "}"
     end
 
