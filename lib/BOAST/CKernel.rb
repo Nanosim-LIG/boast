@@ -794,7 +794,7 @@ EOF
       for(_boast_i=0; _boast_i<3; _boast_i++) {
         _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
         if( _boast_rb_array_data != Qnil )
-          _boast_block_size[i] = (size_t) NUM2LONG( _boast_rb_array_data );
+          _boast_block_size[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
     }
     _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_number")));
@@ -804,7 +804,7 @@ EOF
       for(_boast_i=0; _boast_i<3; _boast_i++) {
         _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
         if( _boast_rb_array_data != Qnil )
-          _boast_block_number[i] = (size_t) NUM2LONG( _boast_rb_array_data );
+          _boast_block_number[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
     }
   }
@@ -847,9 +847,9 @@ EOF
 
     def create_procedure_call(module_file)
       if @lang == CUDA then
-        module_file.print "  duration = "
+        module_file.print "  _boast_duration = "
       elsif @procedure.properties[:return] then
-        module_file.print "  ret = "
+        module_file.print "  _boast_ret = "
       end
       module_file.print "  #{@procedure.name}"
       module_file.print "_" if @lang == FORTRAN
