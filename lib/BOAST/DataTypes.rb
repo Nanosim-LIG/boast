@@ -185,6 +185,7 @@ module BOAST
 #          @getters["s#{indx}"] = indx
 #          @setters["s#{indx}="] = indx
 #        }
+         raise "Vectors need to have their element size specified!" if not @size
       else
         @vector_length = 1
       end
@@ -208,12 +209,16 @@ module BOAST
     end
 
     def decl
-      return "integer(kind=#{@size})" if lang == FORTRAN
+      if lang == FORTRAN then
+        return "integer(kind=#{@size})" if @size
+        return "integer"
+      end
       if lang == C then
         if @vector_length == 1 then
           s = ""
           s += "u" if not @signed
-          return s+"int#{8*@size}_t"
+          return s+"int#{8*@size}_t" if @size
+          return s+"int"
         elsif @vector_length > 1 then
           if get_architecture == X86 then
             return "__m#{@total_size*8}#{@total_size*8>64 ? "i" : ""}"
@@ -237,6 +242,8 @@ module BOAST
           char += "int"
         when 8
           char += "long"
+        when nil
+          char += "int"
         else
           raise "Unsupported integer size!"
         end
@@ -257,6 +264,8 @@ module BOAST
             char += "int"
           when 8
             char += "longlong"
+          when nil
+            char += "int"
           else
             raise "Unsupported integer size!"
           end
@@ -264,10 +273,21 @@ module BOAST
         else
           char = ""
           char += "unsigned " if not @signed
-          return char += "char" if @size==1
-          return char += "short" if @size==2
-          return char += "int" if @size==4
-          return char += "long long" if @size==8
+          case @size
+          when 1
+            char += "char"
+          when 2
+            char += "short"
+          when 4
+            char += "int"
+          when 8
+            char += "longlong"
+          when nil
+            char += "int"
+          else
+            raise "Unsupported integer size!"
+          end
+          return char
         end
       end
     end
@@ -276,7 +296,7 @@ module BOAST
       t = ""
       t += "u" if not @signed
       t += "int"
-      t += "#{@size*8}"
+      t += "#{@size*8}" if @size
       return t.to_sym
     end
 
