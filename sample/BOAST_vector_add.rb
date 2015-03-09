@@ -29,7 +29,6 @@ n = 1024*1024
 a = NArray.sfloat(n).random
 b = NArray.sfloat(n).random
 c = NArray.sfloat(n)
-c_ref = NArray.float(n)
 
 epsilon = 10e-15
 
