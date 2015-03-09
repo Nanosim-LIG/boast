@@ -428,7 +428,18 @@ def self.run(*args)
   params.each_index{ |i|
     @kernel.set_arg(i, params[i])
   }
-  event = @queue.enqueue_NDrange_kernel(@kernel, opts[:global_work_size], :local_work_size => opts[:local_work_size])
+  gws = opts[:global_work_size]
+  if not gws then
+    gws = []
+    opts[:block_number].each_index { |i|
+      gws.push(opts[:block_number][i]*opts[:block_size][i])
+    }
+  end
+  lws = opts[:local_work_size]
+  if not lws then
+    lws = opts[:block_size]
+  end
+  event = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
   @procedure.parameters.each_index { |i|
     if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
       read_opencl_param( params[i], args[i], @procedure.parameters[i] )
@@ -796,6 +807,17 @@ EOF
         if( _boast_rb_array_data != Qnil )
           _boast_block_size[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
       }
+    } else {
+      _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("local_work_size")));
+      if( _boast_rb_ptr != Qnil ) {
+        if (TYPE(_boast_rb_ptr) != T_ARRAY)
+          rb_raise(rb_eArgError, "Cuda option local_work_size should be an array");
+        for(_boast_i=0; _boast_i<3; _boast_i++) {
+          _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+          if( _boast_rb_array_data != Qnil )
+            _boast_block_size[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
+        }
+      }
     }
     _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_number")));
     if( _boast_rb_ptr != Qnil ) {
@@ -805,6 +827,17 @@ EOF
         _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
         if( _boast_rb_array_data != Qnil )
           _boast_block_number[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
+      }
+    } else {
+      _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("global_work_size")));
+      if( _boast_rb_ptr != Qnil ) {
+        if (TYPE(_boast_rb_ptr) != T_ARRAY)
+          rb_raise(rb_eArgError, "Cuda option global_work_size should be an array");
+        for(_boast_i=0; _boast_i<3; _boast_i++) {
+          _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+          if( _boast_rb_array_data != Qnil )
+            _boast_block_number[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data ) / _boast_block_size[_boast_i];
+        }
       }
     }
   }
