@@ -41,11 +41,7 @@ c_ref = a + b
   k = vector_add
   puts k.print
   c.random!
-  if lang == CL or lang == CUDA then
-    k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
-  else
-    k.run(n, a, b, c)
-  end
+  k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
   diff = (c_ref - c).abs
   diff.each { |elem|
     raise "Warning: residue too big: #{elem}" if elem > epsilon
