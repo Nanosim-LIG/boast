@@ -922,7 +922,7 @@ EOF
               module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));\n" if param.type.signed?
               module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));\n" if not param.type.signed?
             when Real
-              module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((unsigned long long)#{param}));\n" if not param.type.signed?
+              module_file.print "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{param}));\n"
             end
           end
         end
