@@ -79,6 +79,15 @@ module BOAST
       return close_c if [C, CL, CUDA].include?( lang )
     end
 
+    def ckernel
+      old_output = output
+      k = CKernel::new
+      k.procedure = self
+      self.pr
+      set_output( old_output )
+      return k
+    end
+
     def close_c
       decrement_indent_level
       s = ""
