@@ -44,6 +44,7 @@ c_ref = a + b
   puts l
   k = vector_add
   puts k.print
+  c.random!
   if lang == CL or lang == CUDA then
     k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
   else
