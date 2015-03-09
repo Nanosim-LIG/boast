@@ -1,38 +1,31 @@
 require 'narray'
 require 'BOAST'
 include BOAST
-set_array_start( 0 )
+set_array_start(0)
+set_default_real_size(4)
 def vector_add
-  kernel = CKernel::new
-  n = Int("n",{:dir => :in, :signed => false})
-  a = Real("a",{:dir => :in, :dim => [ Dim(n)] })
-  b = Real("b",{:dir => :in, :dim => [ Dim(n)] })
-  c = Real("c",{:dir => :out, :dim => [ Dim(n)] })
-  i = Int( :i, :signed => false )
-  ig = Sizet :ig
-  if get_lang == CL then
-    @@output.puts "#pragma OPENCL EXTENSION cl_khr_fp64: enable"
-  end
-  pr p = Procedure("vector_add", [n,a,b,c]) {
+  n = Int("n",:dir => :in)
+  a = Real("a",:dir => :in, :dim => [ Dim(n)] )
+  b = Real("b",:dir => :in, :dim => [ Dim(n)] )
+  c = Real("c",:dir => :out, :dim => [ Dim(n)] )
+  p = Procedure("vector_add", [n,a,b,c]) {
+    decl i = Int("i")
     if (get_lang == CL or get_lang == CUDA) then
-      decl ig
-      pr ig === get_global_id(0)
-      pr c[ig] === a[ig] + b[ig]
+      pr i === get_global_id(0)
+      pr c[i] === a[i] + b[i]
     else
-      decl i
       pr For(i,0,n-1) {
         pr c[i] === a[i] + b[i]
       }
     end
   }
-  kernel.procedure = p
-  return kernel
+  return p.ckernel
 end
 
 n = 1024*1024
-a = NArray.float(n).random
-b = NArray.float(n).random
-c = NArray.float(n)
+a = NArray.sfloat(n).random
+b = NArray.sfloat(n).random
+c = NArray.sfloat(n)
 c_ref = NArray.float(n)
 
 epsilon = 10e-15
@@ -41,7 +34,7 @@ c_ref = a + b
 
 [:FORTRAN, :C, :CL, :CUDA].each { |l|
   set_lang( BOAST.const_get(l)  )
-  puts l
+  puts "#{l}:"
   k = vector_add
   puts k.print
   c.random!
@@ -55,3 +48,4 @@ c_ref = a + b
     raise "Warning: residue too big: #{elem}" if elem > epsilon
   }
 }
+puts "Success!"
