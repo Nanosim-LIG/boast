@@ -1,8 +1,10 @@
 require 'narray'
 require 'BOAST'
 include BOAST
+
 set_array_start(0)
 set_default_real_size(4)
+
 def vector_add
   n = Int("n",:dir => :in)
   a = Real("a",:dir => :in, :dim => [ Dim(n)] )
@@ -10,12 +12,13 @@ def vector_add
   c = Real("c",:dir => :out, :dim => [ Dim(n)] )
   p = Procedure("vector_add", [n,a,b,c]) {
     decl i = Int("i")
+    expr = c[i] === a[i] + b[i]
     if (get_lang == CL or get_lang == CUDA) then
       pr i === get_global_id(0)
-      pr c[i] === a[i] + b[i]
+      pr expr
     else
       pr For(i,0,n-1) {
-        pr c[i] === a[i] + b[i]
+        pr expr
       }
     end
   }
