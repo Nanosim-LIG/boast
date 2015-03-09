@@ -64,7 +64,7 @@ puts k.print
 k.run(n,a,b,c_ref)
 BOAST::set_lang( BOAST::C )
 puts "C"
-c.random
+c.random!
 k = BOAST::vector_add
 puts k.print
 k.run(n,a,b,c)
@@ -74,7 +74,7 @@ diff.each { |elem|
 }
 BOAST::set_lang( BOAST::CL )
 puts "CL"
-c.random
+c.random!
 k = BOAST::vector_add
 puts k.print
 k.run(n, a, b, c, :global_work_size => [rndup(n,32), 1,1], :local_work_size => [32,1,1] )
@@ -84,7 +84,7 @@ diff.each { |elem|
 }
 BOAST::set_lang( BOAST::CUDA )
 puts "CUDA"
-c.random
+c.random!
 k = BOAST::vector_add
 puts k.print
 k.build(:LDFLAGS => " -L/usr/local/cuda-5.5.22/lib64")

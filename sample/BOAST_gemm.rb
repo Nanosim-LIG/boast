@@ -57,7 +57,7 @@ stats = []
 puts stats
 BOAST::set_lang( BOAST::C )
 puts "C"
-c.random
+c.random!
 k = BOAST::gemm(8)
 puts k.print
 stats = []
