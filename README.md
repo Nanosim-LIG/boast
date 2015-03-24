@@ -167,39 +167,39 @@ The Canonical Case: Vector Addition
 Following Listing shows the addition of two vectors in a third one. Here BOAST
 is configured to have arrays starting at 0 and to use single precision reals by
 default (Lines 5 and 6). The kernel declaration is encapsulated inside a method
-to avoid cluttering the global namespace. Line 15 the expression `c[i] === a[i]
-+ b[i]` is stored inside a variable *expr* for later use. Lines 16 to 23 show
+to avoid cluttering the global namespace. Line 15 the expression `c[i] === a[i]+ b[i]`
+is stored inside a variable *expr* for later use. Lines 16 to 23 show
 that the kernel differs depending on the target language, in CUDA and OpenCL
 each thread will process one element.
 
-    ```ruby
-    require 'narray'
-    require 'BOAST'
-    include BOAST
+```ruby
+require 'narray'
+require 'BOAST'
+include BOAST
 
-    set_array_start(0)
-    set_default_real_size(4)
+set_array_start(0)
+set_default_real_size(4)
 
-    def vector_add
-      n = Int("n",:dir => :in)
-      a = Real("a",:dir => :in, :dim => [ Dim(n)] )
-      b = Real("b",:dir => :in, :dim => [ Dim(n)] )
-      c = Real("c",:dir => :out, :dim => [ Dim(n)] )
-      p = Procedure("vector_add", [n,a,b,c]) {
-        decl i = Int("i")
-        expr = c[i] === a[i] + b[i]
-        if (get_lang == CL or get_lang == CUDA) then
-          pr i === get_global_id(0)
-          pr expr
-        else
-          pr For(i,0,n-1) {
-            pr expr
-          }
-        end
+def vector_add
+  n = Int("n",:dir => :in)
+  a = Real("a",:dir => :in, :dim => [ Dim(n)] )
+  b = Real("b",:dir => :in, :dim => [ Dim(n)] )
+  c = Real("c",:dir => :out, :dim => [ Dim(n)] )
+  p = Procedure("vector_add", [n,a,b,c]) {
+    decl i = Int("i")
+    expr = c[i] === a[i] + b[i]
+    if (get_lang == CL or get_lang == CUDA) then
+      pr i === get_global_id(0)
+      pr expr
+    else
+      pr For(i,0,n-1) {
+        pr expr
       }
-      return p.ckernel
     end
-    ```
+  }
+  return p.ckernel
+end
+```
 
 Following Listing shows the a way to check the validity of the previous kernel
 over the available range of languages. The options that are passed to run are
@@ -207,28 +207,28 @@ only relevant for GPU languages and are thus ignored in FORTRAN and C
 (Line 16). Success is only printed if results are validated, else an exception
 is raised (Lines 17 to 20).
 
-    ```ruby
-    n = 1024*1024
-    a = NArray.sfloat(n).random
-    b = NArray.sfloat(n).random
-    c = NArray.sfloat(n)
+```ruby
+n = 1024*1024
+a = NArray.sfloat(n).random
+b = NArray.sfloat(n).random
+c = NArray.sfloat(n)
 
-    epsilon = 10e-15
+epsilon = 10e-15
 
-    c_ref = a + b
+c_ref = a + b
 
-    [:FORTRAN, :C, :CL, :CUDA].each { |l|
-      set_lang( BOAST.const_get(l)  )
-      puts "#{l}:"
-      k = vector_add
-      puts k.print
-      c.random!
-      k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
-      diff = (c_ref - c).abs
-      diff.each { |elem|
-        raise "Warning: residue too big: #{elem}" if elem > epsilon
-      }
-    }
-    puts "Success!"
-    ```
+[:FORTRAN, :C, :CL, :CUDA].each { |l|
+  set_lang( BOAST.const_get(l)  )
+  puts "#{l}:"
+  k = vector_add
+  puts k.print
+  c.random!
+  k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
+  diff = (c_ref - c).abs
+  diff.each { |elem|
+    raise "Warning: residue too big: #{elem}" if elem > epsilon
+  }
+}
+puts "Success!"
+```
 
