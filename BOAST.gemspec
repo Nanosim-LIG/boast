@@ -3,7 +3,7 @@ Gem::Specification.new do |s|
   s.version = "1.0.1"
   s.author = "Brice Videau"
   s.email = "brice.videau@imag.fr"
-  s.homepage = "https://forge.imag.fr/projects/boast/"
+  s.homepage = "https://github.com/Nanosim-LIG/boast"
   s.summary = "BOAST is a computing kernel metaprogramming tool."
   s.description = "BOAST aims at providing a framework to metaprogram, benchmark and validate computing kernels"
   s.files = %w( BOAST.gemspec
