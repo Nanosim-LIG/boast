@@ -11,10 +11,10 @@ BOAST is ruby based, so ruby needs to be installed on the machine.
 Installation of boast can be done using the ruby built-in package
 manager: *gem*. See following Listing for reference.
 
-    ```bash
-    sudo apt-get install ruby ruby-dev
-    gem install --user-install BOAST
-    ```
+```bash
+sudo apt-get install ruby ruby-dev
+gem install --user-install BOAST
+```
 
 Variable and Procedure Declaration
 ----------------------------------
