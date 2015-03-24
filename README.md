@@ -1,26 +1,27 @@
-BOAST {#boast .unnumbered}
-=======
+BOAST
+=====
 
 This section will present some simple examples to familiarize the user
 with BOAST. More samples can be found in the git repository.
 
-Installation {#installation .unnumbered}
+Installation
 ------------
 
 BOAST is ruby based, so ruby needs to be installed on the machine.
 Installation of boast can be done using the ruby built-in package
-manager: *gem*. See Listing [lst:BOAST~i~nstall] for reference.
+manager: *gem*. See following Listing for reference.
 
+    ```bash
     sudo apt-get install ruby ruby-dev
     gem install --user-install BOAST
+    ```
 
-Variable and Procedure Declaration {#variable-and-procedure-declaration .unnumbered}
+Variable and Procedure Declaration
 ----------------------------------
 
-The following samples are presented using *irb* ruby interactive
-interpreter. It can be launched using the *irb* command in a terminal.
-Listing [lst:variable~d~eclaration] shows the declaration of two
-variables of different kind.
+The following samples are presented using *irb* ruby interactive interpreter.
+It can be launched using the *irb* command in a terminal.  Following
+Listing shows the declaration of two variables of different kind.
 
     irb(main):001:0> require 'BOAST'
     => true
@@ -33,9 +34,8 @@ variables of different kind.
     real(kind=8) :: b
     => [a, b]
 
-Listing [lst:procedure~d~eclaration] shows the declaration of a
-procedure using the two previous variables as parameters. For clarity
-irb echoes have been suppressed.
+Following Listing shows the declaration of a procedure using the two previous
+variables as parameters. For clarity irb echoes have been suppressed.
 
     005:0> p = BOAST::Procedure( "test_proc", [a,b] )
     006:0> BOAST::opn p
@@ -46,11 +46,11 @@ irb echoes have been suppressed.
     007:0> BOAST::close p
     END SUBROUTINE test_proc
 
-Switching Language {#switching-language .unnumbered}
+Switching Language
 ------------------
 
-Listing [lst:switching~l~anguage] shows how to switch BOAST to C.
-Available languages are *FORTRAN*, *C*, *CUDA* and *CL*.
+Following Listing shows how to switch BOAST to C.  Available languages are
+*FORTRAN*, *C*, *CUDA* and *CL*.
 
     008:0> BOAST::lang = BOAST::C
     009:0> BOAST::opn p
@@ -58,13 +58,12 @@ Available languages are *FORTRAN*, *C*, *CUDA* and *CL*.
     010:0> BOAST::close p
     }
 
-Defining a Complete Procedure {#defining-a-complete-procedure .unnumbered}
+Defining a Complete Procedure
 -----------------------------
 
-Listing [lst:complete~p~rocedure] shows how to define a procedure and
-the associated code. Note that here the parameters of the procedure have
-been associated a direction: one, *a*, is an input parameter while the
-other is an output parameter.
+Following Listing shows how to define a procedure and the associated code. Note
+that here the parameters of the procedure have been associated a direction:
+one, *a*, is an input parameter while the other, *b*, is an output parameter.
 
     011:0> BOAST::lang = BOAST::FORTRAN
     012:0> a = BOAST::Real( "a", :dir => :in)
@@ -85,15 +84,15 @@ other is an output parameter.
       (*b) = a + 2;
     }
 
-Creating, Building and Running a Computing Kernel {#creating-building-and-running-a-computing-kernel .unnumbered}
+Creating, Building and Running a Computing Kernel
 -------------------------------------------------
 
-Listing [lst:computing~k~ernel] shows how to create a Computing kernel
-(*CKernel*) and build it. Once a computing kernel is instantiated the
-output of BOAST will be redirected to the computing kernel source code.
-Line 4 sets the entry point of the computing kernel to the procedure we
-just defined. By default compilation commands are not shown unless an
-error occurs. This behavior can be changed by switching to verbose mode.
+Following Listing shows how to create a Computing kernel (*CKernel*) and build
+it. Once a computing kernel is instantiated the output of BOAST will be
+redirected to the computing kernel source code.  Line 4 sets the entry point of
+the computing kernel to the procedure we just defined. By default compilation
+commands are not shown unless an error occurs. This behavior can be changed by
+switching to verbose mode.
 
 When running the kernel all the arguments have to be specified. Running
 a kernel returns a hash table containing information about the procedure
@@ -122,11 +121,11 @@ execution took.
     029:0> puts r
     {:reference_return=>{:b=>7.0}, :duration=>5.84e-07}
 
-Using Arrays in Procedures {#using-arrays-in-procedures .unnumbered}
+Using Arrays in Procedures
 --------------------------
 
-Most computing kernels don’t work on scalar values but rather on arrays
-of data. Listing [lst:arrays] shows how to use arrays in computing
+Most computing kernels don't work on scalar values but rather on arrays
+of data. Following Listing shows how to use arrays in computing
 kernels. In this case we place ourselves in BOAST namespace to reduce
 the syntax overhead. Variables *a* and *b* are one-dimensional arrays of
 size *n*. Arrays in BOAST start at index 1 unless specified otherwise.
@@ -162,18 +161,18 @@ result of the kernel.
     021:0> puts "Success, duration: #{stats[:duration]} s"
     Success, duration: 3.79e-06 s
 
-The Canonical Case: Vector Addition {#the-canonical-case-vector-addition .unnumbered}
+The Canonical Case: Vector Addition
 -----------------------------------
 
-Listing [lst:vector~a~dd~d~ecl] shows the addition of two vectors in a
-third one. Here BOAST is configured to have arrays starting at 0 and to
-use single precision reals by default (Lines 5 and 6). The kernel
-declaration is encapsulated inside a method to avoid cluttering the
-global namespace. Line 15 the expression `c[i] === a[i] + b[i]` is
-stored inside a variable *expr* for later use. Lines 16 to 23 show that
-the kernel differs depending on the target language, in CUDA and OpenCL
+Following Listing shows the addition of two vectors in a third one. Here BOAST
+is configured to have arrays starting at 0 and to use single precision reals by
+default (Lines 5 and 6). The kernel declaration is encapsulated inside a method
+to avoid cluttering the global namespace. Line 15 the expression `c[i] === a[i]
++ b[i]` is stored inside a variable *expr* for later use. Lines 16 to 23 show
+that the kernel differs depending on the target language, in CUDA and OpenCL
 each thread will process one element.
 
+    ```ruby
     require 'narray'
     require 'BOAST'
     include BOAST
@@ -200,13 +199,15 @@ each thread will process one element.
       }
       return p.ckernel
     end
+    ```
 
-Listing [lst:vector~a~dd~r~un] shows the a way to check the validity of
-the previous kernel over the available range of languages. The options
-that are passed to run are only relevant for GPU languages and are thus
-ignored in FORTRAN and C (Line 16). Success is only printed if results
-are validated, else an exception is raised (Lines 17 to 20).
+Following Listing shows the a way to check the validity of the previous kernel
+over the available range of languages. The options that are passed to run are
+only relevant for GPU languages and are thus ignored in FORTRAN and C
+(Line 16). Success is only printed if results are validated, else an exception
+is raised (Lines 17 to 20).
 
+    ```ruby
     n = 1024*1024
     a = NArray.sfloat(n).random
     b = NArray.sfloat(n).random
@@ -229,5 +230,5 @@ are validated, else an exception is raised (Lines 17 to 20).
       }
     }
     puts "Success!"
-
+    ```
 
