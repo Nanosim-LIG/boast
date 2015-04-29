@@ -6,6 +6,7 @@ require 'rbconfig'
 require 'systemu'
 require 'yaml'
 require 'pathname'
+require 'os'
 
 module BOAST
   @@compiler_default_options = {
@@ -693,12 +694,16 @@ EOF
       module_file.print <<EOF
 #include "ruby.h"
 #include <inttypes.h>
-#include <time.h>
 #ifdef HAVE_NARRAY_H
 #include "narray.h"
 #endif
 EOF
-      if( @lang == CUDA ) then
+      if OS.mac? then
+        module_file.print "#include <mach/mach_time.h>\n"
+      else
+        module_file.print "#include <time.h>\n"
+      end
+      if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
       end
     end
@@ -787,7 +792,12 @@ EOF
       module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
       module_file.print "  VALUE _boast_refs = rb_hash_new();\n"
       module_file.print "  VALUE _boast_event_set = Qnil;\n"
-      module_file.print "  struct timespec _boast_start, _boast_stop;\n"
+      if OS.mac? then
+        module_file.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
+        module_file.print "  mach_timebase_info_data_t _mac_boast_timebase_info;\n"
+      else
+        module_file.print "  struct timespec _boast_start, _boast_stop;\n"
+      end
       module_file.print "  unsigned long long int _boast_duration;\n"
     end
 
@@ -964,10 +974,6 @@ EOF
     end
 
     def store_result(module_file)
-      if @lang != CUDA then
-        module_file.print "  _boast_duration = (unsigned long long int)_boast_stop.tv_sec * (unsigned long long int)1000000000 + _boast_stop.tv_nsec;\n"
-        module_file.print "  _boast_duration -= (unsigned long long int)_boast_start.tv_sec * (unsigned long long int)1000000000 + _boast_start.tv_nsec;\n"
-      end
       module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_duration*(double)1e-9));\n"
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
@@ -1002,13 +1008,30 @@ EOF
 
       get_PAPI_options(module_file)
 
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
+      if OS.mac? then
+        module_file.print "  _mac_boast_start = mach_absolute_time();\n"
+      else
+        module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
+      end
 
       create_procedure_call(module_file)
 
-      module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+      if OS.mac? then
+        module_file.print "  _mac_boast_stop = mach_absolute_time();\n"
+      else
+        module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+      end
 
       get_PAPI_results(module_file)
+
+      if @lang != CUDA then
+        if OS.mac? then
+          module_file.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
+          module_file.print "  _boast_duration = (_mac_boast_stop - _mac_boast_start) * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom;\n"
+        else
+          module_file.print "  _boast_duration = (_boast_stop.tv_sec - _boast_start.tv_sec) * (unsigned long long int)1000000000 + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
+        end
+      end
 
       get_results(module_file, argv, rb_ptr)
 
