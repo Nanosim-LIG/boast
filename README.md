@@ -232,3 +232,9 @@ c_ref = a + b
 puts "Success!"
 ```
 
+Acknowledgment
+--------------
+
+The research leading to these results has received funding from the
+European Community's Seventh Framework Programme [FP7/2007-2013] under
+grant agreement n° 288777 and 610402.
