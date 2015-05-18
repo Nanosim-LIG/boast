@@ -610,7 +610,7 @@ EOF
       if not ffi? then
         file module_final => [module_target, target] do
           #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-          sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+          sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-export-dynamic #{ldflags}"
         end
         Rake::Task[module_final].invoke
 
@@ -618,7 +618,7 @@ EOF
       else
         file module_final => [target] do
           #puts "#{linker} -shared -o #{module_final} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-          sh "#{linker} -shared -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+          sh "#{linker} -shared -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-export-dynamic #{ldflags}"
         end
         Rake::Task[module_final].invoke
         create_ffi_module(module_name, module_final)
