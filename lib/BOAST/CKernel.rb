@@ -185,7 +185,7 @@ module BOAST
           cflags += " #{openmp_cflags}"
       end
 
-      rule '.o' => '.c' do |t|
+      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
@@ -201,7 +201,7 @@ module BOAST
           cxxflags += " #{openmp_cxxflags}"
       end
 
-      rule '.o' => '.cpp' do |t|
+      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cpp' do |t|
         cxx_call_string = "#{cxx_compiler} #{cxxflags} -c -o #{t.name} #{t.source}"
         runner.call(t, cxx_call_string)
       end
@@ -218,7 +218,7 @@ module BOAST
           fcflags += " #{openmp_fcflags}"
       end
 
-      rule '.o' => '.f90' do |t|
+      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.f90' do |t|
         f_call_string = "#{f_compiler} #{fcflags} -c -o #{t.name} #{t.source}"
         runner.call(t, f_call_string)
       end
@@ -229,7 +229,7 @@ module BOAST
       cudaflags = options[:NVCCFLAGS]
       cudaflags += " --compiler-options '-fPIC'"
 
-      rule '.o' => '.cu' do |t|
+      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cu' do |t|
         cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
         runner.call(t, cuda_call_string)
       end
@@ -249,7 +249,15 @@ module BOAST
         ldflags += " #{openmp_ldflags}"
       end
 
-      return [linker, ldflags]
+      if OS.mac? then
+        ldflags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress #{ldflags}"
+        ldshared = "-dynamic -bundle"
+      else
+        ldflags = "-Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
+        ldshared = "-shared"
+      end
+
+      return [linker, ldshared, ldflags]
     end
 
     def setup_compilers(options = {})
@@ -590,7 +598,7 @@ EOF
       compiler_options.update(options)
       return build_opencl(compiler_options) if @lang == CL
 
-      linker, ldflags = setup_compilers(compiler_options)
+      linker, ldshared, ldflags = setup_compilers(compiler_options)
 
       extension = @@extensions[@lang]
 
@@ -598,10 +606,10 @@ EOF
 
       if not ffi? then
         module_file_name, module_name = create_module_source(path)
-        module_target = module_file_name.chomp(File::extname(module_file_name))+".o"
-        module_final = module_file_name.chomp(File::extname(module_file_name))+".so"
+        module_target = module_file_name.chomp(File::extname(module_file_name))+"."+RbConfig::CONFIG["OBJEXT"]
+        module_final = module_file_name.chomp(File::extname(module_file_name))+"."+RbConfig::CONFIG["DLEXT"]
       else
-        module_final = path.chomp(File::extname(path))+".so"
+        module_final = path.chomp(File::extname(path))+"."+RbConfig::CONFIG["DLEXT"]
         module_name = "Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_")
       end
 
@@ -609,16 +617,16 @@ EOF
 
       if not ffi? then
         file module_final => [module_target, target] do
-          #puts "#{linker} -shared -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-          sh "#{linker} -shared -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-export-dynamic #{ldflags}"
+          #puts "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} #{ldflags}"
+          sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
         Rake::Task[module_final].invoke
 
         require(module_final)
       else
         file module_final => [target] do
-          #puts "#{linker} -shared -o #{module_final} #{target} #{kernel_files.join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
-          sh "#{linker} -shared -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-export-dynamic #{ldflags}"
+          #puts "#{linker} #{ldshared} -o #{module_final} #{target} #{kernel_files.join(" ")} #{ldflags}"
+          sh "#{linker} #{ldshared} -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
         Rake::Task[module_final].invoke
         create_ffi_module(module_name, module_final)
