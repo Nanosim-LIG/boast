@@ -237,7 +237,8 @@ module BOAST
 
     def setup_linker(options)
       ldflags = options[:LDFLAGS]
-      ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]} -lrt"
+      ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
+      ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
@@ -707,7 +708,15 @@ EOF
 #endif
 EOF
       if OS.mac? then
-        module_file.print "#include <mach/mach_time.h>\n"
+        module_file.print <<EOF
+#if __cplusplus
+extern "C" {
+#include <mach/mach_time.h>
+#endif
+#if __cplusplus
+}
+#endif
+EOF
       else
         module_file.print "#include <time.h>\n"
       end
