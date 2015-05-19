@@ -711,8 +711,8 @@ EOF
         module_file.print <<EOF
 #if __cplusplus
 extern "C" {
-#include <mach/mach_time.h>
 #endif
+#include <mach/mach_time.h>
 #if __cplusplus
 }
 #endif
