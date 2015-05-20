@@ -38,13 +38,16 @@ module BOAST
 
   module PrivateStateAccessor
     private_boolean_state_accessor :verbose
+    private_boolean_state_accessor :debug_source
     private_boolean_state_accessor :ffi
   end
 
   boolean_state_accessor :verbose
+  boolean_state_accessor :debug_source
   boolean_state_accessor :ffi
   @@ffi = false
   @@verbose = false
+  @@debug_source = false
   FORTRAN_LINE_LENGTH = 72
 
   module_function
@@ -82,6 +85,7 @@ module BOAST
     @@compiler_default_options[:LD] = ENV["LD"] if ENV["LD"]
     @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
     @@ffi = ENV["FFI"] if ENV["FFI"]
+    @@debug_source = ENV["DEBUG_SOURCE"] if ENV["DEBUG_SOURCE"]
   end
 
   read_boast_config
@@ -492,8 +496,10 @@ EOF
       module_file = File::open(module_file_name,"w+")
       set_output( module_file )
       fill_module(module_file, module_name)
-      module_file.rewind
-      #puts module_file.read
+      if debug_source? then
+        module_file.rewind
+        puts module_file.read
+      end
       module_file.close
       set_lang( previous_lang )
       set_output( previous_output )
@@ -513,6 +519,10 @@ EOF
       path = source_file.path
       target = path.chomp(File::extname(path))+".o"
       fill_code(source_file)
+      if debug_source? then
+        source_file.rewind
+        puts source_file.read
+      end
       source_file.close
       return [source_file, path, target]
     end
