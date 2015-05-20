@@ -819,7 +819,6 @@ EOF
       set_decl_module(false)
       module_file.print "  #{@procedure.properties[:return].type.decl} _boast_ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
-      module_file.print "  VALUE _boast_refs = rb_hash_new();\n"
       module_file.print "  VALUE _boast_event_set = Qnil;\n"
       if OS.mac? then
         module_file.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
@@ -886,7 +885,6 @@ EOF
     def  get_PAPI_options(module_file)
 module_file.print <<EOF
   if( _boast_rb_opts != Qnil ) {
-    VALUE _boast_rb_array_data = Qnil;
     _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("PAPI")));
     if( _boast_rb_ptr != Qnil ) {
       VALUE _boast_PAPI = Qnil;
