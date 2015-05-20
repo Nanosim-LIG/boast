@@ -1019,7 +1019,7 @@ EOF
       module_preamble(module_file, module_name)
 
       module_file.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
-
+      increment_indent_level
       check_args(module_file)
 
       argc = @procedure.parameters.length
@@ -1068,6 +1068,7 @@ EOF
       store_result(module_file)
 
       module_file.print "  return _boast_stats;\n"
+      decrement_indent_level
       module_file.print "}"
     end
 
