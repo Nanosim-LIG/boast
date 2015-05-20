@@ -786,8 +786,9 @@ EOF
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
     cudaMalloc( (void **) &#{param.name}, _boast_array_size);
     cudaMemcpy(#{param.name}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
-  } else
+  } else {
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
+  }
 EOF
           else
             module_file.print <<EOF
@@ -797,8 +798,9 @@ EOF
     struct NARRAY *_boast_n_ary;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     #{param.name} = (void *) _boast_n_ary->ptr;
-  } else
+  } else {
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
+  }
 EOF
           end
         end
@@ -973,9 +975,9 @@ EOF
             end
             module_file.print <<EOF
     cudaFree( (void *) #{param.name});
-  } else
+  } else {
     rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
-  
+  }
 EOF
           end
         end
@@ -984,6 +986,7 @@ EOF
         @procedure.parameters.each_with_index do |param,i|
           if param.scalar_output? then
             if first then
+              module_file.print "  VALUE _boast_refs = rb_hash_new();\n"
               module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);\n"
               first = false
             end
