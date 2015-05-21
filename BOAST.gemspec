@@ -44,4 +44,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'systemu', '~> 2', '>=2.2.0'
   s.add_dependency 'os', '~> 0.9', '>=0.9.6'
   s.add_dependency 'PAPI', '~> 0', '>=0.101'
+  s.add_dependency 'ffi', '~> 1.9', '>=1.9.3'
 end
