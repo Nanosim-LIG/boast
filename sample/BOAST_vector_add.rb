@@ -1,3 +1,4 @@
+[ '../lib', 'lib' ].each { |d| $:.unshift(d) if File::directory?(d) }
 require 'narray'
 require 'BOAST'
 include BOAST
