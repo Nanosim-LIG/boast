@@ -479,7 +479,7 @@ EOF
     def get_sub_kernels
       kernel_files = []
       @kernels.each { |kernel|
-        kernel_file = Tempfile::new([kernel.procedure.name,".o"])
+        kernel_file = Tempfile::new([kernel.procedure.name,".#{RbConfig::CONFIG["OBJEXT"]}"])
         kernel.binary.rewind
         kernel_file.write( kernel.binary.read )
         kernel_file.close
@@ -517,7 +517,7 @@ EOF
       extension = @@extensions[@lang]
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
-      target = path.chomp(File::extname(path))+".o"
+      target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
       fill_code(source_file)
       if debug_source? then
         source_file.rewind
