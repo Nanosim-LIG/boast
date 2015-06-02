@@ -8,6 +8,7 @@ module BOAST
   CUDA = 4
   X86 = 1
   ARM = 2
+  MPPA = 3
 
   module PrivateStateAccessor
 
