@@ -733,6 +733,9 @@ EOF
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
       end
+      if get_architecture == MPPA then
+        module_file.print "#include <mppaipc.h>"
+      end
     end
 
     def module_preamble(module_file, module_name)
