@@ -919,6 +919,12 @@ EOF
     end
 
     def create_procedure_call(module_file)
+      if get_architecture == MPPA then
+        decl mppa_load_id = Variable::new("_mppa_load_id", Int)
+        decl mppa_pid = Variable::new("_mppa_pid", Int)
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{path_mpk}\");"
+        module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);"
+      end
       if @lang == CUDA then
         module_file.print "  _boast_duration = "
       elsif @procedure.properties[:return] then
@@ -953,6 +959,10 @@ EOF
       end
       module_file.print params.join(", ")
       module_file.print "  );\n"
+      if get_architecture == MPPA then
+        module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);"
+        module_file.print "  mppa_unload(_mppa_load_id);"
+      end
     end
 
     def get_results(module_file, argv, rb_ptr)
