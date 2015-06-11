@@ -922,46 +922,50 @@ EOF
       if get_architecture == MPPA then
         decl mppa_load_id = Variable::new("_mppa_load_id", Int)
         decl mppa_pid = Variable::new("_mppa_pid", Int)
-        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{path_mpk}\");"
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{path_mpk}\");" # TODO : Implementing MPK making
         module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);"
-      end
-      if @lang == CUDA then
-        module_file.print "  _boast_duration = "
-      elsif @procedure.properties[:return] then
-        module_file.print "  _boast_ret = "
-      end
-      module_file.print "  #{@procedure.name}"
-      module_file.print "_" if @lang == FORTRAN
-      module_file.print "_wrapper" if @lang == CUDA
-      module_file.print "("
-      params = []
-      if(@lang == FORTRAN) then
-        @procedure.parameters.each { |param|
-          if param.dimension then
-            params.push( param.name )
-          else
-            params.push( "&"+param.name )
-          end
-        }
-      else
-        @procedure.parameters.each { |param|
-          if param.dimension then
-            params.push( param.name )
-          elsif param.direction == :out or param.direction == :inout then
-            params.push( "&"+param.name )
-          else
-            params.push( param.name )
-          end
-        }
-      end
-      if @lang == CUDA then
-        params.push( "_boast_block_number", "_boast_block_size" )
-      end
-      module_file.print params.join(", ")
-      module_file.print "  );\n"
-      if get_architecture == MPPA then
+        
+        # TODO : Sending data
+        # TODO : Retrieving results
+        # TODO : Retrieving timers
+
         module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);"
         module_file.print "  mppa_unload(_mppa_load_id);"
+      else
+        if @lang == CUDA then
+          module_file.print "  _boast_duration = "
+        elsif @procedure.properties[:return] then
+          module_file.print "  _boast_ret = "
+        end
+        module_file.print "  #{@procedure.name}"
+        module_file.print "_" if @lang == FORTRAN
+        module_file.print "_wrapper" if @lang == CUDA
+        module_file.print "("
+        params = []
+        if(@lang == FORTRAN) then
+          @procedure.parameters.each { |param|
+            if param.dimension then
+              params.push( param.name )
+            else
+              params.push( "&"+param.name )
+            end
+          }
+        else 
+          @procedure.parameters.each { |param|
+            if param.dimension then
+              params.push( param.name )
+            elsif param.direction == :out or param.direction == :inout then
+              params.push( "&"+param.name )
+            else
+              params.push( param.name )
+            end
+          }
+        end
+        if @lang == CUDA then
+          params.push( "_boast_block_number", "_boast_block_size" )
+        end
+        module_file.print params.join(", ")
+        module_file.print "  );\n"
       end
     end
 
