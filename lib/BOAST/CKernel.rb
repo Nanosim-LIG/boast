@@ -250,7 +250,7 @@ module BOAST
       linker = c_compiler if not linker
       if options[:openmp] then
         openmp_ldflags = get_openmp_flags(linker)
-        raise "unkwown openmp flags for: #{linker}" if not openmp_ldflags
+        raise "unknown openmp flags for: #{linker}" if not openmp_ldflags
         ldflags += " #{openmp_ldflags}"
       end
 
