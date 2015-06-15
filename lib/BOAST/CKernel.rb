@@ -179,6 +179,7 @@ module BOAST
     end
 
     def setup_c_compiler(options, includes, narray_path, runner)
+      c_mppa_compiler = "k1-gcc"
       c_compiler = options[:CC]
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
@@ -192,6 +193,16 @@ module BOAST
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
+      end
+
+      rule ".o.io" => ".c" do |t|
+        c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1io -mos=rtems"
+        c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
+      end
+
+      rule ".o.comp" => ".c" do |t|
+        c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1dp -mos=nodeos"
+        c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
       end
     end
 
@@ -239,7 +250,36 @@ module BOAST
       end
     end
 
+    def setup_linker_mppa_io
+      ldflags = options[:LDFLAGS]
+      ldflags += " -mcore=k1io"
+      ldflags += " -mboard=developer"
+      ldflags += " -mos=rtems"
+      ldflags += " -lmppaipc"
+
+      linker += "k1-gcc"
+      
+      return [linker, nil, ldflags]
+    end
+
+    def setup_linker_mppa_clust
+      ldflags = options[:LDFLAGS]
+      ldflags += " -mcore=k1dp"
+      ldflags += " -mboard=developer"
+      ldflags += " -mos=nodeos"
+      ldflags += " -lmppaipc"
+
+      linker += "k1-gcc"
+      
+      return [linker, nil, ldflags]
+    end
+
     def setup_linker(options)
+      if get_architecture == MPPA then
+        return setup_linker_mppa_io if get_mppastate == IO
+        return setup_linker_mppa_clust
+      end
+
       ldflags = options[:LDFLAGS]
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
