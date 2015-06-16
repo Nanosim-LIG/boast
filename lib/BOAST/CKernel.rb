@@ -535,7 +535,9 @@ EOF
       previous_lang = get_lang
       previous_output = get_output
       set_lang( C )
-      module_file_name = File::split(path.chomp(File::extname(path)))[0] + "/Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_") + ".c"
+      extension = @@extensions[@lang]
+      extension += ".comp" if get_architecture == MPPA
+      module_file_name = File::split(path.chomp(extension))[0] + "/Mod_" + File::split(path.chomp(extension))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
       set_output( module_file )
@@ -557,11 +559,21 @@ EOF
       f.close
     end
 
+    def save_multibinary(target)
+      f = File::open(target,"rb")
+      @multibinary = StringIO::new
+      @multibinary.write( f.read )
+      f.close
+    end
+
     def create_source
       extension = @@extensions[@lang]
+      extension += ".comp" if get_architecture == MPPA
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
-      target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
+      #target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
+      target = path.chomp(extension)+".#{RbConfig::CONFIG["OBJEXT"]}"
+      target += ".comp" if get_architecture == MPPA
       fill_code(source_file)
       if debug_source? then
         source_file.rewind
@@ -648,6 +660,15 @@ EOF
       eval s
     end
 
+    def create_mppa_target(path, target)
+      extension = @@extensions[@lang] + ".comp"
+      compbin = path.chomp(extension) + ".bin.comp"
+      iobin = path.chomp(extension) + ".bin.io"
+      multibin = path.chomp(extension) + ".mpk"
+      
+      return iobin, compbin, multibin
+    end
+
     def build(options = {})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
@@ -689,8 +710,13 @@ EOF
       eval "self.extend(#{module_name})"
       save_binary(target)
       
-      file multibin => [iobin, compbin] do
-        sh "k1-create-multibinary --clusters #{compbin} --boot #{iobin} -T #{multibin}"
+      if get_architecture == MPPA then
+        iobin, compbin, multibin == create_mppa_target(path, target)
+
+        file multibin => [iobin, compbin] do
+          sh "k1-create-multibinary --clusters #{compbin} --boot #{iobin} -T #{multibin}"
+        end
+        Rake::Task[multibin].invoke
       end
 
       if not ffi? then
