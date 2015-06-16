@@ -277,13 +277,14 @@ module BOAST
     def setup_linker(options)
       if get_architecture == MPPA then
         return setup_linker_mppa_io if get_mppastate == IO
-        return setup_linker_mppa_clust
+        return setup_linker_mppa_clust if get_mppastate == COMP
       end
 
       ldflags = options[:LDFLAGS]
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
+      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA and get_mppastate == HOST
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
