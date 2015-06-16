@@ -184,25 +184,28 @@ module BOAST
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
+      objext = RbConfig::CONFIG["OBJEXT"]
       if options[:openmp] and @lang == C then
           openmp_cflags = get_openmp_flags(c_compiler)
           raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
           cflags += " #{openmp_cflags}"
       end
 
-      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.c' do |t|
+      rule ".#{objext}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
 
-      rule ".o.io" => ".c" do |t|
+      rule ".#{objext}.io" => ".c.io" do |t|
         c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1io -mos=rtems"
         c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
       end
 
-      rule ".o.comp" => ".c" do |t|
+      rule ".#{objext}.comp" => ".c.comp" do |t|
         c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1dp -mos=nodeos"
         c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
       end
     end
 
@@ -250,41 +253,39 @@ module BOAST
       end
     end
 
-    def setup_linker_mppa_io
+    def setup_linker_mppa(options, runner)
+      objext = RbConfig::CONFIG["OBJEXT"]
       ldflags = options[:LDFLAGS]
-      ldflags += " -mcore=k1io"
       ldflags += " -mboard=developer"
-      ldflags += " -mos=rtems"
       ldflags += " -lmppaipc"
-
+      archflags = "-mcore=k1dp"
+      archflags += " -mos=nodeos"
+      
       linker += "k1-gcc"
       
-      return [linker, nil, ldflags]
-    end
-
-    def setup_linker_mppa_clust
-      ldflags = options[:LDFLAGS]
-      ldflags += " -mcore=k1dp"
-      ldflags += " -mboard=developer"
-      ldflags += " -mos=nodeos"
-      ldflags += " -lmppaipc"
-
-      linker += "k1-gcc"
+      rule ".bin.comp" => ".#{objext}.comp" do |t|
+        linker_string = "#{linker} #{ldflags} #{archflags} -o #{t.name} #{t.source}"
+        runner.call(t, linker_string)
+      end
       
-      return [linker, nil, ldflags]
-    end
+      archflags = "-mcore=k1io"
+      archflags += " -mos=rtems"
 
-    def setup_linker(options)
-      if get_architecture == MPPA then
-        return setup_linker_mppa_io if get_mppastate == IO
-        return setup_linker_mppa_clust if get_mppastate == COMP
+      rule ".bin.io" => ".#{objext}.io" do
+        linker_string = "#{linker} #{ldflags} #{archflags} -o #{t.name} #{t.source}"
+        runner.call(t, linker_string)
       end
 
+      return [linker, nil, ldflags]
+    end
+
+
+    def setup_linker(options)
       ldflags = options[:LDFLAGS]
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
-      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA and get_mppastate == HOST
+      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
@@ -333,6 +334,8 @@ module BOAST
       setup_cxx_compiler(options, includes, runner)
       setup_fortran_compiler(options, runner)
       setup_cuda_compiler(options, runner)
+      
+      setup_linker_mppa(options, runner) if get_architecture == MPPA
 
       return setup_linker(options)
 
@@ -685,6 +688,10 @@ EOF
       end
       eval "self.extend(#{module_name})"
       save_binary(target)
+      
+      file multibin => [iobin, compbin] do
+        sh "k1-create-multibinary --clusters #{compbin} --boot #{iobin} -T #{multibin}"
+      end
 
       if not ffi? then
         [target, module_target, module_file_name, module_final].each { |fn|
