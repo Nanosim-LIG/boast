@@ -717,6 +717,7 @@ EOF
           sh "k1-create-multibinary --clusters #{compbin} --boot #{iobin} -T #{multibin}"
         end
         Rake::Task[multibin].invoke
+        save_multibinary(multibin)
       end
 
       if not ffi? then
@@ -728,6 +729,13 @@ EOF
           File::unlink(fn)
         }
       end
+      
+      if get_architecture == MPPA then
+        [iobin, compbin, multibin].each { |fn|
+          File::unlink(fn)
+        }
+      end
+
       kernel_files.each { |f|
         f.unlink
       }
