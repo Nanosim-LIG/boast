@@ -133,6 +133,15 @@ module BOAST
       end
     end
 
+    def set_io
+      @code_io = StringIO::new unless @code_io
+      set_output(@code_io)
+    end
+
+    def set_comp
+      set_output(@code)
+    end
+
     def print
       @code.rewind
       puts @code.read
@@ -184,6 +193,7 @@ module BOAST
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
+      cflags += " -I/usr/local/k1tools/include" if get_architecture == MPPA
       objext = RbConfig::CONFIG["OBJEXT"]
       if options[:openmp] and @lang == C then
           openmp_cflags = get_openmp_flags(c_compiler)
@@ -196,15 +206,15 @@ module BOAST
         runner.call(t, c_call_string)
       end
 
-      rule ".#{objext}.io" => ".c.io" do |t|
-        c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1io -mos=rtems"
-        c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
+      rule ".#{objext}io" => ".cio" do |t|
+        c_call_string = "#{c_mppa_compiler} -mcore=k1io -mos=rtems"
+        c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
 
-      rule ".#{objext}.comp" => ".c.comp" do |t|
-        c_call_string = "#{c_mppa_compiler} -I/usr/local/k1tools/include -mcore=k1dp -mos=nodeos"
-        c_call_string += " -mboard=developer -c -o #{t.name} #{t.source}"
+      rule ".#{objext}comp" => ".ccomp" do |t|
+        c_call_string = "#{c_mppa_compiler} -mcore=k1dp -mos=nodeos"
+        c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
     end
@@ -256,27 +266,21 @@ module BOAST
     def setup_linker_mppa(options, runner)
       objext = RbConfig::CONFIG["OBJEXT"]
       ldflags = options[:LDFLAGS]
-      ldflags += " -mboard=developer"
+      board = " -mboard=developer"
       ldflags += " -lmppaipc"
-      archflags = "-mcore=k1dp"
-      archflags += " -mos=nodeos"
       
-      linker += "k1-gcc"
+      linker = "k1-gcc"
       
-      rule ".bin.comp" => ".#{objext}.comp" do |t|
-        linker_string = "#{linker} #{ldflags} #{archflags} -o #{t.name} #{t.source}"
+      rule ".bincomp" => ".#{objext}comp" do |t|
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1dp #{board} -mos=nodeos #{ldflags}"
         runner.call(t, linker_string)
       end
       
-      archflags = "-mcore=k1io"
-      archflags += " -mos=rtems"
-
-      rule ".bin.io" => ".#{objext}.io" do
-        linker_string = "#{linker} #{ldflags} #{archflags} -o #{t.name} #{t.source}"
+      rule ".binio" => ".#{objext}io" do |t|
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1io #{board} -mos=rtems #{ldflags}"
         runner.call(t, linker_string)
       end
 
-      return [linker, nil, ldflags]
     end
 
 
@@ -536,7 +540,7 @@ EOF
       previous_output = get_output
       set_lang( C )
       extension = @@extensions[@lang]
-      extension += ".comp" if get_architecture == MPPA
+      extension += "comp" if get_architecture == MPPA
       module_file_name = File::split(path.chomp(extension))[0] + "/Mod_" + File::split(path.chomp(extension))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
@@ -564,17 +568,38 @@ EOF
       @multibinary = StringIO::new
       @multibinary.write( f.read )
       f.close
+      @multibinary_path = f.path
     end
 
     def create_source
       extension = @@extensions[@lang]
-      extension += ".comp" if get_architecture == MPPA
+      extension += "comp" if get_architecture == MPPA
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
       #target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
-      target = path.chomp(extension)+".#{RbConfig::CONFIG["OBJEXT"]}"
-      target += ".comp" if get_architecture == MPPA
+      target = path.chomp(extension)
+      if get_architecture == MPPA then
+        target += ".bincomp"
+      else
+        target += ".#{RbConfig::CONFIG["OBJEXT"]}"
+      end
       fill_code(source_file)
+      if debug_source? then
+        source_file.rewind
+        puts source_file.read
+      end
+      source_file.close
+      return [source_file, path, target]
+    end
+
+    def create_source_io(origin_source_path)
+      extension = @@extensions[@lang]
+      extension_comp = extension + "comp"
+      extension_io = extension + "io"
+      path = origin_source_path.chomp(extension_comp)+@@extensions[@lang]+"io"
+      target = origin_source_path.chomp(extension_comp)+".bin"+"io"
+      source_file = File::open(path, "w+")
+      fill_code(source_file,true)
       if debug_source? then
         source_file.rewind
         puts source_file.read
@@ -660,13 +685,11 @@ EOF
       eval s
     end
 
-    def create_mppa_target(path, target)
+    def create_mppa_target(path)
       extension = @@extensions[@lang] + ".comp"
-      compbin = path.chomp(extension) + ".bin.comp"
-      iobin = path.chomp(extension) + ".bin.io"
       multibin = path.chomp(extension) + ".mpk"
       
-      return iobin, compbin, multibin
+      return multibin
     end
 
     def build(options = {})
@@ -680,6 +703,17 @@ EOF
 
       source_file, path, target = create_source
 
+      if get_architecture == MPPA then
+        source_file_io, path_io, target_io = create_source_io(path)
+
+        multibin = create_mppa_target(path)
+        file multibin => [target_io, target] do
+          sh "k1-create-multibinary --clusters #{target} --clusters-names \"comp-part\" --boot #{target_io} --bootname \"io-part\" -T #{multibin}"
+        end
+        Rake::Task[multibin].invoke
+        save_multibinary(multibin)
+      end
+
       if not ffi? then
         module_file_name, module_name = create_module_source(path)
         module_target = module_file_name.chomp(File::extname(module_file_name))+"."+RbConfig::CONFIG["OBJEXT"]
@@ -691,35 +725,32 @@ EOF
 
       kernel_files = get_sub_kernels
 
-      if not ffi? then
+      if get_architecture == MPPA then
+        file module_final => [module_target] do
+          sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{ldflags}"
+        end
+      elsif not ffi? then
         file module_final => [module_target, target] do
           #puts "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} #{ldflags}"
           sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
-        Rake::Task[module_final].invoke
-
-        require(module_final)
       else
         file module_final => [target] do
           #puts "#{linker} #{ldshared} -o #{module_final} #{target} #{kernel_files.join(" ")} #{ldflags}"
           sh "#{linker} #{ldshared} -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
-        Rake::Task[module_final].invoke
-        create_ffi_module(module_name, module_final)
       end
+
+      Rake::Task[module_final].invoke
+      if ffi? then
+        create_ffi_module(module_name, module_final)
+      else
+        require(module_final)
+      end
+
       eval "self.extend(#{module_name})"
       save_binary(target)
       
-      if get_architecture == MPPA then
-        iobin, compbin, multibin == create_mppa_target(path, target)
-
-        file multibin => [iobin, compbin] do
-          sh "k1-create-multibinary --clusters #{compbin} --boot #{iobin} -T #{multibin}"
-        end
-        Rake::Task[multibin].invoke
-        save_multibinary(multibin)
-      end
-
       if not ffi? then
         [target, module_target, module_file_name, module_final].each { |fn|
           File::unlink(fn)
@@ -731,7 +762,7 @@ EOF
       end
       
       if get_architecture == MPPA then
-        [iobin, compbin, multibin].each { |fn|
+        [target_io].each { |fn|
           File::unlink(fn)
         }
       end
@@ -742,13 +773,21 @@ EOF
       return self
     end
 
-    def fill_code(source_file)
-      @code.rewind
+    def fill_code(source_file, io=false)
+      if io then
+        code = @code_io
+      else
+        code = @code
+      end
+ 
+      code.rewind
       source_file.puts "#include <inttypes.h>" if @lang == C or @lang == CUDA
       source_file.puts "#include <cuda.h>" if @lang == CUDA
+      source_file.puts "#include <mppaipc.h>" if get_architecture == MPPA
+      source_file.puts "#include <mppa/osconfig.h>" if get_architecture == MPPA
       # check for too long FORTRAN lines
       if @lang == FORTRAN then
-        @code.each_line { |line|
+        code.each_line { |line|
           # check for omp pragmas
           if line.match(/^\s*!\$/) then
             if line.match(/^\s*!\$(omp|OMP)/) then
@@ -766,9 +805,16 @@ EOF
           end
         }
       else
-        source_file.write @code.read
+        source_file.write code.read
       end
-      if @lang == CUDA then
+      if get_architecture == MPPA then
+        source_file.write <<EOF
+  int main(int argc, const char* argv[]) {
+    #{@procedure.name}();
+    return 0;
+  }
+EOF
+      elsif @lang == CUDA then
         source_file.write <<EOF
 extern "C" {
   #{@procedure.boast_header_s(CUDA)}{
@@ -788,7 +834,7 @@ extern "C" {
 }
 EOF
       end
-      @code.rewind
+      code.rewind
     end
 
     def module_header(module_file)
@@ -816,7 +862,7 @@ EOF
         module_file.print "#include <cuda_runtime.h>\n"
       end
       if get_architecture == MPPA then
-        module_file.print "#include <mppaipc.h>"
+        module_file.print "#include <mppaipc.h>\n"
       end
     end
 
@@ -1002,17 +1048,19 @@ EOF
 
     def create_procedure_call(module_file)
       if get_architecture == MPPA then
-        decl mppa_load_id = Variable::new("_mppa_load_id", Int)
-        decl mppa_pid = Variable::new("_mppa_pid", Int)
-        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{path_mpk}\");" # TODO : Implementing MPK making
-        module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);"
+        mppa_load_id = Variable::new("_mppa_load_id", Int)
+        mppa_pid = Variable::new("_mppa_pid", Int)
+        mppa_load_id.decl
+        mppa_pid.decl
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n" # TODO : Implementing MPK making
+        module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);\n"
         
         # TODO : Sending data
         # TODO : Retrieving results
         # TODO : Retrieving timers
 
-        module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);"
-        module_file.print "  mppa_unload(_mppa_load_id);"
+        module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);\n"
+        module_file.print "  mppa_unload(_mppa_load_id);\n"
       else
         if @lang == CUDA then
           module_file.print "  _boast_duration = "
