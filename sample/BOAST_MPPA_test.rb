@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 [ '../lib', 'lib' ].each { |d| $:.unshift(d) if File::directory?(d) }
 require 'rubygems'
 require 'narray'
@@ -8,7 +9,7 @@ io_code = <<EOF
 #include <stdint.h>
 #include <assert.h>
 int hello(){
-  int pid, ret, from_host, to_clust;
+  int pid, ret, from_host, to_clust, to_host;
   int32_t buf;
   printf("Hello from IO Cluster\\n");
   
@@ -30,10 +31,20 @@ int hello(){
   ret =  mppa_write(to_clust, &buf, sizeof(buf));
   assert(ret != -1);
 
+  to_host = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
+  assert(to_host != -1);
+  
+  buf++;
+  ret = mppa_write(to_host, &buf, sizeof(buf));  
+  assert(ret != -1);
+
   ret = mppa_close(to_clust);
   assert(ret != -1);
 
   ret = mppa_close(from_host);
+  assert(ret != -1);
+
+  ret = mppa_close(to_host);
   assert(ret != -1);
 
   ret = mppa_waitpid(pid, NULL, 0);
@@ -79,8 +90,11 @@ kernel.set_io
 BOAST::get_output.write io_code
 kernel.set_comp
 a = BOAST::Int("a", :dir=>:in)
-kernel.procedure = BOAST::Procedure("hello", [a])
+b = BOAST::Int("b", :dir=>:out)
+kernel.procedure = BOAST::Procedure("hello", [a, b])
 kernel.build
-kernel.run(42)
+r = kernel.run(66, 0)
+
+puts "BOAST : Valeur retournée #{r[:reference_return][:b]}"
 
 sleep 2
