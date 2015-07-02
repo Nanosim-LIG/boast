@@ -9,22 +9,22 @@ io_code = <<EOF
 #include <assert.h>
 int hello(){
   int pid, ret, from_host, to_clust;
-  uint32_t buf;
+  int32_t buf;
   printf("Hello from IO Cluster\\n");
   
   pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
   assert(pid != -1);
 
-//  from_host = mppa_open("/mppa/mqueue/board0#mppa0#pcie0#5/host#5/1.4", O_RDONLY);
-//  assert(from_host != -1);
+  from_host = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
+  assert(from_host != -1);
 
   to_clust = mppa_open("/mppa/rqueue/0:10/128:10/1.4", O_WRONLY);
   assert(to_clust != -1);
 
-//  ret = mppa_read(from_host, &buf, sizeof(buf));
-//  assert(ret != -1);
+  ret = mppa_read(from_host, &buf, sizeof(buf));
+  assert(ret != -1);
 
-  buf=666;
+  // buf=666;
   printf("IO : Received value = %d\\n", buf);
 
   ret =  mppa_write(to_clust, &buf, sizeof(buf));
@@ -33,8 +33,8 @@ int hello(){
   ret = mppa_close(to_clust);
   assert(ret != -1);
 
-//  ret = mppa_close(from_host);
-//  assert(ret != -1);
+  ret = mppa_close(from_host);
+  assert(ret != -1);
 
   ret = mppa_waitpid(pid, NULL, 0);
   assert(ret != -1);
@@ -78,8 +78,9 @@ BOAST::get_output.write comp_code
 kernel.set_io
 BOAST::get_output.write io_code
 kernel.set_comp
-kernel.procedure = BOAST::Procedure("hello")
+a = BOAST::Int("a", :dir=>:in)
+kernel.procedure = BOAST::Procedure("hello", [a])
 kernel.build
-kernel.run
+kernel.run(42)
 
 sleep 2
