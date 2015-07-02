@@ -1050,11 +1050,50 @@ EOF
       if get_architecture == MPPA then
         mppa_load_id = Variable::new("_mppa_load_id", Int)
         mppa_pid = Variable::new("_mppa_pid", Int)
+        mppa_fd_size = Variable::new("_mppa_fd_size", Int)
+        fd = Variable::new("_mppa_fd_var", Int)
+        size = Variable::new("_mppa_size", Int)
         mppa_load_id.decl
         mppa_pid.decl
+        mppa_fd_size.decl
+        fd.decl
+        size.decl
         module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n" # TODO : Implementing MPK making
         module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);\n"
-        
+        module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#2/host#2\", O_WRONLY);\n"
+
+        # Sending parameters to IO Cluster
+        @procedure.parameters.each { |param|
+          if param.direction == :in or param.direction == :inout then
+            module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);\n"
+            if param.dimension then
+              size === param.dimension.size
+              module_file.print "  mppa_write(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
+              module_file.print "  mppa_write(_mppa_fd_var, #{param.name}, sizeof(#{param.name}));\n"
+            else
+              module_file.print "  mppa_write(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
+            end
+            module_file.print "  mppa_close(_mppa_fd_var);\n"
+          end
+        }
+        module_file.print "  mppa_close(_mppa_fd_size);\n"
+
+        module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);\n"
+        # Receiving parameters
+        @procedure.parameters.each { |param|
+          if param.direction == :out or param.direction == :inout then
+            module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/host#5/board0#mppa0#pcie0#5\", O_RDONLY);\n"
+            if param.dimension then
+              module_file.print "  mppa_read(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
+              module_file.print "  mppa_read(_mppa_fd_var, #{param.name}, _mppa_size);\n"
+            else
+              module_file.print "  mppa_read(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
+            end
+            module_file.print "  mppa_close(_mppa_fd_var);\n"
+          end
+        }
+        module_file.print "  mppa_close(_mppa_fd_size);\n"
+
         # TODO : Sending data
         # TODO : Retrieving results
         # TODO : Retrieving timers
