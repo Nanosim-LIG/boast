@@ -70,6 +70,7 @@ EOF
       register_clause(:flush_list,   :option_list)
       register_clause(:threadprivate_list,   :option_list)
       register_clause(:if,           :simple)
+      register_clause(:final,        :simple)
       register_clause(:num_threads,  :simple)
       register_clause(:default,      :simple)
       register_clause(:collapse,     :simple)
