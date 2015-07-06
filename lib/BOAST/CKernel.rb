@@ -805,12 +805,76 @@ EOF
           end
         }
       else
+        if get_architecture == MPPA then
+          @procedure.parameters.each { |param|
+            source_file.write "  #{param.type.decl} #{param.name}"
+            source_file.write "[#{param.dimension[0].size}]" if param.dimension
+            source_file.write ";\n"
+          }
         source_file.write code.read
+        end
       end
       if get_architecture == MPPA then
         source_file.write <<EOF
   int main(int argc, const char* argv[]) {
+EOF
+        #Receiving parameters
+        if io then #IO Code
+          source_file.write <<EOF
+    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size;
+    _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
+    _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
+EOF
+          @procedure.parameters.each { |param|
+            if param.direction == :in or param.direction == :inout then
+              if param.dimension then
+                source_file.write <<EOF
+    mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    mppa_read(_mppa_from_host_var, #{param.name}, _mppa_tmp_size);
+EOF
+              else
+                source_file.write <<EOF
+    mppa_read(_mppa_from_host_var, &#{param.name}, sizeof(#{param.name}));
+EOF
+              end
+            end
+          }
+          source_file.write <<EOF
+    mppa_close(_mppa_from_host_size);
+    mppa_close(_mppa_from_host_var);
+EOF
+        end
+        source_file.write <<EOF
     #{@procedure.name}();
+EOF
+        #Sending results
+        if io then #IO Code
+          source_file.write <<EOF
+    _mppa_to_host_size = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
+    _mppa_to_host_var = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
+EOF
+          @procedure.parameters.each { |param| 
+            if param.direction == :out or param.direction == :inout then
+              if param.dimension then
+                source_file.write <<EOF
+    _mppa_tmp_size = #{param.dimension.size};
+    mppa_write(_mppa_to_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    mppa_write(_mppa_to_host_var, #{param.name}, _mppa_tmp_size);
+EOF
+              else
+                source_file.write <<EOF
+    mppa_write(_mppa_to_host_var, &#{param.name}, sizeof(#{param.name}));
+EOF
+              end
+            end
+          }
+          source_file.write <<EOF
+    mppa_close(_mppa_to_host_size);
+    mppa_close(_mppa_to_host_var);
+EOF
+        end
+        source_file.write <<EOF
+    mppa_exit(0);
     return 0;
   }
 EOF

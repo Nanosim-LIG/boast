@@ -9,48 +9,28 @@ io_code = <<EOF
 #include <stdint.h>
 #include <assert.h>
 int hello(){
-  int pid, ret, from_host, to_clust, to_host;
-  int32_t buf;
+  int pid, ret, to_clust;
   printf("Hello from IO Cluster\\n");
   
   pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
   assert(pid != -1);
 
-  from_host = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
-  assert(from_host != -1);
-
   to_clust = mppa_open("/mppa/rqueue/0:10/128:10/1.4", O_WRONLY);
   assert(to_clust != -1);
 
-  ret = mppa_read(from_host, &buf, sizeof(buf));
+  printf("IO : Received value = %d\\n", a);
+
+  ret =  mppa_write(to_clust, &a, sizeof(a));
   assert(ret != -1);
-
-  // buf=666;
-  printf("IO : Received value = %d\\n", buf);
-
-  ret =  mppa_write(to_clust, &buf, sizeof(buf));
-  assert(ret != -1);
-
-  to_host = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
-  assert(to_host != -1);
   
-  buf++;
-  ret = mppa_write(to_host, &buf, sizeof(buf));  
-  assert(ret != -1);
+  b = a + 1;
 
   ret = mppa_close(to_clust);
-  assert(ret != -1);
-
-  ret = mppa_close(from_host);
-  assert(ret != -1);
-
-  ret = mppa_close(to_host);
   assert(ret != -1);
 
   ret = mppa_waitpid(pid, NULL, 0);
   assert(ret != -1);
 
-  mppa_exit(0);
   return 0;
 }
 EOF
@@ -93,7 +73,7 @@ a = BOAST::Int("a", :dir=>:in)
 b = BOAST::Int("b", :dir=>:out)
 kernel.procedure = BOAST::Procedure("hello", [a, b])
 kernel.build
-r = kernel.run(66, 0)
+r = kernel.run(42, 0)
 
 puts "BOAST : Valeur retournée #{r[:reference_return][:b]}"
 
