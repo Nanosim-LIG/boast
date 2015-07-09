@@ -811,17 +811,17 @@ EOF
             source_file.write "[#{param.dimension[0].size}]" if param.dimension
             source_file.write ";\n"
           }
-        source_file.write code.read
         end
+        source_file.write code.read
       end
       if get_architecture == MPPA then
         source_file.write <<EOF
   int main(int argc, const char* argv[]) {
 EOF
-        #Receiving parameters
+        #Receiving parameters from Host
         if io then #IO Code
           source_file.write <<EOF
-    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size;
+    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid;
     _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
     _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
 EOF
@@ -843,13 +843,19 @@ EOF
     mppa_close(_mppa_from_host_size);
     mppa_close(_mppa_from_host_var);
 EOF
+          #Spawning cluster
+          source_file.write <<EOF
+    _mppa_pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
+EOF
+        else #Compute code
         end
         source_file.write <<EOF
     #{@procedure.name}();
 EOF
-        #Sending results
+        #Sending results to Host
         if io then #IO Code
           source_file.write <<EOF
+    mppa_waitpid(_mppa_pid, NULL, 0);
     _mppa_to_host_size = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
     _mppa_to_host_var = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
 EOF
@@ -872,6 +878,7 @@ EOF
     mppa_close(_mppa_to_host_size);
     mppa_close(_mppa_to_host_var);
 EOF
+        else #Compute code
         end
         source_file.write <<EOF
     mppa_exit(0);
