@@ -12,9 +12,6 @@ int hello(){
   int pid, ret, to_clust;
   printf("Hello from IO Cluster\\n");
   
-  pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
-  assert(pid != -1);
-
   to_clust = mppa_open("/mppa/rqueue/0:10/128:10/1.4", O_WRONLY);
   assert(to_clust != -1);
 
@@ -26,9 +23,6 @@ int hello(){
   b = a + 1;
 
   ret = mppa_close(to_clust);
-  assert(ret != -1);
-
-  ret = mppa_waitpid(pid, NULL, 0);
   assert(ret != -1);
 
   return 0;
