@@ -8,7 +8,7 @@ io_code = <<EOF
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
-int hello(){
+int hello(int32_t a, int32_t* b){
   int pid, ret, to_clust;
   printf("Hello from IO Cluster\\n");
   
@@ -20,7 +20,7 @@ int hello(){
   ret =  mppa_write(to_clust, &a, sizeof(a));
   assert(ret != -1);
   
-  b = a + 1;
+  *b = a + 1;
 
   ret = mppa_close(to_clust);
   assert(ret != -1);
@@ -50,7 +50,6 @@ int hello(){
   ret = mppa_close(from_io);
   assert(ret != -1);
 
-  mppa_exit(0);
   return 0;
 }
 EOF
@@ -69,6 +68,6 @@ kernel.procedure = BOAST::Procedure("hello", [a, b])
 kernel.build
 r = kernel.run(42, 0)
 
-puts "BOAST : Valeur retournée #{r[:reference_return][:b]}"
+puts "BOAST : Received value =  #{r[:reference_return][:b]}"
 
 sleep 2
