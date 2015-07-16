@@ -805,21 +805,23 @@ EOF
           end
         }
       else
-        if get_architecture == MPPA then
-          @procedure.parameters.each { |param|
-            source_file.write "  #{param.type.decl} #{param.name}"
-            source_file.write "[#{param.dimension[0].size}]" if param.dimension
-            source_file.write ";\n"
-          }
-        end
         source_file.write code.read
       end
       if get_architecture == MPPA then
         source_file.write <<EOF
-  int main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
 EOF
-        #Receiving parameters from Host
         if io then #IO Code
+          #Parameters declaration
+          if get_architecture == MPPA then
+            @procedure.parameters.each { |param|
+              source_file.write "    #{param.type.decl} #{param.name}"
+              source_file.write "[#{param.dimension[0].size}]" if param.dimension
+              source_file.write ";\n"
+            }
+          end
+
+          #Receiving parameters from Host
           source_file.write <<EOF
     int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid;
     _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
@@ -847,11 +849,22 @@ EOF
           source_file.write <<EOF
     _mppa_pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
 EOF
+          source_file.write "    #{@procedure.name}("
+          @procedure.parameters.each_with_index { |param, i|
+            source_file.write ", " unless i == 0
+            if !param.dimension then
+              if param.direction == :out or param.direction == :inout then
+                source_file.write "&"
+              end
+            end
+            source_file.write param.name
+          }
+          source_file.write ");\n"
         else #Compute code
+          source_file.write "    #{@procedure.name}();\n"
         end
-        source_file.write <<EOF
-    #{@procedure.name}();
-EOF
+        
+        
         #Sending results to Host
         if io then #IO Code
           source_file.write <<EOF
@@ -883,7 +896,7 @@ EOF
         source_file.write <<EOF
     mppa_exit(0);
     return 0;
-  }
+}
 EOF
       elsif @lang == CUDA then
         source_file.write <<EOF
