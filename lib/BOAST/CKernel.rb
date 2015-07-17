@@ -485,6 +485,7 @@ EOF
         kernel_file.close
         kernel_files.push(kernel_file)
       }
+      return kernel_files
     end
 
     def create_module_source(path)
