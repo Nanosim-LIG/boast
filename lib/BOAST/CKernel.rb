@@ -1141,6 +1141,7 @@ EOF
         size = Variable::new("_mppa_size", Int)
         avg_pwr = Variable::new("avg_pwr", Real, :size => 4)
         energy = Variable::new("energy", Real, :size => 4)
+        mppa_duration = Variable::new("mppa_duration", Real, :size => 4)
         mppa_load_id.decl
         mppa_pid.decl
         mppa_fd_size.decl
@@ -1148,6 +1149,7 @@ EOF
         size.decl
         avg_pwr.decl
         energy.decl
+        mppa_duration.decl
         module_file.print <<EOF
   mppa_mon_ctx_t* mppa_ctx;
   mppa_mon_sensor_t pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
@@ -1209,6 +1211,7 @@ EOF
     energy += mppa_report->measures[i].total_energy;
   } 
   avg_pwr = avg_pwr/(float) mppa_report->count;
+  mppa_duration = mppa_report->total_time;
   mppa_mon_measure_free_report(mppa_report);
   mppa_mon_close(mppa_ctx);
 EOF
@@ -1312,6 +1315,7 @@ EOF
         module_file.print <<EOF
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("avg_pwr")),rb_float_new(avg_pwr));
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("energy")),rb_float_new(energy));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(mppa_duration));
 EOF
       end
     end
