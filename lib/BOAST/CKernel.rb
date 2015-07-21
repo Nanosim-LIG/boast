@@ -1154,13 +1154,11 @@ EOF
   mppa_mon_ctx_t* mppa_ctx;
   mppa_mon_sensor_t pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
   mppa_mon_measure_report_t* mppa_report;
-EOF
-        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n"
-        module_file.print <<EOF
   mppa_mon_open(0, &mppa_ctx);
   mppa_mon_measure_set_sensors(mppa_ctx, pwr_sensor, 1);
-  mppa_mon_measure_start(mppa_ctx);
 EOF
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n"
+        module_file.print "  mppa_mon_measure_start(mppa_ctx);\n"
         module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);\n"
         module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#2/host#2\", O_WRONLY);\n"
         module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);\n"
@@ -1201,20 +1199,7 @@ EOF
         # TODO : Retrieving timers
 
         module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);\n"
-        module_file.print <<EOF
-  mppa_mon_measure_stop(mppa_ctx, &mppa_report);
-  avg_pwr = 0;
-  energy = 0;
-  int i;
-  for(i=0; i < mppa_report->count; i++){
-    avg_pwr += mppa_report->measures[i].avg_power;
-    energy += mppa_report->measures[i].total_energy;
-  } 
-  avg_pwr = avg_pwr/(float) mppa_report->count;
-  mppa_duration = mppa_report->total_time;
-  mppa_mon_measure_free_report(mppa_report);
-  mppa_mon_close(mppa_ctx);
-EOF
+        module_file.print "  mppa_mon_measure_stop(mppa_ctx, &mppa_report);\n"
         module_file.print "  mppa_unload(_mppa_load_id);\n"
       else
         if @lang == CUDA then
@@ -1357,6 +1342,22 @@ EOF
         module_file.print "  _mac_boast_stop = mach_absolute_time();\n"
       else
         module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+      end
+
+      if get_architecture == MPPA then
+        module_file.print <<EOF
+  avg_pwr = 0;
+  energy = 0;
+  int i;
+  for(i=0; i < mppa_report->count; i++){
+    avg_pwr += mppa_report->measures[i].avg_power;
+    energy += mppa_report->measures[i].total_energy;
+  } 
+  avg_pwr = avg_pwr/(float) mppa_report->count;
+  mppa_duration = mppa_report->total_time;
+  mppa_mon_measure_free_report(mppa_report);
+  mppa_mon_close(mppa_ctx);
+EOF
       end
 
       get_PAPI_results(module_file)
