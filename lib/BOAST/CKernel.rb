@@ -290,6 +290,7 @@ module BOAST
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
       ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA
+      ldflags += " -lmppamon -lmppabm -lm -lmppalock" if get_architecture == MPPA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
@@ -947,6 +948,7 @@ EOF
       end
       if get_architecture == MPPA then
         module_file.print "#include <mppaipc.h>\n"
+        module_file.print "#include <mppa_mon.h>\n"
       end
     end
 
@@ -1137,19 +1139,34 @@ EOF
         mppa_fd_size = Variable::new("_mppa_fd_size", Int)
         fd = Variable::new("_mppa_fd_var", Int)
         size = Variable::new("_mppa_size", Int)
+        avg_pwr = Variable::new("avg_pwr", Real, :size => 4)
+        energy = Variable::new("energy", Real, :size => 4)
         mppa_load_id.decl
         mppa_pid.decl
         mppa_fd_size.decl
         fd.decl
         size.decl
-        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n" # TODO : Implementing MPK making
+        avg_pwr.decl
+        energy.decl
+        module_file.print <<EOF
+  mppa_mon_ctx_t* mppa_ctx;
+  mppa_mon_sensor_t pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
+  mppa_mon_measure_report_t* mppa_report;
+EOF
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n"
+        module_file.print <<EOF
+  mppa_mon_open(0, &mppa_ctx);
+  mppa_mon_measure_set_sensors(mppa_ctx, pwr_sensor, 1);
+  mppa_mon_measure_start(mppa_ctx);
+EOF
         module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);\n"
         module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#2/host#2\", O_WRONLY);\n"
+        module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);\n"
+        
 
         # Sending parameters to IO Cluster
         @procedure.parameters.each { |param|
           if param.direction == :in or param.direction == :inout then
-            module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);\n"
             if param.dimension then
               size === param.dimension.size
               module_file.print "  mppa_write(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
@@ -1157,32 +1174,44 @@ EOF
             else
               module_file.print "  mppa_write(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
             end
-            module_file.print "  mppa_close(_mppa_fd_var);\n"
           end
         }
+
+        module_file.print "  mppa_close(_mppa_fd_var);\n"
         module_file.print "  mppa_close(_mppa_fd_size);\n"
 
         module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);\n"
+        module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/host#5/board0#mppa0#pcie0#5\", O_RDONLY);\n"
         # Receiving parameters
         @procedure.parameters.each { |param|
           if param.direction == :out or param.direction == :inout then
-            module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/host#5/board0#mppa0#pcie0#5\", O_RDONLY);\n"
             if param.dimension then
               module_file.print "  mppa_read(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
               module_file.print "  mppa_read(_mppa_fd_var, #{param.name}, _mppa_size);\n"
             else
               module_file.print "  mppa_read(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
             end
-            module_file.print "  mppa_close(_mppa_fd_var);\n"
           end
         }
+        module_file.print "  mppa_close(_mppa_fd_var);\n"
         module_file.print "  mppa_close(_mppa_fd_size);\n"
 
-        # TODO : Sending data
-        # TODO : Retrieving results
         # TODO : Retrieving timers
 
         module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);\n"
+        module_file.print <<EOF
+  mppa_mon_measure_stop(mppa_ctx, &mppa_report);
+  avg_pwr = 0;
+  energy = 0;
+  int i;
+  for(i=0; i < mppa_report->count; i++){
+    avg_pwr += mppa_report->measures[i].avg_power;
+    energy += mppa_report->measures[i].total_energy;
+  } 
+  avg_pwr = avg_pwr/(float) mppa_report->count;
+  mppa_mon_measure_free_report(mppa_report);
+  mppa_mon_close(mppa_ctx);
+EOF
         module_file.print "  mppa_unload(_mppa_load_id);\n"
       else
         if @lang == CUDA then
@@ -1278,6 +1307,12 @@ EOF
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_ret));\n" if type_ret.kind_of?(Int) and type_ret.signed
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));\n" if type_ret.kind_of?(Real)
+      end
+      if get_architecture == MPPA then
+        module_file.print <<EOF
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("avg_pwr")),rb_float_new(avg_pwr));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("energy")),rb_float_new(energy));
+EOF
       end
     end
 

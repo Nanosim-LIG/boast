@@ -69,5 +69,6 @@ kernel.build
 r = kernel.run(42, 0)
 
 puts "BOAST : Received value =  #{r[:reference_return][:b]}"
-
+puts "BOAST : Average power = #{r[:avg_pwr].round(3)} W"
+puts "BOAST : Energy consumption = #{r[:energy].round(3)} J"
 sleep 2
