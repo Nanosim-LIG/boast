@@ -816,9 +816,9 @@ EOF
           #Parameters declaration
           if get_architecture == MPPA then
             @procedure.parameters.each { |param|
-              source_file.write "    #{param.type.decl} #{param.name}"
-              source_file.write "[#{param.dimension[0].size}]" if param.dimension
-              source_file.write ";\n"
+              source_file.write "    #{param.type.decl}"
+              source_file.write "*" if param.dimension
+              source_file.write " #{param.name};\n"
             }
           end
 
@@ -833,6 +833,7 @@ EOF
               if param.dimension then
                 source_file.write <<EOF
     mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    #{param.name} = malloc(_mppa_tmp_size);
     mppa_read(_mppa_from_host_var, #{param.name}, _mppa_tmp_size);
 EOF
               else
