@@ -821,10 +821,16 @@ EOF
               source_file.write " #{param.name};\n"
             }
           end
+          
+          #Cluster list declaration
+          source_file.write <<EOF
+    uint32_t* _clust_list;
+    int _nb_clust;
+EOF
 
           #Receiving parameters from Host
           source_file.write <<EOF
-    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid;
+    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid[16], i;
     _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
     _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
 EOF
@@ -843,13 +849,24 @@ EOF
               end
             end
           }
+
+          #Receiving cluster list
+          source_file.write <<EOF
+    mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    _clust_list = malloc(_mppa_tmp_size);
+    _nb_clust = _mppa_tmp_size / sizeof(uint32_t);
+    mppa_read(_mppa_from_host_var, _clust_list, _mppa_tmp_size);
+EOF
+
           source_file.write <<EOF
     mppa_close(_mppa_from_host_size);
     mppa_close(_mppa_from_host_var);
 EOF
           #Spawning cluster
           source_file.write <<EOF
-    _mppa_pid = mppa_spawn(0, NULL, "comp-part", NULL, NULL);
+    for(i=0; i<_nb_clust;i++){
+        _mppa_pid[i] = mppa_spawn(_clust_list[i], NULL, "comp-part", NULL, NULL);
+    }
 EOF
           source_file.write "    #{@procedure.name}("
           @procedure.parameters.each_with_index { |param, i|
@@ -870,7 +887,9 @@ EOF
         #Sending results to Host
         if io then #IO Code
           source_file.write <<EOF
-    mppa_waitpid(_mppa_pid, NULL, 0);
+    for(i=0; i< _nb_clust; i++){
+        mppa_waitpid(_mppa_pid[i], NULL, 0);
+    }
     _mppa_to_host_size = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
     _mppa_to_host_var = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
 EOF
@@ -1143,6 +1162,8 @@ EOF
         avg_pwr = Variable::new("avg_pwr", Real, :size => 4)
         energy = Variable::new("energy", Real, :size => 4)
         mppa_duration = Variable::new("mppa_duration", Real, :size => 4)
+        mppa_clust_list_size = Variable::new("_mppa_clust_list_size", Int)
+        mppa_clust_nb = Variable::new("_mppa_clust_nb", Int, :size => 4)
         mppa_load_id.decl
         mppa_pid.decl
         mppa_fd_size.decl
@@ -1151,7 +1172,10 @@ EOF
         avg_pwr.decl
         energy.decl
         mppa_duration.decl
+        mppa_clust_list_size.decl
+        mppa_clust_nb.decl
         module_file.print <<EOF
+  uint32_t* _mppa_clust_list;
   mppa_mon_ctx_t* mppa_ctx;
   mppa_mon_sensor_t pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
   mppa_mon_measure_report_t* mppa_report;
@@ -1177,6 +1201,28 @@ EOF
             end
           end
         }
+
+        # Sending cluster list
+        module_file.print <<EOF
+  if(_boast_rb_opts != Qnil){
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clust_list")));
+    int _boast_i;
+    _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
+    _mppa_clust_list = malloc(sizeof(uint32_t)*_mppa_clust_nb);
+    for(_boast_i=0; _boast_i < _mppa_clust_nb; _boast_i++){
+      _mppa_clust_list[_boast_i] = NUM2INT(rb_ary_entry(_boast_rb_ptr, _boast_i));
+    }
+  } else {
+    _mppa_clust_list = malloc(sizeof(uint32_t));
+    _mppa_clust_list[0] = 0;
+    _mppa_clust_nb = 1;
+  }
+  
+  _mppa_clust_list_size = sizeof(uint32_t)*_mppa_clust_nb;
+  mppa_write(_mppa_fd_size, &_mppa_clust_list_size, sizeof(_mppa_clust_list_size));
+  mppa_write(_mppa_fd_var, _mppa_clust_list, _mppa_clust_list_size);
+  free(_mppa_clust_list);
+EOF
 
         module_file.print "  mppa_close(_mppa_fd_var);\n"
         module_file.print "  mppa_close(_mppa_fd_size);\n"

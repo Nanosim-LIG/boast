@@ -66,7 +66,7 @@ a = BOAST::Int("a", :dir=>:in)
 b = BOAST::Int("b", :dir=>:out)
 kernel.procedure = BOAST::Procedure("hello", [a, b])
 kernel.build
-r = kernel.run(42, 0)
+r = kernel.run(42, 0, :clust_list => [0])
 
 puts "BOAST : Received value =  #{r[:reference_return][:b]}"
 puts "BOAST : Average power = #{r[:avg_pwr].round(3)} W"
