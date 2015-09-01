@@ -133,6 +133,15 @@ module BOAST
       end
     end
 
+    def set_io
+      @code_io = StringIO::new unless @code_io
+      set_output(@code_io)
+    end
+
+    def set_comp
+      set_output(@code)
+    end
+
     def print
       @code.rewind
       puts @code.read
@@ -179,18 +188,33 @@ module BOAST
     end
 
     def setup_c_compiler(options, includes, narray_path, runner)
+      c_mppa_compiler = "k1-gcc"
       c_compiler = options[:CC]
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
+      cflags += " -I/usr/local/k1tools/include" if get_architecture == MPPA
+      objext = RbConfig::CONFIG["OBJEXT"]
       if options[:openmp] and @lang == C then
           openmp_cflags = get_openmp_flags(c_compiler)
           raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
           cflags += " #{openmp_cflags}"
       end
 
-      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.c' do |t|
+      rule ".#{objext}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
+      end
+
+      rule ".#{objext}io" => ".cio" do |t|
+        c_call_string = "#{c_mppa_compiler} -mcore=k1io -mos=rtems"
+        c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
+      end
+
+      rule ".#{objext}comp" => ".ccomp" do |t|
+        c_call_string = "#{c_mppa_compiler} -mcore=k1dp -mos=nodeos"
+        c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
     end
@@ -239,18 +263,41 @@ module BOAST
       end
     end
 
+    def setup_linker_mppa(options, runner)
+      objext = RbConfig::CONFIG["OBJEXT"]
+      ldflags = options[:LDFLAGS]
+      board = " -mboard=developer"
+      ldflags += " -lmppaipc"
+      
+      linker = "k1-gcc"
+      
+      rule ".bincomp" => ".#{objext}comp" do |t|
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1dp #{board} -mos=nodeos #{ldflags}"
+        runner.call(t, linker_string)
+      end
+      
+      rule ".binio" => ".#{objext}io" do |t|
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1io #{board} -mos=rtems #{ldflags}"
+        runner.call(t, linker_string)
+      end
+
+    end
+
+
     def setup_linker(options)
       ldflags = options[:LDFLAGS]
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
+      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA
+      ldflags += " -lmppamon -lmppabm -lm -lmppalock" if get_architecture == MPPA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
       linker = c_compiler if not linker
       if options[:openmp] then
         openmp_ldflags = get_openmp_flags(linker)
-        raise "unkwown openmp flags for: #{linker}" if not openmp_ldflags
+        raise "unknown openmp flags for: #{linker}" if not openmp_ldflags
         ldflags += " #{openmp_ldflags}"
       end
 
@@ -292,6 +339,8 @@ module BOAST
       setup_cxx_compiler(options, includes, runner)
       setup_fortran_compiler(options, runner)
       setup_cuda_compiler(options, runner)
+      
+      setup_linker_mppa(options, runner) if get_architecture == MPPA
 
       return setup_linker(options)
 
@@ -492,7 +541,9 @@ EOF
       previous_lang = get_lang
       previous_output = get_output
       set_lang( C )
-      module_file_name = File::split(path.chomp(File::extname(path)))[0] + "/Mod_" + File::split(path.chomp(File::extname(path)))[1].gsub("-","_") + ".c"
+      extension = @@extensions[@lang]
+      extension += "comp" if get_architecture == MPPA
+      module_file_name = File::split(path.chomp(extension))[0] + "/Mod_" + File::split(path.chomp(extension))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
       set_output( module_file )
@@ -514,12 +565,43 @@ EOF
       f.close
     end
 
+    def save_multibinary(target)
+      f = File::open(target,"rb")
+      @multibinary = StringIO::new
+      @multibinary.write( f.read )
+      f.close
+      @multibinary_path = f.path
+    end
+
     def create_source
       extension = @@extensions[@lang]
+      extension += "comp" if get_architecture == MPPA
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
-      target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
+      #target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
+      target = path.chomp(extension)
+      if get_architecture == MPPA then
+        target += ".bincomp"
+      else
+        target += ".#{RbConfig::CONFIG["OBJEXT"]}"
+      end
       fill_code(source_file)
+      if debug_source? then
+        source_file.rewind
+        puts source_file.read
+      end
+      source_file.close
+      return [source_file, path, target]
+    end
+
+    def create_source_io(origin_source_path)
+      extension = @@extensions[@lang]
+      extension_comp = extension + "comp"
+      extension_io = extension + "io"
+      path = origin_source_path.chomp(extension_comp)+@@extensions[@lang]+"io"
+      target = origin_source_path.chomp(extension_comp)+".bin"+"io"
+      source_file = File::open(path, "w+")
+      fill_code(source_file,true)
       if debug_source? then
         source_file.rewind
         puts source_file.read
@@ -605,6 +687,13 @@ EOF
       eval s
     end
 
+    def create_mppa_target(path)
+      extension = @@extensions[@lang] + ".comp"
+      multibin = path.chomp(extension) + ".mpk"
+      
+      return multibin
+    end
+
     def build(options = {})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
@@ -615,6 +704,17 @@ EOF
       extension = @@extensions[@lang]
 
       source_file, path, target = create_source
+
+      if get_architecture == MPPA then
+        source_file_io, path_io, target_io = create_source_io(path)
+
+        multibin = create_mppa_target(path)
+        file multibin => [target_io, target] do
+          sh "k1-create-multibinary --clusters #{target} --clusters-names \"comp-part\" --boot #{target_io} --bootname \"io-part\" -T #{multibin}"
+        end
+        Rake::Task[multibin].invoke
+        save_multibinary(multibin)
+      end
 
       if not ffi? then
         module_file_name, module_name = create_module_source(path)
@@ -627,25 +727,32 @@ EOF
 
       kernel_files = get_sub_kernels
 
-      if not ffi? then
+      if get_architecture == MPPA then
+        file module_final => [module_target] do
+          sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{ldflags}"
+        end
+      elsif not ffi? then
         file module_final => [module_target, target] do
           #puts "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{kernel_files.join(" ")} #{ldflags}"
           sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
-        Rake::Task[module_final].invoke
-
-        require(module_final)
       else
         file module_final => [target] do
           #puts "#{linker} #{ldshared} -o #{module_final} #{target} #{kernel_files.join(" ")} #{ldflags}"
           sh "#{linker} #{ldshared} -o #{module_final} #{target} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         end
-        Rake::Task[module_final].invoke
-        create_ffi_module(module_name, module_final)
       end
+
+      Rake::Task[module_final].invoke
+      if ffi? then
+        create_ffi_module(module_name, module_final)
+      else
+        require(module_final)
+      end
+
       eval "self.extend(#{module_name})"
       save_binary(target)
-
+      
       if not ffi? then
         [target, module_target, module_file_name, module_final].each { |fn|
           File::unlink(fn)
@@ -655,19 +762,34 @@ EOF
           File::unlink(fn)
         }
       end
+      
+      if get_architecture == MPPA then
+        [target_io].each { |fn|
+          File::unlink(fn)
+        }
+      end
+
       kernel_files.each { |f|
         f.unlink
       }
       return self
     end
 
-    def fill_code(source_file)
-      @code.rewind
+    def fill_code(source_file, io=false)
+      if io then
+        code = @code_io
+      else
+        code = @code
+      end
+ 
+      code.rewind
       source_file.puts "#include <inttypes.h>" if @lang == C or @lang == CUDA
       source_file.puts "#include <cuda.h>" if @lang == CUDA
+      source_file.puts "#include <mppaipc.h>" if get_architecture == MPPA
+      source_file.puts "#include <mppa/osconfig.h>" if get_architecture == MPPA
       # check for too long FORTRAN lines
       if @lang == FORTRAN then
-        @code.each_line { |line|
+        code.each_line { |line|
           # check for omp pragmas
           if line.match(/^\s*!\$/) then
             if line.match(/^\s*!\$(omp|OMP)/) then
@@ -685,9 +807,120 @@ EOF
           end
         }
       else
-        source_file.write @code.read
+        source_file.write code.read
       end
-      if @lang == CUDA then
+      if get_architecture == MPPA then
+        source_file.write <<EOF
+int main(int argc, const char* argv[]) {
+EOF
+        if io then #IO Code
+          #Parameters declaration
+          if get_architecture == MPPA then
+            @procedure.parameters.each { |param|
+              source_file.write "    #{param.type.decl}"
+              source_file.write "*" if param.dimension
+              source_file.write " #{param.name};\n"
+            }
+          end
+          
+          #Cluster list declaration
+          source_file.write <<EOF
+    uint32_t* _clust_list;
+    int _nb_clust;
+EOF
+
+          #Receiving parameters from Host
+          source_file.write <<EOF
+    int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid[16], i;
+    _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
+    _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
+EOF
+          @procedure.parameters.each { |param|
+            if param.direction == :in or param.direction == :inout then
+              if param.dimension then
+                source_file.write <<EOF
+    mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    #{param.name} = malloc(_mppa_tmp_size);
+    mppa_read(_mppa_from_host_var, #{param.name}, _mppa_tmp_size);
+EOF
+              else
+                source_file.write <<EOF
+    mppa_read(_mppa_from_host_var, &#{param.name}, sizeof(#{param.name}));
+EOF
+              end
+            end
+          }
+
+          #Receiving cluster list
+          source_file.write <<EOF
+    mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    _clust_list = malloc(_mppa_tmp_size);
+    _nb_clust = _mppa_tmp_size / sizeof(uint32_t);
+    mppa_read(_mppa_from_host_var, _clust_list, _mppa_tmp_size);
+EOF
+
+          source_file.write <<EOF
+    mppa_close(_mppa_from_host_size);
+    mppa_close(_mppa_from_host_var);
+EOF
+          #Spawning cluster
+          source_file.write <<EOF
+    for(i=0; i<_nb_clust;i++){
+        _mppa_pid[i] = mppa_spawn(_clust_list[i], NULL, "comp-part", NULL, NULL);
+    }
+EOF
+          source_file.write "    #{@procedure.name}("
+          @procedure.parameters.each_with_index { |param, i|
+            source_file.write ", " unless i == 0
+            if !param.dimension then
+              if param.direction == :out or param.direction == :inout then
+                source_file.write "&"
+              end
+            end
+            source_file.write param.name
+          }
+          source_file.write ");\n"
+        else #Compute code
+          source_file.write "    #{@procedure.name}();\n"
+        end
+        
+        
+        #Sending results to Host
+        if io then #IO Code
+          source_file.write <<EOF
+    for(i=0; i< _nb_clust; i++){
+        mppa_waitpid(_mppa_pid[i], NULL, 0);
+    }
+    _mppa_to_host_size = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
+    _mppa_to_host_var = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
+EOF
+          @procedure.parameters.each { |param| 
+            if param.direction == :out or param.direction == :inout then
+              if param.dimension then
+                source_file.write <<EOF
+    _mppa_tmp_size = #{param.dimension.size};
+    mppa_write(_mppa_to_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
+    mppa_write(_mppa_to_host_var, #{param.name}, _mppa_tmp_size);
+EOF
+              else
+                source_file.write <<EOF
+    mppa_write(_mppa_to_host_var, &#{param.name}, sizeof(#{param.name}));
+EOF
+              end
+            end
+          }
+          source_file.write <<EOF
+    mppa_close(_mppa_to_host_size);
+    mppa_close(_mppa_to_host_var);
+EOF
+        else #Compute code
+        end
+        source_file.write <<EOF
+    mppa_exit(0);
+    return 0;
+}
+EOF
+      elsif @lang == CUDA then
         source_file.write <<EOF
 extern "C" {
   #{@procedure.boast_header_s(CUDA)}{
@@ -707,7 +940,7 @@ extern "C" {
 }
 EOF
       end
-      @code.rewind
+      code.rewind
     end
 
     def module_header(module_file)
@@ -733,6 +966,10 @@ EOF
       end
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
+      end
+      if get_architecture == MPPA then
+        module_file.print "#include <mppaipc.h>\n"
+        module_file.print "#include <mppa_mon.h>\n"
       end
     end
 
@@ -917,40 +1154,137 @@ EOF
     end
 
     def create_procedure_call(module_file)
-      if @lang == CUDA then
-        module_file.print "  _boast_duration = "
-      elsif @procedure.properties[:return] then
-        module_file.print "  _boast_ret = "
-      end
-      module_file.print "  #{@procedure.name}"
-      module_file.print "_" if @lang == FORTRAN
-      module_file.print "_wrapper" if @lang == CUDA
-      module_file.print "("
-      params = []
-      if(@lang == FORTRAN) then
+      if get_architecture == MPPA then
+        mppa_load_id = Variable::new("_mppa_load_id", Int)
+        mppa_pid = Variable::new("_mppa_pid", Int)
+        mppa_fd_size = Variable::new("_mppa_fd_size", Int)
+        fd = Variable::new("_mppa_fd_var", Int)
+        size = Variable::new("_mppa_size", Int)
+        avg_pwr = Variable::new("avg_pwr", Real, :size => 4)
+        energy = Variable::new("energy", Real, :size => 4)
+        mppa_duration = Variable::new("mppa_duration", Real, :size => 4)
+        mppa_clust_list_size = Variable::new("_mppa_clust_list_size", Int)
+        mppa_clust_nb = Variable::new("_mppa_clust_nb", Int, :size => 4)
+        mppa_load_id.decl
+        mppa_pid.decl
+        mppa_fd_size.decl
+        fd.decl
+        size.decl
+        avg_pwr.decl
+        energy.decl
+        mppa_duration.decl
+        mppa_clust_list_size.decl
+        mppa_clust_nb.decl
+        module_file.print <<EOF
+  uint32_t* _mppa_clust_list;
+  mppa_mon_ctx_t* mppa_ctx;
+  mppa_mon_sensor_t pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
+  mppa_mon_measure_report_t* mppa_report;
+  mppa_mon_open(0, &mppa_ctx);
+  mppa_mon_measure_set_sensors(mppa_ctx, pwr_sensor, 1);
+EOF
+        module_file.print "  _mppa_load_id = mppa_load(0, 0, 0, \"#{@multibinary_path}\");\n"
+        module_file.print "  mppa_mon_measure_start(mppa_ctx);\n"
+        module_file.print "  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);\n"
+        module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#2/host#2\", O_WRONLY);\n"
+        module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);\n"
+        
+
+        # Sending parameters to IO Cluster
         @procedure.parameters.each { |param|
-          if param.dimension then
-            params.push( param.name )
-          else
-            params.push( "&"+param.name )
+          if param.direction == :in or param.direction == :inout then
+            if param.dimension then
+              size === param.dimension.size
+              module_file.print "  mppa_write(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
+              module_file.print "  mppa_write(_mppa_fd_var, #{param.name}, sizeof(#{param.name}));\n"
+            else
+              module_file.print "  mppa_write(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
+            end
           end
         }
+
+        # Sending cluster list
+        module_file.print <<EOF
+  if(_boast_rb_opts != Qnil){
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clust_list")));
+    int _boast_i;
+    _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
+    _mppa_clust_list = malloc(sizeof(uint32_t)*_mppa_clust_nb);
+    for(_boast_i=0; _boast_i < _mppa_clust_nb; _boast_i++){
+      _mppa_clust_list[_boast_i] = NUM2INT(rb_ary_entry(_boast_rb_ptr, _boast_i));
+    }
+  } else {
+    _mppa_clust_list = malloc(sizeof(uint32_t));
+    _mppa_clust_list[0] = 0;
+    _mppa_clust_nb = 1;
+  }
+  
+  _mppa_clust_list_size = sizeof(uint32_t)*_mppa_clust_nb;
+  mppa_write(_mppa_fd_size, &_mppa_clust_list_size, sizeof(_mppa_clust_list_size));
+  mppa_write(_mppa_fd_var, _mppa_clust_list, _mppa_clust_list_size);
+  free(_mppa_clust_list);
+EOF
+
+        module_file.print "  mppa_close(_mppa_fd_var);\n"
+        module_file.print "  mppa_close(_mppa_fd_size);\n"
+
+        module_file.print "  _mppa_fd_size = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);\n"
+        module_file.print "  _mppa_fd_var = mppa_open(\"/mppa/buffer/host#5/board0#mppa0#pcie0#5\", O_RDONLY);\n"
+        # Receiving parameters
+        @procedure.parameters.each { |param|
+          if param.direction == :out or param.direction == :inout then
+            if param.dimension then
+              module_file.print "  mppa_read(_mppa_fd_size, &_mppa_size, sizeof(_mppa_size));\n"
+              module_file.print "  mppa_read(_mppa_fd_var, #{param.name}, _mppa_size);\n"
+            else
+              module_file.print "  mppa_read(_mppa_fd_var, &#{param.name}, sizeof(#{param.name}));\n"
+            end
+          end
+        }
+        module_file.print "  mppa_close(_mppa_fd_var);\n"
+        module_file.print "  mppa_close(_mppa_fd_size);\n"
+
+        # TODO : Retrieving timers
+
+        module_file.print "  mppa_waitpid(_mppa_pid, NULL, 0);\n"
+        module_file.print "  mppa_mon_measure_stop(mppa_ctx, &mppa_report);\n"
+        module_file.print "  mppa_unload(_mppa_load_id);\n"
       else
-        @procedure.parameters.each { |param|
-          if param.dimension then
-            params.push( param.name )
-          elsif param.direction == :out or param.direction == :inout then
-            params.push( "&"+param.name )
-          else
-            params.push( param.name )
-          end
-        }
+        if @lang == CUDA then
+          module_file.print "  _boast_duration = "
+        elsif @procedure.properties[:return] then
+          module_file.print "  _boast_ret = "
+        end
+        module_file.print "  #{@procedure.name}"
+        module_file.print "_" if @lang == FORTRAN
+        module_file.print "_wrapper" if @lang == CUDA
+        module_file.print "("
+        params = []
+        if(@lang == FORTRAN) then
+          @procedure.parameters.each { |param|
+            if param.dimension then
+              params.push( param.name )
+            else
+              params.push( "&"+param.name )
+            end
+          }
+        else 
+          @procedure.parameters.each { |param|
+            if param.dimension then
+              params.push( param.name )
+            elsif param.direction == :out or param.direction == :inout then
+              params.push( "&"+param.name )
+            else
+              params.push( param.name )
+            end
+          }
+        end
+        if @lang == CUDA then
+          params.push( "_boast_block_number", "_boast_block_size" )
+        end
+        module_file.print params.join(", ")
+        module_file.print "  );\n"
       end
-      if @lang == CUDA then
-        params.push( "_boast_block_number", "_boast_block_size" )
-      end
-      module_file.print params.join(", ")
-      module_file.print "  );\n"
     end
 
     def get_results(module_file, argv, rb_ptr)
@@ -1010,6 +1344,13 @@ EOF
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));\n" if type_ret.kind_of?(Real)
       end
+      if get_architecture == MPPA then
+        module_file.print <<EOF
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("avg_pwr")),rb_float_new(avg_pwr));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("energy")),rb_float_new(energy));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(mppa_duration));
+EOF
+      end
     end
 
     def fill_module(module_file, module_name)
@@ -1049,6 +1390,22 @@ EOF
         module_file.print "  _mac_boast_stop = mach_absolute_time();\n"
       else
         module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+      end
+
+      if get_architecture == MPPA then
+        module_file.print <<EOF
+  avg_pwr = 0;
+  energy = 0;
+  int i;
+  for(i=0; i < mppa_report->count; i++){
+    avg_pwr += mppa_report->measures[i].avg_power;
+    energy += mppa_report->measures[i].total_energy;
+  } 
+  avg_pwr = avg_pwr/(float) mppa_report->count;
+  mppa_duration = mppa_report->total_time;
+  mppa_mon_measure_free_report(mppa_report);
+  mppa_mon_close(mppa_ctx);
+EOF
       end
 
       get_PAPI_results(module_file)

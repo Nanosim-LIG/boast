@@ -12,7 +12,8 @@ module BOAST
     def initialize(v1=nil,v2=nil)
       if v1 then
         if v2 then
-          @size = Expression::new(Substraction, v2, v1) + 1
+          #@size = Expression::new(Substraction, v2, v1) + 1
+          @size = v2-v1+1
         else
           @size = v1
         end
