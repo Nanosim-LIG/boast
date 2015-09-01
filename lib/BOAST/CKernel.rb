@@ -10,6 +10,70 @@ require 'os'
 
 module BOAST
 
+  class TimerProbe
+    include PrivateStateAccessor
+
+    RESULT = BOAST::Int( "_boast_duration", :size => 8 )
+
+    def self.header
+      if OS.mac? then
+        get_output.print <<EOF
+#if __cplusplus
+extern "C" {
+#endif
+#include <mach/mach_time.h>
+#if __cplusplus
+}
+#endif
+EOF
+      else
+        get_output.print "#include <time.h>\n"
+      end
+    end
+
+    def self.decl
+      if OS.mac? then
+        get_output.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
+        get_output.print "  mach_timebase_info_data_t _mac_boast_timebase_info;\n"
+      else
+        get_output.print "  struct timespec _boast_start, _boast_stop;\n"
+      end
+      BOAST::decl RESULT
+    end
+
+    def self.start
+      if OS.mac? then
+        get_output.print "  _mac_boast_start = mach_absolute_time();\n"
+      else
+        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
+      end
+    end
+
+    def self.stop
+      if OS.mac? then
+        get_output.print "  _mac_boast_stop = mach_absolute_time();\n"
+      else
+        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
+      end
+    end
+
+    def self.compute
+      if @lang != CUDA then
+        if OS.mac? then
+          get_output.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
+          get_output.print "  _boast_duration = (_mac_boast_stop - _mac_boast_start) * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom;\n"
+        else
+          get_output.print "  _boast_duration = (_boast_stop.tv_sec - _boast_start.tv_sec) * (unsigned long long int)1000000000 + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
+        end
+      end
+    end
+
+    def self.result
+      return RESULT
+    end
+
+  end
+
   class CKernel
     include Rake::DSL
     include Inspectable
@@ -863,19 +927,7 @@ EOF
 #include "narray.h"
 #endif
 EOF
-      if OS.mac? then
-        module_file.print <<EOF
-#if __cplusplus
-extern "C" {
-#endif
-#include <mach/mach_time.h>
-#if __cplusplus
-}
-#endif
-EOF
-      else
-        module_file.print "#include <time.h>\n"
-      end
+      TimerProbe.header
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
       end
@@ -970,13 +1022,7 @@ EOF
       module_file.print "  #{@procedure.properties[:return].type.decl} _boast_ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
       module_file.print "  VALUE _boast_event_set = Qnil;\n"
-      if OS.mac? then
-        module_file.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
-        module_file.print "  mach_timebase_info_data_t _mac_boast_timebase_info;\n"
-      else
-        module_file.print "  struct timespec _boast_start, _boast_stop;\n"
-      end
-      module_file.print "  unsigned long long int _boast_duration;\n"
+      TimerProbe.decl
     end
 
     def get_cuda_launch_bounds(module_file)
@@ -1163,7 +1209,7 @@ EOF
         module_file.print "  mppa_unload(_mppa_load_id);\n"
       else
         if @lang == CUDA then
-          module_file.print "  _boast_duration = "
+          module_file.print "  #{TimerProbe.result} = "
         elsif @procedure.properties[:return] then
           module_file.print "  _boast_ret = "
         end
@@ -1249,7 +1295,7 @@ EOF
     end
 
     def store_result(module_file)
-      module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_duration*(double)1e-9));\n"
+      module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{TimerProbe.result}*(double)1e-9));\n"
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_ret));\n" if type_ret.kind_of?(Int) and type_ret.signed
@@ -1290,19 +1336,11 @@ EOF
 
       get_PAPI_options(module_file)
 
-      if OS.mac? then
-        module_file.print "  _mac_boast_start = mach_absolute_time();\n"
-      else
-        module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
-      end
+      TimerProbe.start
 
       create_procedure_call(module_file)
 
-      if OS.mac? then
-        module_file.print "  _mac_boast_stop = mach_absolute_time();\n"
-      else
-        module_file.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
-      end
+      TimerProbe.stop
 
       if get_architecture == MPPA then
         module_file.print <<EOF
@@ -1322,14 +1360,7 @@ EOF
 
       get_PAPI_results(module_file)
 
-      if @lang != CUDA then
-        if OS.mac? then
-          module_file.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
-          module_file.print "  _boast_duration = (_mac_boast_stop - _mac_boast_start) * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom;\n"
-        else
-          module_file.print "  _boast_duration = (_boast_stop.tv_sec - _boast_start.tv_sec) * (unsigned long long int)1000000000 + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
-        end
-      end
+      TimerProbe.compute
 
       get_results(module_file, argv, rb_ptr)
 
