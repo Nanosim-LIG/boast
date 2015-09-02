@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
                 lib/BOAST/OpenMP.rb
                 lib/BOAST/Slice.rb
                 lib/BOAST/Config.rb
+                lib/BOAST/Probe.rb
               )
   s.has_rdoc = true
   s.license = 'BSD'
