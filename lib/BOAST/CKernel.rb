@@ -42,6 +42,7 @@ module BOAST
       else
         @lang = get_lang
       end
+      @probes = [TimerProbe, PAPIProbe]
     end
 
     def set_io
@@ -863,8 +864,7 @@ EOF
 #endif
 EOF
 
-      TimerProbe.header
-      PAPIProbe.header
+      @probes.map(&:header)
 
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
@@ -959,8 +959,8 @@ EOF
       set_decl_module(false)
       module_file.print "  #{@procedure.properties[:return].type.decl} _boast_ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
-      TimerProbe.decl
-      PAPIProbe.decl
+
+      @probes.map(&:decl)
     end
 
     def get_cuda_launch_bounds(module_file)
@@ -1238,16 +1238,13 @@ EOF
         module_file.print get_cuda_launch_bounds(module_file)
       end
 
-      TimerProbe.configure
-      PAPIProbe.configure
+      @probes.map(&:configure)
 
-      PAPIProbe.start
-      TimerProbe.start
+      @probes.reverse.map(&:start)
 
       create_procedure_call(module_file)
 
-      TimerProbe.stop
-      PAPIProbe.stop
+      @probes.map(&:stop)
 
       if get_architecture == MPPA then
         module_file.print <<EOF
@@ -1265,8 +1262,7 @@ EOF
 EOF
       end
 
-      TimerProbe.compute
-      PAPIProbe.compute
+      @probes.map(&:compute)
 
       get_results(module_file, argv, rb_ptr)
 
