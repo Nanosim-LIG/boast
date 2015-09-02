@@ -864,7 +864,6 @@ EOF
 #endif
 EOF
 
-      @probes.map(&:header)
 
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
@@ -960,7 +959,6 @@ EOF
       module_file.print "  #{@procedure.properties[:return].type.decl} _boast_ret;\n" if @procedure.properties[:return]
       module_file.print "  VALUE _boast_stats = rb_hash_new();\n"
 
-      @probes.map(&:decl)
     end
 
     def get_cuda_launch_bounds(module_file)
@@ -1217,7 +1215,9 @@ EOF
 
     def fill_module(module_file, module_name)
       module_header(module_file)
+      @probes.map(&:header)
       @procedure.boast_header(@lang)
+
       module_preamble(module_file, module_name)
 
       module_file.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
@@ -1231,6 +1231,7 @@ EOF
       rb_ptr.decl
 
       decl_module_params(module_file)
+      @probes.reverse.map(&:decl)
 
       get_params_value(module_file, argv, rb_ptr)
 
