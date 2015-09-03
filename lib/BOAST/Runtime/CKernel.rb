@@ -9,6 +9,347 @@ require 'os'
 
 module BOAST
 
+  module CompiledRuntime
+    def base_name
+      return File::split(@marker.path)[1]
+    end
+
+    def module_name
+      return "Mod_" + base_name.gsub("-","_")
+    end
+
+    def directory
+      return File::split(@marker.path)[0]
+    end
+
+    def module_file_base_name
+      return "Mod_" + base_name
+    end
+
+    def module_file_base_path
+      return directory + "/" + module_file_base_name
+    end
+
+    def module_file_path
+      return module_file_base_path + RbConfig::CONFIG["DLEXT"]
+    end
+
+    def module_file_source
+      return module_file_base_path + ".c"
+    end
+
+    def module_file_object
+      return module_file_base_path + RbConfig::CONFIG["OBJEXT"]
+    end
+
+    def library_source
+      return directory + "/" + base_name + @@extensions[@lang]
+    end
+
+    def library_object
+      return directory + "/" + base_name + RbConfig::CONFIG["OBJEXT"]
+    end
+
+    def library_path
+      return directory + "/" + base_name + RbConfig::CONFIG["DLEXT"]
+    end
+
+    def target
+      return module_file_path
+    end
+
+    def target_depends
+      return [ module_file_object, library_object ]
+    end
+
+    def create_targets
+      file target => target_depends do
+        #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{get_sub_kernels.collect {|f| f.path}).join(" ")} #{ldflags}"
+        sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(@kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+      end
+      Rake::Task[target].invoke
+    end
+
+    def method_name
+      return @procedure.name
+    end
+
+    def get_sub_kernels
+      @kernel_files = []
+      @kernels.each { |kernel|
+        kernel_file = Tempfile::new([kernel.procedure.name,".#{RbConfig::CONFIG["OBJEXT"]}"])
+        kernel.binary.rewind
+        kernel_file.write( kernel.binary.read )
+        kernel_file.close
+        @kernel_files.push(kernel_file)
+      }
+    end
+
+    def create_library_source
+      f = File::open(library_source,"w+")
+      previous_lang = get_lang
+      previous_output = get_output
+      set_output(f)
+      set_lang(@lang)
+
+      fill_library_source
+
+      if debug_source? then
+        f.rewind
+        puts f.read
+      end
+      set_output(previous_output)
+      set_lang(previous_lang)
+      f.close
+    end
+
+    def create_module_file_source
+      f = File::open(module_file_source, "w+")
+      previous_lang = get_lang
+      previous_output = get_output
+      set_output(f)
+      set_lang(C)
+
+      fill_module_file_source
+
+      if debug_source? then
+        f.rewind
+        puts f.read
+      end
+      set_output(previous_output)
+      set_lang(previous_lang)
+      f.close
+    end
+
+    def create_sources
+      create_module_file_source
+      create_library_source
+    end
+
+    def load_module
+      require module_file_path
+    end
+
+    def target_sources
+      return [ module_file_source, library_source ]
+    end
+
+    def cleanup
+      ([target] + target_depends + target_sources).each { |fn|
+        File::unlink(fn)
+      }
+      @kernel_files.each { |f|
+        f.unlink
+      }
+    end
+
+    def build
+      @marker = Tempfile::new([@procedure.name,""])
+
+      get_sub_kernels
+
+      create_sources
+
+      create_targets
+
+      load_module
+
+      cleanup
+
+      eval "self.extend(#{module_name})"
+
+      return self
+    end
+  end
+
+  module CRuntime
+    include CompiledRuntime
+
+    def fill_library_header
+      get_output.puts "#include <inttypes.h>"
+    end
+
+    def fill_library_source
+      fill_library_header
+      @code.rewind
+      get_output.write code.read
+    end
+
+  end
+
+  module CUDARuntime
+    include CRuntime
+
+    alias fill_library_source_old fill_library_source
+    alias fill_library_header_old fill_library_header
+
+    def fill_library_header
+      fill_library_header_old
+      get_output.puts "#include <cuda.h>"
+    end
+
+    def fill_library_source
+      fill_library_source_old
+      get_output.write <<EOF
+extern "C" {
+  #{@procedure.boast_header_s(CUDA)}{
+    dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
+    dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
+    cudaEvent_t __start, __stop;
+    float __time;
+    cudaEventCreate(&__start);
+    cudaEventCreate(&__stop);
+    cudaEventRecord(__start, 0);
+    #{@procedure.name}<<<dimGrid,dimBlock>>>(#{@procedure.parameters.join(", ")});
+    cudaEventRecord(__stop, 0);
+    cudaEventSynchronize(__stop);
+    cudaEventElapsedTime(&__time, __start, __stop);
+    return (unsigned long long int)((double)__time*(double)1e6);
+  }
+}
+EOF
+    end
+  end
+
+  module FORTRANRuntime
+    include CompiledRuntime
+
+    def method_name
+      return @procedure.name + "_"
+    end
+
+    def fill_library_source
+      @code.rewind
+      @code.each_line { |line|
+        # check for omp pragmas
+        if line.match(/^\s*!\$/) then
+          if line.match(/^\s*!\$(omp|OMP)/) then
+            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-7}}/)
+            get_output.puts chunks.join("&\n!$omp&")
+          else
+            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-4}}/)
+            get_output.puts chunks.join("&\n!$&")
+          end
+        elsif line.match(/^\w*!/) then
+          get_output.write line
+        else
+          chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-2}}/)
+          get_output.puts chunks.join("&\n&")
+        end
+      }
+    end
+  end
+
+  module FFIRuntime
+    def init
+      if @lang = FORTRAN then
+        extend FORTRANRuntime
+      elsif @lang = C then
+        extend CRuntime
+      else
+        raise "FFI only supports C or FORTRAN!"
+      end
+    end
+
+    def target
+      return library_path
+    end
+
+    def target_depends
+      return [ library_object ]
+    end
+
+    def target_sources
+      return [ library_source ]
+    end
+
+    def load_module
+      create_ffi_module
+    end
+
+    def create_sources
+      create_library_source
+    end
+
+    def create_ffi_module
+      s =<<EOF
+      require 'ffi'
+      require 'narray_ffi'
+      module #{module_name}
+        extend FFI::Library
+        ffi_lib "#{library_path}"
+        attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
+        def run(*args)
+          if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
+            raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
+          else
+            ev_set = nil
+            if args.length == @procedure.parameters.length + 1 then
+              options = args.last
+              if options[:PAPI] then
+                require 'PAPI'
+                ev_set = PAPI::EventSet::new
+                ev_set.add_named(options[:PAPI])
+              end
+            end
+            t_args = []
+            r_args = {}
+            if @lang == FORTRAN then
+              @procedure.parameters.each_with_index { |p, i|
+                if p.decl_ffi(true) != :pointer then
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
+                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                  t_args.push(arg_p)
+                  r_args[p] = arg_p if p.scalar_output?
+                else
+                  t_args.push( args[i] )
+                end
+              }
+            else
+              @procedure.parameters.each_with_index { |p, i|
+                if p.scalar_output? then
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
+                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                  t_args.push(arg_p)
+                  r_args[p] = arg_p
+                else
+                  t_args.push( args[i] )
+                end
+              }
+            end
+            results = {}
+            counters = nil
+            ev_set.start if ev_set
+            begin
+              start = Time::new
+              ret = #{method_name}(*t_args)
+              stop = Time::new
+            ensure
+              if ev_set then
+                counters = ev_set.stop
+                ev_set.cleanup
+                ev_set.destroy
+              end
+            end
+            results = { :start => start, :stop => stop, :duration => stop - start, :return => ret }
+            results[:PAPI] = Hash[[options[:PAPI]].flatten.zip(counters)] if ev_set
+            if r_args.length > 0 then
+              ref_return = {}
+              r_args.each { |p, p_arg|
+                ref_return[p.name.to_sym] = p_arg.send("read_\#{p.decl_ffi(true)}")
+              }
+              results[:reference_return] = ref_return
+            end
+            return results
+          end
+        end
+      end
+EOF
+      eval s
+    end
+
+  end
+
   class CKernel
     include Compilers
     include OpenCLRuntime
