@@ -9,61 +9,8 @@ require 'os'
 
 module BOAST
 
-  class CKernel
+  module Compilers
     include Rake::DSL
-    include Inspectable
-    include PrivateStateAccessor
-    include TypeTransition
-
-    attr_accessor :code
-    attr_accessor :procedure
-    attr_accessor :lang
-    attr_accessor :binary
-    attr_accessor :kernels
-    attr_accessor :cost_function
-    
-    def initialize(options={})
-      if options[:code] then
-        @code = options[:code]
-      elsif get_chain_code
-        @code = get_output
-        @code.seek(0,SEEK_END)
-      else
-        @code = StringIO::new
-      end
-      set_output(@code)
-      if options[:kernels] then
-        @kernels = options[:kernels]
-      else
-        @kernels  = []
-      end
-      if options[:lang] then
-        @lang = options[:lang]
-      else
-        @lang = get_lang
-      end
-      @probes = [TimerProbe, PAPIProbe]
-    end
-
-    def set_io
-      @code_io = StringIO::new unless @code_io
-      set_output(@code_io)
-    end
-
-    def set_comp
-      set_output(@code)
-    end
-
-    def print
-      @code.rewind
-      puts @code.read
-    end
-
-    def to_s
-      @code.rewind
-      return code.read
-    end
-
 
     def get_openmp_flags(compiler)
       openmp_flags = BOAST::get_openmp_flags[compiler]
@@ -105,7 +52,7 @@ module BOAST
       cflags = options[:CFLAGS]
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
-      cflags += " -I/usr/local/k1tools/include" if get_architecture == MPPA
+      cflags += " -I/usr/local/k1tools/include" if @architecture == MPPA
       objext = RbConfig::CONFIG["OBJEXT"]
       if options[:openmp] and @lang == C then
           openmp_cflags = get_openmp_flags(c_compiler)
@@ -201,8 +148,8 @@ module BOAST
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
-      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if get_architecture == MPPA
-      ldflags += " -lmppamon -lmppabm -lm -lmppalock" if get_architecture == MPPA
+      ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if @architecture == MPPA
+      ldflags += " -lmppamon -lmppabm -lm -lmppalock" if @architecture == MPPA
       c_compiler = options[:CC]
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
@@ -252,11 +199,75 @@ module BOAST
       setup_fortran_compiler(options, runner)
       setup_cuda_compiler(options, runner)
       
-      setup_linker_mppa(options, runner) if get_architecture == MPPA
+      setup_linker_mppa(options, runner) if @architecture == MPPA
 
       return setup_linker(options)
 
     end
+
+  end
+
+  class CKernel
+    include Compilers
+    include Rake::DSL
+    include Inspectable
+    include PrivateStateAccessor
+    include TypeTransition
+
+    attr_accessor :code
+    attr_accessor :procedure
+    attr_accessor :lang
+    attr_accessor :binary
+    attr_accessor :kernels
+    attr_accessor :cost_function
+    
+    def initialize(options={})
+      if options[:code] then
+        @code = options[:code]
+      elsif get_chain_code
+        @code = get_output
+        @code.seek(0,SEEK_END)
+      else
+        @code = StringIO::new
+      end
+      set_output(@code)
+      if options[:kernels] then
+        @kernels = options[:kernels]
+      else
+        @kernels  = []
+      end
+      if options[:lang] then
+        @lang = options[:lang]
+      else
+        @lang = get_lang
+      end
+      if options[:architecture] then
+        @architecture = options[:architecture]
+      else
+        @architecture = get_architecture
+      end
+      @probes = [TimerProbe, PAPIProbe]
+    end
+
+    def set_io
+      @code_io = StringIO::new unless @code_io
+      set_output(@code_io)
+    end
+
+    def set_comp
+      set_output(@code)
+    end
+
+    def print
+      @code.rewind
+      puts @code.read
+    end
+
+    def to_s
+      @code.rewind
+      return code.read
+    end
+
 
     def select_cl_platform(options)
       platforms = OpenCL::get_platforms
@@ -454,7 +465,7 @@ EOF
       previous_output = get_output
       set_lang( C )
       extension = @@extensions[@lang]
-      extension += "comp" if get_architecture == MPPA
+      extension += "comp" if @architecture == MPPA
       module_file_name = File::split(path.chomp(extension))[0] + "/Mod_" + File::split(path.chomp(extension))[1].gsub("-","_") + ".c"
       module_name = File::split(module_file_name.chomp(File::extname(module_file_name)))[1]
       module_file = File::open(module_file_name,"w+")
@@ -487,12 +498,12 @@ EOF
 
     def create_source
       extension = @@extensions[@lang]
-      extension += "comp" if get_architecture == MPPA
+      extension += "comp" if @architecture == MPPA
       source_file = Tempfile::new([@procedure.name,extension])
       path = source_file.path
       #target = path.chomp(File::extname(path))+".#{RbConfig::CONFIG["OBJEXT"]}"
       target = path.chomp(extension)
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         target += ".bincomp"
       else
         target += ".#{RbConfig::CONFIG["OBJEXT"]}"
@@ -617,7 +628,7 @@ EOF
 
       source_file, path, target = create_source
 
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         source_file_io, path_io, target_io = create_source_io(path)
 
         multibin = create_mppa_target(path)
@@ -639,7 +650,7 @@ EOF
 
       kernel_files = get_sub_kernels
 
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         file module_final => [module_target] do
           sh "#{linker} #{ldshared} -o #{module_final} #{module_target} #{ldflags}"
         end
@@ -675,7 +686,7 @@ EOF
         }
       end
       
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         [target_io].each { |fn|
           File::unlink(fn)
         }
@@ -697,8 +708,8 @@ EOF
       code.rewind
       source_file.puts "#include <inttypes.h>" if @lang == C or @lang == CUDA
       source_file.puts "#include <cuda.h>" if @lang == CUDA
-      source_file.puts "#include <mppaipc.h>" if get_architecture == MPPA
-      source_file.puts "#include <mppa/osconfig.h>" if get_architecture == MPPA
+      source_file.puts "#include <mppaipc.h>" if @architecture == MPPA
+      source_file.puts "#include <mppa/osconfig.h>" if @architecture == MPPA
       # check for too long FORTRAN lines
       if @lang == FORTRAN then
         code.each_line { |line|
@@ -721,13 +732,13 @@ EOF
       else
         source_file.write code.read
       end
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         source_file.write <<EOF
 int main(int argc, const char* argv[]) {
 EOF
         if io then #IO Code
           #Parameters declaration
-          if get_architecture == MPPA then
+          if @architecture == MPPA then
             @procedure.parameters.each { |param|
               source_file.write "    #{param.type.decl}"
               source_file.write "*" if param.dimension
@@ -868,7 +879,7 @@ EOF
       if @lang == CUDA then
         module_file.print "#include <cuda_runtime.h>\n"
       end
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         module_file.print "#include <mppaipc.h>\n"
         module_file.print "#include <mppa_mon.h>\n"
       end
@@ -1015,7 +1026,7 @@ EOF
     end
 
     def create_procedure_call(module_file)
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         mppa_load_id = Variable::new("_mppa_load_id", Int)
         mppa_pid = Variable::new("_mppa_pid", Int)
         mppa_fd_size = Variable::new("_mppa_fd_size", Int)
@@ -1204,7 +1215,7 @@ EOF
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));\n" if type_ret.kind_of?(Int) and not type_ret.signed
         module_file.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));\n" if type_ret.kind_of?(Real)
       end
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         module_file.print <<EOF
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("avg_pwr")),rb_float_new(avg_pwr));
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("energy")),rb_float_new(energy));
@@ -1247,7 +1258,7 @@ EOF
 
       @probes.map(&:stop)
 
-      if get_architecture == MPPA then
+      if @architecture == MPPA then
         module_file.print <<EOF
   avg_pwr = 0;
   energy = 0;
