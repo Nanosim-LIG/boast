@@ -103,6 +103,100 @@ module BOAST
       f.close
     end
 
+    def fill_module_header
+      get_output.print <<EOF
+#include "ruby.h"
+#include <inttypes.h>
+#ifdef HAVE_NARRAY_H
+#include "narray.h"
+#endif
+EOF
+    end
+
+    def fill_module_preamble
+      get_output.print <<EOF
+VALUE #{module_name} = Qnil;
+void Init_#{module_name}();
+VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
+void Init_#{module_name}() {
+  #{module_name} = rb_define_module("#{module_name}");
+  rb_define_method(#{module_name}, "run", method_run, -1);
+}
+EOF
+    end
+
+    def fill_check_args
+      get_output.print <<EOF
+  VALUE _boast_rb_opts;
+  if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
+    rb_raise(rb_eArgError, "wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})", _boast_argc);
+  _boast_rb_opts = Qnil;
+  if( _boast_argc == #{@procedure.parameters.length + 1} ) {
+    _boast_rb_opts = _boast_argv[_boast_argc -1];
+    if ( _boast_rb_opts != Qnil ) {
+      if (TYPE(_boast_rb_opts) != T_HASH)
+        rb_raise(rb_eArgError, "Options should be passed as a hash");
+    }
+  }
+EOF
+    end
+
+    def fill_decl_module_params
+      set_decl_module(true)
+      @procedure.parameters.each { |param|
+        param_copy = param.copy
+        param_copy.constant = nil
+        param_copy.direction = nil
+        param_copy.decl
+      }
+      set_decl_module(false)
+      get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
+      get_output.puts "  VALUE _boast_stats = rb_hash_new();"
+      get_output.puts "  VALUE _boast_rb_ptr = Qnil;"
+    end
+
+    def fill_module_file_source
+      fill_module_header
+      @probes.map(&:header)
+      @procedure.boast_header(@lang)
+
+      fill_module_preamble
+
+      get_output.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
+      increment_indent_level
+
+      fill_check_args
+
+      argc = @procedure.parameters.length
+      argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
+
+      fill_decl_module_params
+
+      @probes.reverse.map(&:decl)
+
+      get_params_value(argv, rb_ptr)
+
+      @probes.map(&:configure)
+
+      @probes.reverse.map(&:start)
+
+      create_procedure_call
+
+      @probes.map(&:stop)
+
+      @probes.map(&:compute)
+
+      get_results(argv, rb_ptr)
+
+      store_result
+
+      get_output.puts "  return _boast_stats;"
+      decrement_indent_level
+      get_output.puts "}"
+    end
+
     def create_module_file_source
       f = File::open(module_file_source, "w+")
       previous_lang = get_lang
@@ -182,6 +276,12 @@ module BOAST
 
     alias fill_library_source_old fill_library_source
     alias fill_library_header_old fill_library_header
+    alias fill_module_header_old fill_module_header
+
+    def fill_module_header
+      fill_module_header_old
+      get_output.puts "#include <cuda_runtime.h>"
+    end
 
     def fill_library_header
       fill_library_header_old
