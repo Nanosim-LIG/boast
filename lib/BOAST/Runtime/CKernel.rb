@@ -149,10 +149,107 @@ EOF
         param_copy.direction = nil
         param_copy.decl
       }
-      set_decl_module(false)
       get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
       get_output.puts "  VALUE _boast_stats = rb_hash_new();"
       get_output.puts "  VALUE _boast_rb_ptr = Qnil;"
+      refs = false
+      @procedure.parameters.each_with_index do |param,i|
+        refs = true if param.scalar_output?
+      end
+      if refs then
+        get_output.puts "  VALUE _boast_refs = rb_hash_new();"
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);"
+      end
+      set_decl_module(false)
+    end
+
+    def copy_scalar_param_from_ruby( param, ruby_param )
+      case param.type
+      when Int
+        (param === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
+        (param === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
+      when Real
+        (param === FuncCall::new("NUM2DBL", ruby_param)).pr
+      end
+    end
+
+    def copy_array_param_from_ruby( param, ruby_param )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if (TYPE(_boast_rb_ptr) == T_STRING) {
+    #{param} = (void *) RSTRING_PTR(_boast_rb_ptr);
+  } else if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    #{param} = (void *) _boast_n_ary->ptr;
+  } else {
+    rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
+  }
+EOF
+    end
+
+    def get_params_value
+      argc = @procedure.parameters.length
+      argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      set_decl_module(true)
+      @procedure.parameters.each_index do |i|
+        param = @procedure.parameters[i]
+        if not param.dimension then
+          copy_scalar_param_from_ruby(param, argv[i])
+        else
+          copy_array_param_from_ruby(param, argv[i])
+        end
+      end
+      set_decl_module(false)
+    end
+
+    def create_procedure_call
+      get_output.print "  _boast_ret = " if @procedure.properties[:return]
+      get_output.print " #{method_name}( "
+      get_output.print create_procedure_call_parameters.join(", ")
+      get_output.puts " );"
+    end
+
+    def copy_scalar_param_to_ruby(param, ruby_param)
+      if param.scalar_output? then
+        case param.type
+        when Int
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));" if param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));" if not param.type.signed?
+        when Real
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{param}));"
+        end
+      end
+    end
+
+    def copy_array_param_to_ruby(param, ruby_param)
+    end
+
+    def get_results
+      argc = @procedure.parameters.length
+      argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      set_decl_module(true)
+      @procedure.parameters.each_index do |i|
+        param = @procedure.parameters[i]
+        if not param.dimension then
+          copy_scalar_param_to_ruby(param, argv[i])
+        else
+          copy_array_param_to_ruby(param, argv[i])
+        end
+      end
+      set_decl_module(false)
+    end
+
+    def store_results
+      if @procedure.properties[:return] then
+        type_ret = @procedure.properties[:return].type
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_ret));" if type_ret.kind_of?(Int) and type_ret.signed
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));" if type_ret.kind_of?(Int) and not type_ret.signed
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));" if type_ret.kind_of?(Real)
+      end
     end
 
     def fill_module_file_source
@@ -162,21 +259,17 @@ EOF
 
       fill_module_preamble
 
+      set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
       get_output.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
       increment_indent_level
 
       fill_check_args
 
-      argc = @procedure.parameters.length
-      argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
-      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
-      set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
-
       fill_decl_module_params
 
       @probes.reverse.map(&:decl)
 
-      get_params_value(argv, rb_ptr)
+      get_params_value
 
       @probes.map(&:configure)
 
@@ -188,7 +281,7 @@ EOF
 
       @probes.map(&:compute)
 
-      get_results(argv, rb_ptr)
+      get_results
 
       store_result
 
@@ -269,6 +362,20 @@ EOF
       get_output.write code.read
     end
 
+    def create_procedure_call_parameters
+      params = []
+      @procedure.parameters.each { |param|
+        if param.dimension then
+          params.push( param.name )
+        elsif param.direction == :out or param.direction == :inout then
+          params.push( "&"+param.name )
+        else
+          params.push( param.name )
+        end
+      }
+      return params
+    end
+
   end
 
   module CUDARuntime
@@ -277,6 +384,9 @@ EOF
     alias fill_library_source_old fill_library_source
     alias fill_library_header_old fill_library_header
     alias fill_module_header_old fill_module_header
+    alias get_params_value_old get_params_value
+    alias fill_decl_module_params_old fill_decl_module_params
+    alias create_procedure_call_parameters_old create_procedure_call_parameters
 
     def fill_module_header
       fill_module_header_old
@@ -309,6 +419,118 @@ extern "C" {
 }
 EOF
     end
+
+    def copy_array_param_from_ruby( param, ruby_param )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    cudaMalloc( (void **) &#{param}, _boast_array_size);
+    cudaMemcpy(#{param}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
+  } else {
+    rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
+  }
+EOF
+    end
+
+    def fill_decl_module_params
+      fill_decl_module_params_old
+      get_output.print <<EOF
+  size_t _boast_block_size[3] = {1,1,1};
+  size_t _boast_block_number[3] = {1,1,1};
+EOF
+    end
+
+    def get_param_value
+      get_params_value_old
+      get_output.print <<EOF
+  if( _boast_rb_opts != Qnil ) {
+    VALUE _boast_rb_array_data = Qnil;
+    int _boast_i;
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_size")));
+    if( _boast_rb_ptr != Qnil ) {
+      if (TYPE(_boast_rb_ptr) != T_ARRAY)
+        rb_raise(rb_eArgError, "Cuda option block_size should be an array");
+      for(_boast_i=0; _boast_i<3; _boast_i++) {
+        _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+        if( _boast_rb_array_data != Qnil )
+          _boast_block_size[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
+      }
+    } else {
+      _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("local_work_size")));
+      if( _boast_rb_ptr != Qnil ) {
+        if (TYPE(_boast_rb_ptr) != T_ARRAY)
+          rb_raise(rb_eArgError, "Cuda option local_work_size should be an array");
+        for(_boast_i=0; _boast_i<3; _boast_i++) {
+          _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+          if( _boast_rb_array_data != Qnil )
+            _boast_block_size[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
+        }
+      }
+    }
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("block_number")));
+    if( _boast_rb_ptr != Qnil ) {
+      if (TYPE(_boast_rb_ptr) != T_ARRAY)
+        rb_raise(rb_eArgError, "Cuda option block_number should be an array");
+      for(_boast_i=0; _boast_i<3; _boast_i++) {
+        _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+        if( _boast_rb_array_data != Qnil )
+          _boast_block_number[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data );
+      }
+    } else {
+      _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("global_work_size")));
+      if( _boast_rb_ptr != Qnil ) {
+        if (TYPE(_boast_rb_ptr) != T_ARRAY)
+          rb_raise(rb_eArgError, "Cuda option global_work_size should be an array");
+        for(_boast_i=0; _boast_i<3; _boast_i++) {
+          _boast_rb_array_data = rb_ary_entry(_boast_rb_ptr, _boast_i);
+          if( _boast_rb_array_data != Qnil )
+            _boast_block_number[_boast_i] = (size_t) NUM2LONG( _boast_rb_array_data ) / _boast_block_size[_boast_i];
+        }
+      }
+    }
+  }
+EOF
+    end
+
+    def create_procedure_call_parameters
+      return create_procedure_call_parameters_old + ["_boast_block_number", "_boast_block_size"]
+    end
+
+    def create_procedure_call
+      get_output.print "  #{TimerProbe::RESULT} = "
+      get_output.print " #{method_name}_wrapper( "
+      get_output.print create_procedure_call_parameters.join(", ")
+      get_output.puts " );"
+    end
+
+    def copy_array_param_to_ruby(param, ruby_param)
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if ( IsNArray(_boast_rb_ptr) ) {
+EOF
+      if param.direction == :out or param.direction == :inout then
+        get_output.print <<EOF
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    cudaMemcpy((void *) _boast_n_ary->ptr, #{param.name}, _boast_array_size, cudaMemcpyDeviceToHost);
+EOF
+      end
+      get_output.print <<EOF
+    cudaFree( (void *) #{param.name});
+  } else {
+    rb_raise(rb_eArgError, "wrong type of argument %d", #{i});
+  }
+EOF
+    end
+
   end
 
   module FORTRANRuntime
@@ -338,6 +560,19 @@ EOF
         end
       }
     end
+
+    def create_procedure_call_parameters
+      params = []
+      @procedure.parameters.each { |param|
+        if param.dimension then
+          params.push( param.name )
+        else
+          params.push( "&"+param.name )
+        end
+      }
+      return params
+    end
+
   end
 
   module FFIRuntime
