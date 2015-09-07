@@ -1,15 +1,6 @@
 module BOAST
 
   module FFIRuntime
-    def init
-      if @lang = FORTRAN then
-        extend FORTRANRuntime
-      elsif @lang = C then
-        extend CRuntime
-      else
-        raise "FFI only supports C or FORTRAN!"
-      end
-    end
 
     def target
       return library_path
@@ -105,7 +96,7 @@ module BOAST
         end
       end
 EOF
-      eval s
+      BOAST::class_eval s
     end
 
   end

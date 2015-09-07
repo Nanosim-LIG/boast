@@ -56,17 +56,11 @@ module BOAST
       when CUDA
         extend CUDARuntime
       when FORTRAN
-        if ffi? then
-          extend FFIRuntime
-        else
-          extend FORTRANRuntime
-        end
+        extend FORTRANRuntime
+        extend FFIRuntime if ffi?
       else
-        if ffi? then
-          extend FFIRuntime
-        else
-          extend CRuntime
-        end
+        extend CRuntime
+        extend FFIRuntime if ffi?
       end
     end
 
