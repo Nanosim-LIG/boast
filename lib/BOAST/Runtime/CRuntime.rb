@@ -10,7 +10,7 @@ module BOAST
     def fill_library_source
       fill_library_header
       @code.rewind
-      get_output.write code.read
+      get_output.write @code.read
     end
 
     def create_procedure_call_parameters
