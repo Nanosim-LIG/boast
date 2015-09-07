@@ -69,16 +69,20 @@ module BOAST
       return "#{module_file_base_path}.#{RbConfig::CONFIG["OBJEXT"]}"
     end
 
+    def base_path
+      return "#{directory}/#{base_name}"
+    end
+
     def library_source
-      return directory + "/" + base_name + @@extensions[@lang]
+      return base_path + @@extensions[@lang]
     end
 
     def library_object
-      return "#{directory}/#{base_name}.#{RbConfig::CONFIG["OBJEXT"]}"
+      return "#{base_path}.#{RbConfig::CONFIG["OBJEXT"]}"
     end
 
     def library_path
-      return "#{directory}/#{base_name}.#{RbConfig::CONFIG["DLEXT"]}"
+      return "#{base_path}.#{RbConfig::CONFIG["DLEXT"]}"
     end
 
     def target

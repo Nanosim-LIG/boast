@@ -64,15 +64,6 @@ module BOAST
       end
     end
 
-    def set_io
-      @code_io = StringIO::new unless @code_io
-      set_output(@code_io)
-    end
-
-    def set_comp
-      set_output(@code)
-    end
-
     def print
       @code.rewind
       puts @code.read
