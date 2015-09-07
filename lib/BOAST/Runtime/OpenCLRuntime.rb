@@ -131,8 +131,10 @@ module BOAST
       end
     end
 
-    def build_opencl(options)
-      init_opencl(options)
+    def build(options={})
+      compiler_options = BOAST::get_compiler_options
+      compiler_options.update(options)
+      init_opencl(compiler_options)
 
       run_method = <<EOF
 def self.run(*args)
