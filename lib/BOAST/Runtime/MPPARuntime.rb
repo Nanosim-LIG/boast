@@ -4,9 +4,25 @@ module BOAST
     include CRuntime
 
     alias create_targets_old create_targets
+    alias cleanup_old cleanup
+    alias fill_module_header_old fill_module_header
+    alias get_params_value_old get_params_value
+    alias fill_decl_module_params_old fill_decl_module_params
+    alias get_results_old get_results
+
+    def cleanup(kernel_files)
+      cleanup_old(kernel_files)
+      ([io_bin, comp_bin, io_object, comp_object]).each { |fn|
+        File::unlink(fn)
+      }
+    end
 
     def target_depends
       return [ module_file_object ]
+    end
+
+    def target_sources
+      return [ module_file_source, io_source, comp_source ]
     end
 
     def multibinary_path
@@ -48,6 +64,23 @@ module BOAST
 
     attr_accessor :code_comp
     attr_accessor :procedure_comp
+    attr_accessor :binary_comp
+    attr_accessor :multibinary
+
+    def save_binary
+      f = File::open(io_object,"rb")
+      @binary = StringIO::new
+      @binary.write( f.read )
+      f.close
+      f = File::open(comp_object,"rb")
+      @binary_comp = StringIO::new
+      @binary_comp.write( f.read )
+      f.close
+      f = File::open(multibinary_path,"rb")
+      @multibinary = StringIO::new
+      @multibinary.write( f.read )
+      f.close
+    end
 
     def create_targets( linker, ldshared, ldflags, kernel_files )
       create_targets_old( linker, ldshared, ldflags, kernel_files )
@@ -79,11 +112,133 @@ EOF
 
     def get_cluster_list_from_host
       get_output.write <<EOF
-  mppa_read(_mppa_from_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
-  _clust_list = malloc(_mppa_tmp_size);
-  _nb_clust = _mppa_tmp_size / sizeof(uint32_t);
-  mppa_read(_mppa_from_host_var, _clust_list, _mppa_tmp_size);
+  mppa_read(_mppa_from_host_size, &_mppa_clust_list_size, sizeof(_mppa_clust_list_size));
+  _clust_list = malloc(_mppa_clust_list_size);
+  _nb_clust = _mppa_clust_list_size / sizeof(*_clust_list);
+  mppa_read(_mppa_from_host_var, _clust_list, _mppa_clust_list_size);
 EOF
+    end
+
+    def copy_array_param_to_host(param)
+      get_output.write <<EOF
+  mppa_write(_mppa_to_host_var, #{param}, _mppa_#{param}_size);
+EOF
+    end
+
+    def copy_scalar_param_to_host(param)
+      get_output.write <<EOF
+  mppa_write(_mppa_to_host_var, &#{param}, sizeof(#{param}));
+EOF
+    end
+
+    def multibinary_main_io_source_decl
+      #Parameters declaration
+      @procedure.parameters.each { |param|
+        get_output.write "  #{param.type.decl}"
+        get_output.write "*" if param.dimension
+        get_output.puts " #{param};"
+        if param.dimension then
+          get_output.puts " size_t _mppa_#{param}_size;"
+        end
+      }
+
+      #Return value declaration
+      get_output.puts "  #{@procedure.properties[:return].type.decl} _mppa_ret;" if @procedure.properties[:return]
+
+      #Cluster list declaration
+      get_output.write <<EOF
+  uint32_t* _clust_list;
+  int _nb_clust;
+  int _mppa_clust_list_size;
+EOF
+
+      #Communication variables
+      get_output.write <<EOF
+  int _mppa_from_host_size, _mppa_from_host_var;
+  int _mppa_to_host_size,   _mppa_to_host_var;
+  int _mppa_pid[16], i;
+EOF
+    end
+
+    def multibinary_main_io_source_get_params
+      #Receiving parameters from Host
+      get_output.write <<EOF
+  _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
+  _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
+EOF
+      @procedure.parameters.each { |param|
+        if param.dimension then
+          copy_array_param_from_host(param)
+        else
+          copy_scalar_param_from_host(param)
+        end
+      }
+
+      #Receiving cluster list
+      get_cluster_list_from_host
+
+      get_output.write <<EOF
+  mppa_close(_mppa_from_host_size);
+  mppa_close(_mppa_from_host_var);
+EOF
+    end
+
+    def multibinary_main_io_source_send_results
+      #Sending results to Host
+      get_output.write <<EOF
+  _mppa_to_host_var = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
+EOF
+      @procedure.parameters.each { |param| 
+        if param.direction == :out or param.direction == :inout then
+          if param.dimension then
+            copy_array_param_to_host(param)
+          else
+            copy_scalar_param_to_host(param)
+          end
+        end
+      }
+      copy_scalar_param_to_host("_mppa_ret")  if @procedure.properties[:return]
+      get_output.write <<EOF
+  mppa_close(_mppa_to_host_var);
+EOF
+    end
+
+    def fill_multibinary_main_io_source
+      multibinary_main_io_source_decl
+
+      multibinary_main_io_source_get_params
+
+      #Spawning cluster
+      get_output.write <<EOF
+  for(i=0; i<_nb_clust;i++){
+    _mppa_pid[i] = mppa_spawn(_clust_list[i], NULL, "comp-part", NULL, NULL);
+  }
+EOF
+      #Calling IO procedure
+      get_output.write "  _mppa_ret = #{@procedure.name}("
+      @procedure.parameters.each_with_index { |param, i|
+      get_output.write ", " unless i == 0
+        if !param.dimension then
+          if param.direction == :out or param.direction == :inout then
+            get_output.write "&"
+          end
+        end
+        get_output.write param.name
+      }
+      get_output.puts ");"
+
+      #Waiting for clusters
+      get_output.write <<EOF
+  for(i=0; i< _nb_clust; i++){
+    mppa_waitpid(_mppa_pid[i], NULL, 0);
+  }
+EOF
+
+      multibinary_main_io_source_send_results
+    end
+
+    def fill_multibinary_main_comp_source
+      get_output.puts "    #{@procedure_comp.name}();"
     end
 
     def fill_multibinary_source(mode)
@@ -98,100 +253,13 @@ EOF
       get_output.write code.read
       get_output.puts "int main(int argc, const char* argv[]) {"
       if mode == :io then
-        #Parameters declaration
-        if @architecture == MPPA then
-          @procedure.parameters.each { |param|
-            get_output.write "  #{param.type.decl}"
-            get_output.write "*" if param.dimension
-            get_output.puts " #{param.name};"
-            if param.dimension then
-              get_output.puts " size_t _mppa_#{param.name}_size;"
-            end
-          }
-        end
-          
-        #Cluster list declaration
-        get_output.write <<EOF
-  uint32_t* _clust_list;
-  int _nb_clust;
-EOF
-
-        #Receiving parameters from Host
-        get_output.write <<EOF
-  int _mppa_from_host_size, _mppa_from_host_var, _mppa_to_host_size, _mppa_to_host_var, _mppa_tmp_size, _mppa_pid[16], i;
-  _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
-  _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
-EOF
-        @procedure.parameters.each { |param|
-          if param.dimension then
-            copy_array_param_from_host(param)
-          else
-            copy_scalar_param_from_host(param)
-          end
-        }
-
-        #Receiving cluster list
-        get_cluster_list_from_host
-
-        get_output.write <<EOF
-  mppa_close(_mppa_from_host_size);
-  mppa_close(_mppa_from_host_var);
-EOF
-        #Spawning cluster
-        get_output.write <<EOF
-  for(i=0; i<_nb_clust;i++){
-    _mppa_pid[i] = mppa_spawn(_clust_list[i], NULL, "comp-part", NULL, NULL);
-  }
-EOF
-        get_output.write "    #{@procedure.name}("
-        @procedure.parameters.each_with_index { |param, i|
-        get_output.write ", " unless i == 0
-          if !param.dimension then
-            if param.direction == :out or param.direction == :inout then
-              get_output.write "&"
-            end
-          end
-          get_output.write param.name
-        }
-        get_output.write ");\n"
-      else #Compute code
-        source_file.write "    #{@procedure_comp.name}();\n"
+        fill_multibinary_main_io_source
+      else
+        fill_multibinary_main_comp_source
       end
-        
-        
-      #Sending results to Host
-      if mode == :io then #IO Code
-        get_output.write <<EOF
-  for(i=0; i< _nb_clust; i++){
-    mppa_waitpid(_mppa_pid[i], NULL, 0);
-  }
-  _mppa_to_host_size = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
-  _mppa_to_host_var = mppa_open("/mppa/buffer/host#5/board0#mppa0#pcie0#5", O_WRONLY);
-EOF
-        @procedure.parameters.each { |param| 
-          if param.direction == :out or param.direction == :inout then
-            if param.dimension then
-              source_file.write <<EOF
-  _mppa_tmp_size = #{param.dimension.size};
-  mppa_write(_mppa_to_host_size, &_mppa_tmp_size, sizeof(_mppa_tmp_size));
-  mppa_write(_mppa_to_host_var, #{param.name}, _mppa_tmp_size);
-EOF
-              else
-                source_file.write <<EOF
-    mppa_write(_mppa_to_host_var, &#{param.name}, sizeof(#{param.name}));
-EOF
-              end
-            end
-          }
-          source_file.write <<EOF
-    mppa_close(_mppa_to_host_size);
-    mppa_close(_mppa_to_host_var);
-EOF
-        else #Compute code
-        end
-        source_file.write <<EOF
-    mppa_exit(0);
-    return 0;
+      get_output.write <<EOF
+  mppa_exit(0);
+  return 0;
 }
 EOF
     end
@@ -222,6 +290,169 @@ EOF
     def create_sources
       create_multibinary_sources
       create_module_file_source
+    end
+
+    def fill_module_header
+      fill_module_header_old
+      get_output.puts "#include <mppaipc.h>"
+      get_output.puts "#include <mppa_mon.h>"
+    end
+
+    def fill_decl_module_params
+      fill_decl_module_params_old
+      get_output.print <<EOF
+  int _mppa_i;
+  int _mppa_load_id;
+  int _mppa_pid;
+  int _mppa_fd_size;
+  int _mppa_fd_var;
+  int _mppa_size;
+  float _mppa_avg_power;
+  float _mppa_energy;
+  float _mppa_duration;
+  int _mppa_clust_list_size;
+  int _mppa_clust_nb;
+  uint32_t * _mppa_clust_list;
+  mppa_mon_ctx_t * _mppa_ctx;
+  mppa_mon_sensor_t _mppa_pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
+  mppa_mon_measure_report_t * _mppa_report;
+  mppa_mon_open(0, &_mppa_ctx);
+  mppa_mon_measure_set_sensors(_mppa_ctx, _mppa_pwr_sensor, 1);
+  _mppa_load_id = mppa_load(0, 0, 0, \"#{multibinary_path}\");
+  mppa_mon_measure_start(_mppa_ctx);
+  _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);
+EOF
+    end
+
+    def copy_array_param_from_ruby( param, ruby_param )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    mppa_write(_mppa_fd_size, &_boast_array_size, sizeof(_boast_array_size));
+    mppa_write(_mppa_fd_var, _boast_n_ary->ptr, _boast_array_size);
+  } else {
+    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
+  }
+EOF
+    end
+
+    def copy_scalar_param_from_ruby( param, ruby_param )
+      case param.type
+      when Int
+        (param === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
+        (param === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
+      when Real
+        (param === FuncCall::new("NUM2DBL", ruby_param)).pr
+      end
+      get_output.puts "  mppa_write(_mppa_fd_var, &#{param}, sizeof(#{param}));"
+    end
+
+    def get_params_value
+      get_output.print <<EOF
+  _mppa_fd_size = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#2/host#2\", O_WRONLY);
+  _mppa_fd_var = mppa_open(\"/mppa/buffer/board0#mppa0#pcie0#3/host#3\", O_WRONLY);
+EOF
+      get_params_value_old
+      get_output.print <<EOF
+  if(_boast_rb_opts != Qnil){
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clust_list")));
+    int _boast_i;
+    _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
+    _mppa_clust_list = malloc(sizeof(uint32_t)*_mppa_clust_nb);
+    for(_boast_i=0; _boast_i < _mppa_clust_nb; _boast_i++){
+      _mppa_clust_list[_boast_i] = NUM2INT(rb_ary_entry(_boast_rb_ptr, _boast_i));
+    }
+  } else {
+    _mppa_clust_list = malloc(sizeof(uint32_t));
+    _mppa_clust_list[0] = 0;
+    _mppa_clust_nb = 1;
+  }
+  
+  _mppa_clust_list_size = sizeof(uint32_t)*_mppa_clust_nb;
+  mppa_write(_mppa_fd_size, &_mppa_clust_list_size, sizeof(_mppa_clust_list_size));
+  mppa_write(_mppa_fd_var, _mppa_clust_list, _mppa_clust_list_size);
+  free(_mppa_clust_list);
+  mppa_close(_mppa_fd_var);
+  mppa_close(_mppa_fd_size);
+EOF
+    end
+
+    def create_procedure_call
+    end
+
+    def copy_array_param_to_ruby(param, ruby_param)
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if ( IsNArray(_boast_rb_ptr) ) {
+EOF
+      if param.direction == :out or param.direction == :inout then
+        get_output.print <<EOF
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    mppa_read(_mppa_fd_var, _boast_n_ary->ptr, _boast_array_size);
+EOF
+      end
+        get_output.print <<EOF
+  } else {
+    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
+  }
+EOF
+    end
+
+    def copy_scalar_param_to_ruby(param, ruby_param)
+      if param.scalar_output? then
+        get_output.print <<EOF
+  mppa_read(_mppa_fd_var, &#{param}, sizeof(#{param}));
+EOF
+        case param.type
+        when Int
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));" if param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));" if not param.type.signed?
+        when Real
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{param}));"
+        end
+      end
+    end
+
+    def get_results
+      get_output.print <<EOF
+  _mppa_fd_var = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);
+EOF
+      get_results_old
+      get_output.puts "mppa_read(_mppa_fd_var, &#{_boast_ret}, sizeof(#{_boast_ret}));" if @procedure.properties[:return]
+      get_output.print <<EOF
+  mppa_close(_mppa_fd_var);
+  mppa_waitpid(_mppa_pid, NULL, 0);
+  mppa_mon_measure_stop(_mppa_ctx, &_mppa_report);
+  mppa_unload(_mppa_load_id);
+  _mppa_avg_pwr = 0;
+  _mppa_energy = 0;
+  for(_mppa_i=0; _mppa_i < _mppa_report->count; _mppa_i++){
+    _mppa_avg_pwr += _mppa_report->measures[_mppa_i].avg_power;
+    _mppa_energy += _mppa_report->measures[_mppa_i].total_energy;
+  } 
+  _mppa_avg_pwr = _mppa_avg_pwr/(float) _mppa_report->count;
+  _mppa_duration = _mppa_report->total_time;
+  mppa_mon_measure_free_report(_mppa_report);
+  mppa_mon_close(_mppa_ctx);
+EOF
+    end
+
+    def store_results
+      store_results_old
+      get_output.print <<EOF
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_energy")),rb_float_new(_mppa_energy));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_duration")), rb_float_new(_mppa_duration));
+EOF
     end
 
   end

@@ -59,8 +59,12 @@ module BOAST
         extend FORTRANRuntime
         extend FFIRuntime if ffi?
       else
-        extend CRuntime
-        extend FFIRuntime if ffi?
+        if @architecture == MPPA then
+          extend MPPARuntime
+        else
+          extend CRuntime
+          extend FFIRuntime if ffi?
+        end
       end
     end
 

@@ -93,6 +93,13 @@ module BOAST
       return [ module_file_object, library_object ]
     end
 
+    def save_binary
+      f = File::open(library_object,"rb")
+      @binary = StringIO::new
+      @binary.write( f.read )
+      f.close
+    end
+
     def create_targets( linker, ldshared, ldflags, kernel_files)
       file target => target_depends do
         #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
@@ -374,6 +381,8 @@ EOF
       create_sources
 
       create_targets(linker, ldshared, ldflags, kernel_files)
+
+      save_binary
 
       load_module
 
