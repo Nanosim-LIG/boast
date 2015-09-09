@@ -54,22 +54,22 @@ int hello(){
 }
 EOF
 
-BOAST::set_architecture(BOAST::MPPA)
 BOAST::set_lang(BOAST::C)
+BOAST::set_architecture(BOAST::MPPA)
 
 kernel = BOAST::CKernel::new
-BOAST::get_output.write comp_code
-kernel.set_io
 BOAST::get_output.write io_code
 kernel.set_comp
+BOAST::get_output.write comp_code
+kernel.set_io
 a = BOAST::Int("a", :dir=>:in)
 b = BOAST::Int("b", :dir=>:out)
 kernel.procedure = BOAST::Procedure("hello", [a, b])
+kernel.procedure_comp = BOAST::Procedure("hello", [])
 kernel.build
-r = kernel.run(42, 0, :clust_list => [0])
+r = kernel.run(42, 0, :clusters => [0])
 
 puts "BOAST : Received value =  #{r[:reference_return][:b]}"
-puts "BOAST : Average power = #{r[:avg_pwr].round(3)} W"
-puts "BOAST : Energy consumption = #{r[:energy].round(3)} J"
+puts "BOAST : Average power = #{r[:mppa_avg_pwr].round(3)} W"
+puts "BOAST : Energy consumption = #{r[:mppa_energy].round(3)} J"
 puts "BOAST : Raw results = #{r.to_s}"
-sleep 2

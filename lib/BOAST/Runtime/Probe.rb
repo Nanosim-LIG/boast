@@ -1,11 +1,13 @@
 module BOAST
 
-  class TimerProbe
-    include PrivateStateAccessor
+  module TimerProbe
+    extend PrivateStateAccessor
 
     RESULT = BOAST::Int( "_boast_duration", :size => 8 )
 
-    def self.header
+    module_function
+
+    def header
       if OS.mac? then
         get_output.print <<EOF
 #if __cplusplus
@@ -21,7 +23,7 @@ EOF
       end
     end
 
-    def self.decl
+    def decl
       if OS.mac? then
         get_output.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
         get_output.print "  mach_timebase_info_data_t _mac_boast_timebase_info;\n"
@@ -31,10 +33,10 @@ EOF
       BOAST::decl RESULT
     end
 
-    def self.configure
+    def configure
     end
 
-    def self.start
+    def start
       if OS.mac? then
         get_output.print "  _mac_boast_start = mach_absolute_time();\n"
       else
@@ -42,7 +44,7 @@ EOF
       end
     end
 
-    def self.stop
+    def stop
       if OS.mac? then
         get_output.print "  _mac_boast_stop = mach_absolute_time();\n"
       else
@@ -50,7 +52,7 @@ EOF
       end
     end
 
-    def self.compute
+    def compute
       if @lang != CUDA then
         if OS.mac? then
           get_output.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
@@ -64,22 +66,24 @@ EOF
 
   end
 
-  class PAPIProbe
-    include PrivateStateAccessor
+  module PAPIProbe
+    extend PrivateStateAccessor
 
-    def self.name
+    module_function
+
+    def name
       return "PAPI"
     end
 
-    def self.header
+    def header
     end
 
-    def self.decl
+    def decl
       get_output.print "  VALUE _boast_event_set = Qnil;\n"
       get_output.print "  VALUE _boast_papi_results = Qnil;\n"
     end
 
-    def self.configure
+    def configure
       get_output.print <<EOF
   if( _boast_rb_opts != Qnil ) {
      VALUE _boast_PAPI_rb_ptr = Qnil;
@@ -97,7 +101,7 @@ EOF
 EOF
     end
 
-    def self.start
+    def start
       get_output.print <<EOF
   if( _boast_event_set != Qnil) {
     rb_funcall(_boast_event_set, rb_intern("start"), 0);
@@ -105,7 +109,7 @@ EOF
 EOF
   end
 
-    def self.stop
+    def stop
       get_output.print <<EOF
   if( _boast_event_set != Qnil) {
     _boast_papi_results = rb_funcall(_boast_event_set, rb_intern("stop"), 0);
@@ -113,7 +117,7 @@ EOF
 EOF
     end
 
-    def self.compute
+    def compute
       get_output.print <<EOF
   if( _boast_papi_results != Qnil) {
     VALUE _boast_papi_stats = Qnil;

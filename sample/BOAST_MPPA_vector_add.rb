@@ -35,7 +35,7 @@ epsilon = 10e-15
 
 c_ref = a + b
 
-[:FORTRAN, :C].each { |l|
+[:FORTRAN, :C, :CL].each { |l|
   set_lang( BOAST.const_get(l)  )
   if get_lang == C then
     set_architecture( MPPA )
@@ -44,7 +44,8 @@ c_ref = a + b
   k = vector_add
   puts k.print
   c.random!
-  k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
+  stats = k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [16,1,1], :clusters => [2,8])
+  puts stats
   diff = (c_ref - c).abs
   diff.each { |elem|
     raise "Warning: residue too big: #{elem}" if elem > epsilon

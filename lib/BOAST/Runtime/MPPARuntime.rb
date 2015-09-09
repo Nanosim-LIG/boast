@@ -135,9 +135,9 @@ EOF
     def multibinary_main_io_source_decl
       #Parameters declaration
       @procedure.parameters.each { |param|
-        get_output.write "  #{param.type.decl}"
-        get_output.write "*" if param.dimension
-        get_output.puts " #{param};"
+        get_output.write "  #{param.type.decl} "
+        get_output.write "*" if param.dimension or param.scalar_output?
+        get_output.puts "#{param.name};"
         if param.dimension then
           get_output.puts "  size_t _mppa_#{param}_size;"
         end
@@ -148,7 +148,7 @@ EOF
 
       #Cluster list declaration
       get_output.write <<EOF
-  uint32_t* _clust_list;
+  uint32_t *_clust_list;
   int _nb_clust;
   int _mppa_clust_list_size;
 EOF
@@ -218,15 +218,7 @@ EOF
       #Calling IO procedure
       get_output.write "  _mppa_ret =" if @procedure.properties[:return]
       get_output.write "  #{@procedure.name}("
-      @procedure.parameters.each_with_index { |param, i|
-      get_output.write ", " unless i == 0
-        if !param.dimension then
-          if param.direction == :out or param.direction == :inout then
-            get_output.write "&"
-          end
-        end
-        get_output.write param.name
-      }
+      get_output.write @procedure.parameters.map(&:name).join(", ")
       get_output.puts ");"
 
       #Waiting for clusters
@@ -366,7 +358,7 @@ EOF
       get_params_value_old
       get_output.print <<EOF
   if(_boast_rb_opts != Qnil) {
-    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clust_list")));
+    _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clusters")));
     if (_boast_rb_ptr != Qnil ) {
       int _boast_i;
       _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
@@ -461,9 +453,9 @@ EOF
     def store_results
       store_results_old
       get_output.print <<EOF
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_energy")),rb_float_new(_mppa_energy));
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("_mppa_duration")), rb_float_new(_mppa_duration));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_energy")),rb_float_new(_mppa_energy));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(_mppa_duration));
 EOF
     end
 
