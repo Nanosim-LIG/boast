@@ -9,6 +9,7 @@ module BOAST
     alias get_params_value_old get_params_value
     alias fill_decl_module_params_old fill_decl_module_params
     alias get_results_old get_results
+    alias store_results_old store_results
 
     def cleanup(kernel_files)
       cleanup_old(kernel_files)
@@ -105,7 +106,7 @@ EOF
     end
 
     def copy_scalar_param_from_host( param )
-      get_ouput.write  <<EOF
+      get_output.write  <<EOF
   mppa_read(_mppa_from_host_var, &#{param}, sizeof(#{param}));
 EOF
     end
@@ -138,7 +139,7 @@ EOF
         get_output.write "*" if param.dimension
         get_output.puts " #{param};"
         if param.dimension then
-          get_output.puts " size_t _mppa_#{param}_size;"
+          get_output.puts "  size_t _mppa_#{param}_size;"
         end
       }
 
@@ -156,7 +157,7 @@ EOF
       get_output.write <<EOF
   int _mppa_from_host_size, _mppa_from_host_var;
   int _mppa_to_host_size,   _mppa_to_host_var;
-  int _mppa_pid[16], i;
+  int _mppa_pid[16], _mppa_i;
 EOF
     end
 
@@ -197,7 +198,7 @@ EOF
           end
         end
       }
-      copy_scalar_param_to_host("_mppa_ret")  if @procedure.properties[:return]
+      copy_scalar_param_to_host("_mppa_ret") if @procedure.properties[:return]
       get_output.write <<EOF
   mppa_close(_mppa_to_host_var);
 EOF
@@ -210,12 +211,13 @@ EOF
 
       #Spawning cluster
       get_output.write <<EOF
-  for(i=0; i<_nb_clust;i++){
-    _mppa_pid[i] = mppa_spawn(_clust_list[i], NULL, "comp-part", NULL, NULL);
+  for(_mppa_i=0; _mppa_i<_nb_clust; _mppa_i++){
+    _mppa_pid[_mppa_i] = mppa_spawn(_clust_list[_mppa_i], NULL, "comp-part", NULL, NULL);
   }
 EOF
       #Calling IO procedure
-      get_output.write "  _mppa_ret = #{@procedure.name}("
+      get_output.write "  _mppa_ret =" if @procedure.properties[:return]
+      get_output.write "  #{@procedure.name}("
       @procedure.parameters.each_with_index { |param, i|
       get_output.write ", " unless i == 0
         if !param.dimension then
@@ -229,8 +231,8 @@ EOF
 
       #Waiting for clusters
       get_output.write <<EOF
-  for(i=0; i< _nb_clust; i++){
-    mppa_waitpid(_mppa_pid[i], NULL, 0);
+  for(_mppa_i=0; _mppa_i<_nb_clust; _mppa_i++){
+    mppa_waitpid(_mppa_pid[_mppa_i], NULL, 0);
   }
 EOF
 
@@ -310,8 +312,7 @@ EOF
   int _mppa_pid;
   int _mppa_fd_size;
   int _mppa_fd_var;
-  int _mppa_size;
-  float _mppa_avg_power;
+  float _mppa_avg_pwr;
   float _mppa_energy;
   float _mppa_duration;
   int _mppa_clust_list_size;
@@ -338,7 +339,8 @@ EOF
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
     mppa_write(_mppa_fd_size, &_boast_array_size, sizeof(_boast_array_size));
-    mppa_write(_mppa_fd_var, _boast_n_ary->ptr, _boast_array_size);
+    #{param} = (void *) _boast_n_ary->ptr;
+    mppa_write(_mppa_fd_var, #{param}, _boast_array_size);
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }
@@ -363,13 +365,19 @@ EOF
 EOF
       get_params_value_old
       get_output.print <<EOF
-  if(_boast_rb_opts != Qnil){
+  if(_boast_rb_opts != Qnil) {
     _boast_rb_ptr = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("clust_list")));
-    int _boast_i;
-    _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
-    _mppa_clust_list = malloc(sizeof(uint32_t)*_mppa_clust_nb);
-    for(_boast_i=0; _boast_i < _mppa_clust_nb; _boast_i++){
-      _mppa_clust_list[_boast_i] = NUM2INT(rb_ary_entry(_boast_rb_ptr, _boast_i));
+    if (_boast_rb_ptr != Qnil ) {
+      int _boast_i;
+      _mppa_clust_nb = RARRAY_LEN(_boast_rb_ptr);
+      _mppa_clust_list = malloc(sizeof(uint32_t)*_mppa_clust_nb);
+      for(_boast_i=0; _boast_i < _mppa_clust_nb; _boast_i++){
+        _mppa_clust_list[_boast_i] = NUM2INT(rb_ary_entry(_boast_rb_ptr, _boast_i));
+      }
+    } else {
+      _mppa_clust_list = malloc(sizeof(uint32_t));
+      _mppa_clust_list[0] = 0;
+      _mppa_clust_nb = 1;
     }
   } else {
     _mppa_clust_list = malloc(sizeof(uint32_t));
@@ -401,7 +409,7 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    mppa_read(_mppa_fd_var, _boast_n_ary->ptr, _boast_array_size);
+    mppa_read(_mppa_fd_var, #{param}, _boast_array_size);
 EOF
       end
         get_output.print <<EOF
