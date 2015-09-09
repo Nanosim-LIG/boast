@@ -238,7 +238,9 @@ EOF
     end
 
     def fill_multibinary_main_comp_source
-      get_output.puts "    #{@procedure_comp.name}();"
+      if @procedure_comp then
+        get_output.puts "    #{@procedure_comp.name}();"
+      end
     end
 
     def fill_multibinary_source(mode)
@@ -249,8 +251,10 @@ EOF
       else
         code = @code_comp
       end
-      code.rewind
-      get_output.write code.read
+      if code then
+        code.rewind
+        get_output.write code.read
+      end
       get_output.puts "int main(int argc, const char* argv[]) {"
       if mode == :io then
         fill_multibinary_main_io_source
