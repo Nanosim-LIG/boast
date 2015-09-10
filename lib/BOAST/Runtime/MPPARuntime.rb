@@ -63,6 +63,7 @@ EOF
     alias get_params_value_old get_params_value
     alias fill_decl_module_params_old fill_decl_module_params
     alias get_results_old get_results
+    alias store_results_old store_results
 
     def cleanup(kernel_files)
       cleanup_old(kernel_files)
@@ -290,7 +291,7 @@ EOF
     mppa_waitpid(_mppa_pid[_mppa_i], NULL, 0);
   }
   clock_gettime(CLOCK_REALTIME, &_mppa_stop);
-  _mppa_duration = (_mppa_stop.tv_sec - _mppa_start.tv_sec) * (unsigned long long int)1000000000 + _mppa_stop.tv_nsec - _mppa_start.tv_nsec;
+  _mppa_duration = (int64_t)(_mppa_stop.tv_sec - _mppa_start.tv_sec) * 1000000000ll + _mppa_stop.tv_nsec - _mppa_start.tv_nsec;
 EOF
 
       multibinary_main_io_source_send_results
@@ -370,6 +371,7 @@ EOF
   int _mppa_fd_var;
   int _mppa_clust_list_size;
   int _mppa_clust_nb;
+  int64_t _boast_duration;
   uint32_t * _mppa_clust_list;
   _mppa_load_id = mppa_load(0, 0, 0, \"#{multibinary_path}\");
   _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);
@@ -493,6 +495,11 @@ EOF
   mppa_waitpid(_mppa_pid, NULL, 0);
   mppa_unload(_mppa_load_id);
 EOF
+    end
+
+    def store_results
+      store_results_old
+      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_duration*(double)1e-9));\n"
     end
 
   end

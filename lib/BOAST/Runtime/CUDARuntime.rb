@@ -9,6 +9,7 @@ module BOAST
     alias get_params_value_old get_params_value
     alias fill_decl_module_params_old fill_decl_module_params
     alias create_procedure_call_parameters_old create_procedure_call_parameters
+    alias store_results_old store_results
 
     def fill_module_header
       fill_module_header_old
@@ -64,6 +65,7 @@ EOF
       get_output.print <<EOF
   size_t _boast_block_size[3] = {1,1,1};
   size_t _boast_block_number[3] = {1,1,1};
+  int64_t _boast_duration;
 EOF
     end
 
@@ -151,6 +153,11 @@ EOF
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }
 EOF
+    end
+
+    def store_results
+      store_results_old
+      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_duration*(double)1e-9));\n"
     end
 
   end

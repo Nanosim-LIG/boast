@@ -55,13 +55,14 @@ module BOAST
         extend OpenCLRuntime
       when CUDA
         extend CUDARuntime
+        @probes = []
       when FORTRAN
         extend FORTRANRuntime
         extend FFIRuntime if ffi?
       else
         if @architecture == MPPA then
           extend MPPARuntime
-          @probes.push(MPPAProbe)
+          @probes = [MPPAProbe]
         else
           extend CRuntime
           extend FFIRuntime if ffi?
