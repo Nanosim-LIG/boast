@@ -53,15 +53,15 @@ EOF
     end
 
     def compute
-      if @lang != CUDA then
+      if @lang != CUDA or @architecture != MPPA then
         if OS.mac? then
           get_output.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
           get_output.print "  #{RESULT} = (_mac_boast_stop - _mac_boast_start) * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom;\n"
         else
           get_output.print "  #{RESULT} = (_boast_stop.tv_sec - _boast_start.tv_sec) * (unsigned long long int)1000000000 + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
         end
-          get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
       end
+      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
     end
 
   end

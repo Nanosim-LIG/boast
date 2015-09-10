@@ -61,6 +61,7 @@ module BOAST
       else
         if @architecture == MPPA then
           extend MPPARuntime
+          @probes.push(MPPAProbe)
         else
           extend CRuntime
           extend FFIRuntime if ffi?

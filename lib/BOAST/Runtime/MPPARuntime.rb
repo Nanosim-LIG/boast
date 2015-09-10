@@ -1,5 +1,57 @@
 module BOAST
 
+  module MPPAProbe
+    extend PrivateStateAccessor
+
+    # Monitoring has to be started before transfer begin and after transfers end as we don't have sync points in between.
+    def header
+      get_output.puts "#include <mppa_mon.h>"
+    end
+
+    def decl
+      get_output.print <<EOF
+  float _mppa_avg_pwr;
+  float _mppa_energy;
+  float _mppa_duration;
+  mppa_mon_ctx_t * _mppa_ctx;
+  mppa_mon_sensor_t _mppa_pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
+  mppa_mon_measure_report_t * _mppa_report;
+  mppa_mon_open(0, &_mppa_ctx);
+  mppa_mon_measure_set_sensors(_mppa_ctx, _mppa_pwr_sensor, 1);
+  mppa_mon_measure_start(_mppa_ctx);
+EOF
+    end
+
+    def configure
+    end
+
+    def start
+    end
+
+    def stop
+    end
+
+    def compute
+      get_output.print <<EOF
+  mppa_mon_measure_stop(_mppa_ctx, &_mppa_report);
+  _mppa_avg_pwr = 0;
+  _mppa_energy = 0;
+  for(_mppa_i=0; _mppa_i < _mppa_report->count; _mppa_i++){
+    _mppa_avg_pwr += _mppa_report->measures[_mppa_i].avg_power;
+    _mppa_energy += _mppa_report->measures[_mppa_i].total_energy;
+  }
+  _mppa_avg_pwr = _mppa_avg_pwr/(float) _mppa_report->count;
+  _mppa_duration = _mppa_report->total_time;
+  mppa_mon_measure_free_report(_mppa_report);
+  mppa_mon_close(_mppa_ctx);
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_energy")),rb_float_new(_mppa_energy));
+  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(_mppa_duration));
+EOF
+    end
+
+  end
+
   module MPPARuntime
     include CRuntime
 
@@ -9,7 +61,6 @@ module BOAST
     alias get_params_value_old get_params_value
     alias fill_decl_module_params_old fill_decl_module_params
     alias get_results_old get_results
-    alias store_results_old store_results
 
     def cleanup(kernel_files)
       cleanup_old(kernel_files)
@@ -95,10 +146,11 @@ module BOAST
       fill_library_header
       get_output.puts "#include <mppaipc.h>"
       get_output.puts "#include <mppa/osconfig.h>"
+      get_output.puts "#include <time.h>"
     end
 
     def copy_array_param_from_host( param )
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_read(_mppa_from_host_size, &_mppa_#{param}_size, sizeof(_mppa_#{param}_size));
   #{param} = malloc(_mppa_#{param}_size);
   mppa_read(_mppa_from_host_var, #{param}, _mppa_#{param}_size);
@@ -106,13 +158,13 @@ EOF
     end
 
     def copy_scalar_param_from_host( param )
-      get_output.write  <<EOF
+      get_output.print  <<EOF
   mppa_read(_mppa_from_host_var, &#{param}, sizeof(#{param}));
 EOF
     end
 
     def get_cluster_list_from_host
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_read(_mppa_from_host_size, &_mppa_clust_list_size, sizeof(_mppa_clust_list_size));
   _clust_list = malloc(_mppa_clust_list_size);
   _nb_clust = _mppa_clust_list_size / sizeof(*_clust_list);
@@ -121,13 +173,13 @@ EOF
     end
 
     def copy_array_param_to_host(param)
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_write(_mppa_to_host_var, #{param}, _mppa_#{param}_size);
 EOF
     end
 
     def copy_scalar_param_to_host(param)
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_write(_mppa_to_host_var, &#{param}, sizeof(#{param}));
 EOF
     end
@@ -135,8 +187,8 @@ EOF
     def multibinary_main_io_source_decl
       #Parameters declaration
       @procedure.parameters.each { |param|
-        get_output.write "  #{param.type.decl} "
-        get_output.write "*" if param.dimension or param.scalar_output?
+        get_output.print "  #{param.type.decl} "
+        get_output.print "*" if param.dimension or param.scalar_output?
         get_output.puts "#{param.name};"
         if param.dimension then
           get_output.puts "  size_t _mppa_#{param}_size;"
@@ -147,14 +199,20 @@ EOF
       get_output.puts "  #{@procedure.properties[:return].type.decl} _mppa_ret;" if @procedure.properties[:return]
 
       #Cluster list declaration
-      get_output.write <<EOF
+      get_output.print <<EOF
   uint32_t *_clust_list;
   int _nb_clust;
   int _mppa_clust_list_size;
 EOF
 
+      #Timer
+      get_output.print <<EOF
+  struct timespec _mppa_start, _mppa_stop;
+  uint64_t _mppa_duration;
+EOF
+
       #Communication variables
-      get_output.write <<EOF
+      get_output.print <<EOF
   int _mppa_from_host_size, _mppa_from_host_var;
   int _mppa_to_host_size,   _mppa_to_host_var;
   int _mppa_pid[16], _mppa_i;
@@ -163,7 +221,7 @@ EOF
 
     def multibinary_main_io_source_get_params
       #Receiving parameters from Host
-      get_output.write <<EOF
+      get_output.print <<EOF
   _mppa_from_host_size = mppa_open("/mppa/buffer/board0#mppa0#pcie0#2/host#2", O_RDONLY);
   _mppa_from_host_var = mppa_open("/mppa/buffer/board0#mppa0#pcie0#3/host#3", O_RDONLY);
 EOF
@@ -178,7 +236,7 @@ EOF
       #Receiving cluster list
       get_cluster_list_from_host
 
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_close(_mppa_from_host_size);
   mppa_close(_mppa_from_host_var);
 EOF
@@ -186,7 +244,7 @@ EOF
 
     def multibinary_main_io_source_send_results
       #Sending results to Host
-      get_output.write <<EOF
+      get_output.print <<EOF
   _mppa_to_host_var = mppa_open("/mppa/buffer/host#4/board0#mppa0#pcie0#4", O_WRONLY);
 EOF
       @procedure.parameters.each { |param| 
@@ -199,7 +257,8 @@ EOF
         end
       }
       copy_scalar_param_to_host("_mppa_ret") if @procedure.properties[:return]
-      get_output.write <<EOF
+      copy_scalar_param_to_host("_mppa_duration")
+      get_output.print <<EOF
   mppa_close(_mppa_to_host_var);
 EOF
     end
@@ -210,22 +269,25 @@ EOF
       multibinary_main_io_source_get_params
 
       #Spawning cluster
-      get_output.write <<EOF
+      get_output.print <<EOF
+  clock_gettime(CLOCK_REALTIME, &_mppa_start);
   for(_mppa_i=0; _mppa_i<_nb_clust; _mppa_i++){
     _mppa_pid[_mppa_i] = mppa_spawn(_clust_list[_mppa_i], NULL, "comp-part", NULL, NULL);
   }
 EOF
       #Calling IO procedure
-      get_output.write "  _mppa_ret =" if @procedure.properties[:return]
-      get_output.write "  #{@procedure.name}("
-      get_output.write @procedure.parameters.map(&:name).join(", ")
+      get_output.print "  _mppa_ret =" if @procedure.properties[:return]
+      get_output.print "  #{@procedure.name}("
+      get_output.print @procedure.parameters.map(&:name).join(", ")
       get_output.puts ");"
 
       #Waiting for clusters
-      get_output.write <<EOF
+      get_output.print <<EOF
   for(_mppa_i=0; _mppa_i<_nb_clust; _mppa_i++){
     mppa_waitpid(_mppa_pid[_mppa_i], NULL, 0);
   }
+  clock_gettime(CLOCK_REALTIME, &_mppa_stop);
+  _mppa_duration = (_mppa_stop.tv_sec - _mppa_start.tv_sec) * (unsigned long long int)1000000000 + _mppa_stop.tv_nsec - _mppa_start.tv_nsec;
 EOF
 
       multibinary_main_io_source_send_results
@@ -247,7 +309,7 @@ EOF
       end
       if code then
         code.rewind
-        get_output.write code.read
+        get_output.print code.read
       end
       get_output.puts "int main(int argc, const char* argv[]) {"
       if mode == :io then
@@ -255,7 +317,7 @@ EOF
       else
         fill_multibinary_main_comp_source
       end
-      get_output.write <<EOF
+      get_output.print <<EOF
   mppa_exit(0);
   return 0;
 }
@@ -293,7 +355,6 @@ EOF
     def fill_module_header
       fill_module_header_old
       get_output.puts "#include <mppaipc.h>"
-      get_output.puts "#include <mppa_mon.h>"
     end
 
     def fill_decl_module_params
@@ -304,19 +365,10 @@ EOF
   int _mppa_pid;
   int _mppa_fd_size;
   int _mppa_fd_var;
-  float _mppa_avg_pwr;
-  float _mppa_energy;
-  float _mppa_duration;
   int _mppa_clust_list_size;
   int _mppa_clust_nb;
   uint32_t * _mppa_clust_list;
-  mppa_mon_ctx_t * _mppa_ctx;
-  mppa_mon_sensor_t _mppa_pwr_sensor[] = {MPPA_MON_PWR_MPPA0};
-  mppa_mon_measure_report_t * _mppa_report;
-  mppa_mon_open(0, &_mppa_ctx);
-  mppa_mon_measure_set_sensors(_mppa_ctx, _mppa_pwr_sensor, 1);
   _mppa_load_id = mppa_load(0, 0, 0, \"#{multibinary_path}\");
-  mppa_mon_measure_start(_mppa_ctx);
   _mppa_pid = mppa_spawn(_mppa_load_id, NULL, \"io-part\", NULL, NULL);
 EOF
     end
@@ -432,30 +484,11 @@ EOF
 EOF
       get_results_old
       get_output.puts "mppa_read(_mppa_fd_var, &#{_boast_ret}, sizeof(#{_boast_ret}));" if @procedure.properties[:return]
+      get_output.puts "mppa_read(_mppa_fd_var, &#{_boast_duration}, sizeof(#{_boast_duration}));"
       get_output.print <<EOF
   mppa_close(_mppa_fd_var);
   mppa_waitpid(_mppa_pid, NULL, 0);
-  mppa_mon_measure_stop(_mppa_ctx, &_mppa_report);
   mppa_unload(_mppa_load_id);
-  _mppa_avg_pwr = 0;
-  _mppa_energy = 0;
-  for(_mppa_i=0; _mppa_i < _mppa_report->count; _mppa_i++){
-    _mppa_avg_pwr += _mppa_report->measures[_mppa_i].avg_power;
-    _mppa_energy += _mppa_report->measures[_mppa_i].total_energy;
-  } 
-  _mppa_avg_pwr = _mppa_avg_pwr/(float) _mppa_report->count;
-  _mppa_duration = _mppa_report->total_time;
-  mppa_mon_measure_free_report(_mppa_report);
-  mppa_mon_close(_mppa_ctx);
-EOF
-    end
-
-    def store_results
-      store_results_old
-      get_output.print <<EOF
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_energy")),rb_float_new(_mppa_energy));
-  rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(_mppa_duration));
 EOF
     end
 

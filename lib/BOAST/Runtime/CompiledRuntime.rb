@@ -318,9 +318,9 @@ EOF
 
       @probes.map(&:stop)
 
-      @probes.map(&:compute)
-
       get_results
+
+      @probes.map(&:compute)
 
       store_results
 
