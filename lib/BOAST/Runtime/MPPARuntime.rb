@@ -3,6 +3,8 @@ module BOAST
   module MPPAProbe
     extend PrivateStateAccessor
 
+    module_function
+
     # Monitoring has to be started before transfer begin and after transfers end as we don't have sync points in between.
     def header
       get_output.puts "#include <mppa_mon.h>"
@@ -208,7 +210,7 @@ EOF
       #Timer
       get_output.print <<EOF
   struct timespec _mppa_start, _mppa_stop;
-  uint64_t _mppa_duration;
+  int64_t _mppa_duration;
 EOF
 
       #Communication variables
@@ -270,6 +272,7 @@ EOF
 
       #Spawning cluster
       get_output.print <<EOF
+
   clock_gettime(CLOCK_REALTIME, &_mppa_start);
   for(_mppa_i=0; _mppa_i<_nb_clust; _mppa_i++){
     _mppa_pid[_mppa_i] = mppa_spawn(_clust_list[_mppa_i], NULL, "comp-part", NULL, NULL);
@@ -483,8 +486,8 @@ EOF
   _mppa_fd_var = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);
 EOF
       get_results_old
-      get_output.puts "mppa_read(_mppa_fd_var, &#{_boast_ret}, sizeof(#{_boast_ret}));" if @procedure.properties[:return]
-      get_output.puts "mppa_read(_mppa_fd_var, &#{_boast_duration}, sizeof(#{_boast_duration}));"
+      get_output.puts "  mppa_read(_mppa_fd_var, &_boast_ret, sizeof(_boast_ret));" if @procedure.properties[:return]
+      get_output.puts "  mppa_read(_mppa_fd_var, &_boast_duration, sizeof(_boast_duration));"
       get_output.print <<EOF
   mppa_close(_mppa_fd_var);
   mppa_waitpid(_mppa_pid, NULL, 0);
