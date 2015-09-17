@@ -44,7 +44,7 @@ c_ref = a + b
   k = vector_add
   puts k.print
   c.random!
-  stats = k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [16,1,1], :clusters => [2,8])
+  stats = k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [16,1,1])
   puts stats
   diff = (c_ref - c).abs
   diff.each { |elem|

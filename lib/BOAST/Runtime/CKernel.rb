@@ -19,7 +19,7 @@ module BOAST
     attr_accessor :code
     attr_accessor :procedure
     attr_accessor :lang
-    attr_accessor :binary
+    attr_accessor :architecture
     attr_accessor :kernels
     attr_accessor :cost_function
     

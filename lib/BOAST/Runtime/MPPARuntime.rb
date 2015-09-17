@@ -120,7 +120,19 @@ EOF
     attr_accessor :code_comp
     attr_accessor :procedure_comp
     attr_accessor :binary_comp
+    attr_accessor :source_comp
     attr_accessor :multibinary
+
+    def save_source
+      f = File::open(io_source, "r")
+      @source = StringIO::new
+      @source.write( f.read )
+      f.close
+      f = File::open(comp_source, "r")
+      @source_comp = StringIO::new
+      @source_comp.write( f.read )
+      f.close
+    end
 
     def save_binary
       f = File::open(io_object,"rb")

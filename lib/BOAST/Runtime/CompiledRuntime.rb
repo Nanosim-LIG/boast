@@ -31,6 +31,9 @@ end
 module BOAST
 
   module CompiledRuntime
+    attr_accessor :binary
+    attr_accessor :source
+
     @@extensions = {
       C => ".c",
       CUDA => ".cu",
@@ -97,6 +100,13 @@ module BOAST
       f = File::open(library_object,"rb")
       @binary = StringIO::new
       @binary.write( f.read )
+      f.close
+    end
+
+    def save_source
+      f = File::open(library_source,"r")
+      @source = StringIO::new
+      @source.write( f.read )
       f.close
     end
 
@@ -380,6 +390,8 @@ EOF
 
       create_sources
 
+      save_source
+
       create_targets(linker, ldshared, ldflags, kernel_files)
 
       save_binary
@@ -391,6 +403,20 @@ EOF
       eval "self.extend(#{module_name})"
 
       return self
+    end
+
+    def dump_binary
+      f = File::open(library_object,"wb")
+      @binary.rewind
+      f.write( @binary.read )
+      f.close
+    end
+
+    def dump_source
+      f = File::open(library_source,"wb")
+      @source.rewind
+      f.write( @source.read )
+      f.close
     end
 
   end
