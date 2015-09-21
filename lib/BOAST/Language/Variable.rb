@@ -137,6 +137,7 @@ module BOAST
     attr_reader :texture
     attr_reader :sampler
     attr_reader :restrict
+    attr_reader :align
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
@@ -176,6 +177,10 @@ module BOAST
       !!@scalar_output
     end
 
+    def align?
+      !!@align
+    end
+
     def initialize(name,type,hash={})
       @name = name.to_s
       @direction = hash[:direction] ? hash[:direction] : hash[:dir]
@@ -185,6 +190,7 @@ module BOAST
       @texture = hash[:texture]
       @allocate = hash[:allocate]
       @restrict = hash[:restrict]
+      @align = hash[:align]
       @force_replace_constant = false
       if not hash[:replace_constant].nil? then
         @replace_constant = hash[:replace_constant]
@@ -388,6 +394,18 @@ module BOAST
       return self
     end
 
+    def align_c_s(a)
+      return "__assume_aligned(#{@name}, #{a})"
+    end
+
+    def align_c(a)
+      s = ""
+      s += indent
+      s += align_c_s(a)
+      s += finalize
+      output.print s
+      return self
+    end
 
     def decl_fortran
       s = ""

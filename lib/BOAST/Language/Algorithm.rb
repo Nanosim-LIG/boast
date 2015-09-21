@@ -14,6 +14,7 @@ module BOAST
 
     private_state_accessor :output, :lang, :architecture
     private_state_accessor :default_int_size, :default_real_size
+    private_state_accessor :default_align
     private_state_accessor :array_start
     private_state_accessor :indent_level, :indent_increment
 
@@ -49,6 +50,7 @@ module BOAST
 
   state_accessor :output, :lang, :architecture
   state_accessor :default_int_size, :default_real_size
+  state_accessor :default_align
   state_accessor :array_start
   state_accessor :indent_level, :indent_increment
 
@@ -85,6 +87,7 @@ module BOAST
   @@default_int_size = 4
   @@default_int_signed = true
   @@default_real_size = 8
+  @@default_align = 1
   @@indent_level = 0
   @@indent_increment = 2
   @@array_start = 1

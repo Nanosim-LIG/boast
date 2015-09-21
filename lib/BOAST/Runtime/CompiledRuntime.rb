@@ -383,6 +383,7 @@ EOF
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
       linker, ldshared, ldflags = setup_compilers(compiler_options)
+      @compiler_options = compiler_options
 
       @marker = Tempfile::new([@procedure.name,""])
 
