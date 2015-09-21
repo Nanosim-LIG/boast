@@ -209,13 +209,7 @@ module BOAST
       }
       if lang == C then
         parameters.each { |p|
-          if p.dimension? then
-            if p.align? or default_align > 1 then
-              a = ( p.align? ? p.align : 1 )
-              a = ( a >= default_align ? a : default_align )
-              p.align_c(a)
-            end
-          end
+          p.align
         }
       end
       return self
@@ -232,6 +226,7 @@ module BOAST
       }
       parameters.each { |p|
         p.decl
+        p.align
       }
       return self
     end

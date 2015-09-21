@@ -358,6 +358,11 @@ module BOAST
           s +=")]"
         end 
       end
+      if dimension? and (align? or default_align > 1) and (constant? or allocate?) then
+        a = ( align? ? align : 1 )
+        a = ( a >= default_align ? a : default_align )
+        s+= " __attribute((aligned(#{a})))"
+      end
       s += " = #{@constant}" if constant?
       return s
     end
@@ -407,6 +412,30 @@ module BOAST
       return self
     end
 
+    def align_fortran_s(a)
+      return "!DIR$ ASSUME_ALIGNED #{@name}: #{a}"
+    end
+
+    def align_fortran(a)
+      s = ""
+      s += indent
+      s += align_fortran_s(a)
+      s += finalize
+      output.print s
+      return self
+    end
+
+    def align
+      if dimension? then
+        if align? or default_align > 1 then
+          a = ( align? ? align : 1 )
+          a = ( a >= default_align ? a : default_align )
+          return align_c(a) if lang == C
+          return align_fortran(a) if lang == FORTRAN
+        end
+      end
+    end
+
     def decl_fortran
       s = ""
       s += indent
@@ -432,6 +461,15 @@ module BOAST
       end
       s += finalize
       output.print s
+      if dimension? and (align? or default_align > 1) and (constant? or allocate?) then
+        a = ( align? ? align : 1 )
+        a = ( a >= default_align ? a : default_align )
+        s = ""
+        s += indent
+        s += "!DIR$ ATTRIBUTES ALIGN: #{a}:: #{name}"
+        s += finalize
+        output.print s
+      end
       return self
     end
 
