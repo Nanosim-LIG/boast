@@ -6,6 +6,7 @@ require 'systemu'
 require 'yaml'
 require 'pathname'
 require 'os'
+require 'narray_ffi'
 
 module BOAST
 
