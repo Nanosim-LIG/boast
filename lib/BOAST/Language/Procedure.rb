@@ -152,6 +152,13 @@ module BOAST
             s += "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
           end
         end
+      elsif lang == C then
+        if @properties[:local] then
+          s += "static "
+        end
+        if @properties[:inline] then
+          s+= "inline "
+        end
       end
       if @properties[:qualifiers] then
         s += "#{@properties[:qualifiers]} "
