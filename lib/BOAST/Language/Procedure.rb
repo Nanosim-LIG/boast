@@ -209,7 +209,7 @@ module BOAST
       }
       if lang == C then
         parameters.each { |p|
-          p.align
+          p.pr_align
         }
       end
       return self
@@ -226,7 +226,7 @@ module BOAST
       }
       parameters.each { |p|
         p.decl
-        p.align
+        p.pr_align
       }
       return self
     end

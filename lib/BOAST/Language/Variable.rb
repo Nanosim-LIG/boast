@@ -399,39 +399,39 @@ module BOAST
       return self
     end
 
-    def align_c_s(a)
+    def pr_align_c_s(a)
       return "__assume_aligned(#{@name}, #{a})"
     end
 
-    def align_c(a)
+    def pr_align_c(a)
       s = ""
       s += indent
-      s += align_c_s(a)
+      s += pr_align_c_s(a)
       s += finalize
       output.print s
       return self
     end
 
-    def align_fortran_s(a)
+    def pr_align_fortran_s(a)
       return "!DIR$ ASSUME_ALIGNED #{@name}: #{a}"
     end
 
-    def align_fortran(a)
+    def pr_align_fortran(a)
       s = ""
       s += indent
-      s += align_fortran_s(a)
+      s += pr_align_fortran_s(a)
       s += finalize
       output.print s
       return self
     end
 
-    def align
+    def pr_align
       if dimension? then
         if align? or default_align > 1 then
           a = ( align? ? align : 1 )
           a = ( a >= default_align ? a : default_align )
-          return align_c(a) if lang == C
-          return align_fortran(a) if lang == FORTRAN
+          return pr_align_c(a) if lang == C
+          return pr_align_fortran(a) if lang == FORTRAN
         end
       end
     end
