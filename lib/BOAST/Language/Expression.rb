@@ -49,13 +49,13 @@ module BOAST
       if op1 and op2 then
         r_t, oper = transition(op1, op2, @operator)
         res_exp = to_s_base(op1, op2, oper, r_t)
-        return r_t.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
+        return r_t.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
       elsif op2
         res_exp = to_s_base(@operand1, op2, @operator)
-        return op2.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
+        return op2.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
       elsif op1
         res_exp = to_s_base(op1, @operand2, @operator)
-        return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil)
+        return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
       else
         STDERR.puts "#{@operand1} #{@operand2}"
         raise "Expression on no operand!"
