@@ -3,14 +3,19 @@ module BOAST
   class Index < Expression
     attr_reader :source
     attr_reader :indexes
+    attr_accessor :align
 
     def initialize(source, indexes)
       @source = source
       @indexes = indexes
     end
 
+    def align?
+      return !!@align
+    end
+
     def to_var
-      var = @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil)
+      var = @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil, :align => align)
       return var
     end
 
