@@ -254,16 +254,19 @@ module BOAST
               if size > 128 then
                 intr_name += "#{size}"
               end
-              intr_name += "_load_"
+              intr_name += "_load"
+              intr_name += "u" unless arg2.align? and (arg2.align * 8) % size == 0
+              intr_name += "_"
               if arg1.type.class == Int then
                 intr_name += "si#{size}"
               else
                 intr_name += "#{get_vector_name(arg1.type)}"
               end
+              return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) #{a2} )" if arg1.type.class == Int
             else
               raise "Unsupported architecture!"
             end
-            return "#{arg1} = #{intr_name}( (#{arg1.type.decl} * ) #{a2} )"
+            return "#{arg1} = #{intr_name}( #{a2} )"
           else
             raise "Unknown convertion between vectors of different length!"
           end
@@ -288,16 +291,19 @@ module BOAST
             if size > 128 then
               intr_name += "#{size}"
             end
-            intr_name += "_store_"
+            intr_name += "_store"
+            intr_name += "u" unless arg1.align? and (arg1.align * 8) % size == 0
+            intr_name += "_"
             if arg2.type.class == Int then
               intr_name += "si#{size}"
             else
               intr_name += "#{get_vector_name(arg2.type)}"
             end
+            return "#{intr_name}((#{arg2.type.decl} * ) #{a1}, #{arg2} )" if arg2.type.class == Int
           else
             raise "Unsupported architecture!"
           end
-          return "#{intr_name}((#{arg2.type.decl} * ) #{a1}, #{arg2} )"
+          return "#{intr_name}( #{a1}, #{arg2} )"
         else
           return basic_usage(arg1, arg2)
         end
