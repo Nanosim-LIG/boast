@@ -137,7 +137,7 @@ module BOAST
     attr_reader :texture
     attr_reader :sampler
     attr_reader :restrict
-    attr_reader :align
+    attr_accessor :align
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
