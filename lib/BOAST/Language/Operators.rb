@@ -170,7 +170,21 @@ module BOAST
     def Set.to_s(arg1, arg2, return_type)
       if lang == C then
         if arg1.class == Variable and arg1.type.vector_length > 1 then
-          if arg1.type == arg2.type then
+          if arg2.kind_of?( Array ) then
+            raise "Invalid array length!" unless arg2.length == arg1.type.vector_length
+            case get_architecture
+            when X86
+              intr_name = "_mm"
+              if size > 128 then
+                intr_name += "#{size}"
+              end
+              intr_name += "_set_#{get_vector_name(arg1.type).gsub("u","i")}"
+              intr_name += "x" if arg1.type.class == Int and arg1.type.size == 8 and size < 512
+              return "(#{arg1} = #{intr_name}( #{arg2.reverse.join(",")} ))"
+            else
+              return "(#{arg1} = {#{arg2.join(",")}})"
+            end
+          elsif arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
           elsif arg1.type.vector_length == arg2.type.vector_length then
             return "(#{arg1} = #{convert(arg2, arg1.type)})"
@@ -187,8 +201,8 @@ module BOAST
               if size > 128 then
                 intr_name += "#{size}"
               end
-              intr_name += "_set1_#{get_vector_name(arg1.type).gsub("u","")}"
-              intr_name += "x" if arg1.type.class == Int and arg1.type.size == 8
+              intr_name += "_set1_#{get_vector_name(arg1.type).gsub("u","i")}"
+              intr_name += "x" if arg1.type.class == Int and arg1.type.size == 8 and size < 512
             else
               raise "Unsupported architecture!"
             end
