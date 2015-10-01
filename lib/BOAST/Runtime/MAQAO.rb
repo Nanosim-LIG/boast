@@ -16,9 +16,9 @@ module BOAST
       f2.close
 
       if verbose? then
-        puts "#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name}"
+        puts "#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}"
       end
-      result = `#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name}`
+      result = `#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}`
       File::unlink(library_object)
       File::unlink(library_source)
       return result
