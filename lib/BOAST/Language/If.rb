@@ -28,7 +28,7 @@ module BOAST
 
     def get_c_strings
       return { :if => '"if (#{cond}) {"',
-               :else_if => '"} else if (#{cond}) {"',
+               :elsif => '"} else if (#{cond}) {"',
                :else => '"} else {"',
                :end => '"}"' }
     end
