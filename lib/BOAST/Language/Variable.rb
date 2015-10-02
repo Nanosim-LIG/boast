@@ -137,6 +137,7 @@ module BOAST
     attr_reader :texture
     attr_reader :sampler
     attr_reader :restrict
+    attr_reader :deferred_shape
     attr_accessor :align
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
@@ -181,6 +182,10 @@ module BOAST
       !!@align
     end
 
+    def deferred_shape?
+      !!@deferred_shape
+    end
+
     def initialize(name,type,hash={})
       @name = name.to_s
       @direction = hash[:direction] ? hash[:direction] : hash[:dir]
@@ -191,6 +196,7 @@ module BOAST
       @allocate = hash[:allocate]
       @restrict = hash[:restrict]
       @align = hash[:align]
+      @deferred_shape = hash[:deferred_shape]
       @force_replace_constant = false
       if not hash[:replace_constant].nil? then
         @replace_constant = hash[:replace_constant]
@@ -448,6 +454,8 @@ module BOAST
           dim = d.to_s
           if dim then
             dim.to_s
+          elsif deferred_shape?
+            ":"
           else
             "*"
           end
