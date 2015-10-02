@@ -309,7 +309,7 @@ module BOAST
       return s
     end
 
-    def decl_ffi(alloc = false)
+    def decl_ffi(alloc, lang)
       return :pointer if lang == FORTRAN and not alloc
       return :pointer if dimension?
       return :pointer if @direction == :out or @direction == :inout and not alloc

@@ -29,7 +29,7 @@ module BOAST
       module #{module_name}
         extend FFI::Library
         ffi_lib "#{library_path}"
-        attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi.to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
+        attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi(false,@lang).to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi(false,@lang) : "void" }
         def run(*args)
           if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
             raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
@@ -47,9 +47,9 @@ module BOAST
             r_args = {}
             if @lang == FORTRAN then
               @procedure.parameters.each_with_index { |p, i|
-                if p.decl_ffi(true) != :pointer then
-                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
-                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                if p.decl_ffi(true,@lang) != :pointer then
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true, @lang))
+                  arg_p.send("write_\#{p.decl_ffi(true, @lang)}",args[i])
                   t_args.push(arg_p)
                   r_args[p] = arg_p if p.scalar_output?
                 else
@@ -59,8 +59,8 @@ module BOAST
             else
               @procedure.parameters.each_with_index { |p, i|
                 if p.scalar_output? then
-                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true))
-                  arg_p.send("write_\#{p.decl_ffi(true)}",args[i])
+                  arg_p = FFI::MemoryPointer::new(p.decl_ffi(true, @lang))
+                  arg_p.send("write_\#{p.decl_ffi(true,@lang)}",args[i])
                   t_args.push(arg_p)
                   r_args[p] = arg_p
                 else
@@ -87,7 +87,7 @@ module BOAST
             if r_args.length > 0 then
               ref_return = {}
               r_args.each { |p, p_arg|
-                ref_return[p.name.to_sym] = p_arg.send("read_\#{p.decl_ffi(true)}")
+                ref_return[p.name.to_sym] = p_arg.send("read_\#{p.decl_ffi(true, @lang)}")
               }
               results[:reference_return] = ref_return
             end
