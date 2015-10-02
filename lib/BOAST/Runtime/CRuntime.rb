@@ -10,6 +10,9 @@ module BOAST
 
     def fill_library_source
       fill_library_header
+      @kernels.each { |k|
+        k.procedure.boast_header
+      }
       @code.rewind
       get_output.write @code.read
     end
