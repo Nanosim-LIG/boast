@@ -351,9 +351,11 @@ module BOAST
       s = indent
       s += decl_c + " {"
       output.puts s
+      increment_indent_level
       @members_array.each { |value|
          value.decl
       }
+      decrement_indent_level
       s = indent
       s += "}"
       s += finalize
@@ -365,9 +367,11 @@ module BOAST
       s = indent
       s += "TYPE :: #{@name}\n"
       output.puts s
+      increment_indent_level
       @members_array.each { |value|
          value.decl
       }
+      decrement_indent_level
       s = indent
       s += "END TYPE #{@name}"
       s += finalize
