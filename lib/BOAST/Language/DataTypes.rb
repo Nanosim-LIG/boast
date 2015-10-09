@@ -95,7 +95,7 @@ module BOAST
       else
         @vector_length = 1
       end
-      @total_size = @vector_length*@size
+      @total_size = @size*@vector_length
       @signed = true
     end
 
@@ -189,7 +189,7 @@ module BOAST
       else
         @vector_length = 1
       end
-      @total_size = @vector_length*@size
+      @total_size = @size*@vector_length
     end
 
     def to_hash
