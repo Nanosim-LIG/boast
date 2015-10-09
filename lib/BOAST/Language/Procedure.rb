@@ -210,8 +210,11 @@ module BOAST
         s += "SUBROUTINE "
       end
       s += "#{@name}("
-      s += parameters.join(", ")
+      s += parameters.collect(&:name).join(", ")
       s += ")"
+    end
+
+    def pr_align
     end
 
     def open_c
