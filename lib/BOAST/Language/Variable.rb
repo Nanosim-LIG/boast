@@ -138,6 +138,7 @@ module BOAST
     attr_reader :sampler
     attr_reader :restrict
     attr_reader :deferred_shape
+    attr_reader :optional
     attr_accessor :align
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
@@ -178,6 +179,10 @@ module BOAST
       !!@scalar_output
     end
 
+    def optional?
+      !!@optional
+    end
+
     def align?
       !!@align
     end
@@ -197,6 +202,7 @@ module BOAST
       @restrict = hash[:restrict]
       @align = hash[:align]
       @deferred_shape = hash[:deferred_shape]
+      @optional = hash[:optional]
       @force_replace_constant = false
       if not hash[:replace_constant].nil? then
         @replace_constant = hash[:replace_constant]
@@ -446,7 +452,8 @@ module BOAST
       s = ""
       s += indent
       s += @type.decl
-      s += ", intent(#{@direction})" if @direction 
+      s += ", intent(#{@direction})" if @direction
+      s += ", optional" if optional?
       s += ", parameter" if constant?
       if dimension? then
         s += ", dimension("
