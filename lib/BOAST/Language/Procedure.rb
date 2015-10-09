@@ -89,22 +89,23 @@ module BOAST
     end
 
     def close_c
-      decrement_indent_level
       s = ""
-      s += "  return #{@properties[:return]};\n" if @properties[:return]
-      s += "}"
+      s += indent + "return #{@properties[:return]};\n" if @properties[:return]
+      decrement_indent_level
+      s += indent + "}"
       output.puts s
       return self
     end
 
     def close_fortran
-      decrement_indent_level
       s = ""
       if @properties[:return] then
-        s += "  #{@name} = #{@properties[:return]}\n"
-        s += "END FUNCTION #{@name}"
+        s += indent + "#{@name} = #{@properties[:return]}\n"
+        decrement_indent_level
+        s += indent + "END FUNCTION #{@name}"
       else
-        s += "END SUBROUTINE #{@name}"
+        decrement_indent_level
+        s += indent + "END SUBROUTINE #{@name}"
       end
       output.puts s
       return self
