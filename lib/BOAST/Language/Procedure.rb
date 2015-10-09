@@ -187,7 +187,7 @@ module BOAST
     end
 
     def decl_c
-      s = decl_c_s + ";"
+      s = indent + decl_c_s + ";"
       output.puts s
       return self
     end
@@ -230,7 +230,7 @@ module BOAST
     end
 
     def open_fortran
-      s = to_s_fortran
+      s = indent + to_s_fortran
       s += "\n"
       increment_indent_level
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
