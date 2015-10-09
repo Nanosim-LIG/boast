@@ -126,7 +126,13 @@ module BOAST
     end
 
     def decl_fortran
-      raise "Interfaces are not implemented in FORTRAN yet!"
+      output.puts indent + "INTERFACE"
+      increment_indent_level
+      open_fortran
+      close_fortran
+      decrement_indent_level
+      output.puts indent + "END INTERFACE"
+      return self
     end
 
     def decl_c_s
