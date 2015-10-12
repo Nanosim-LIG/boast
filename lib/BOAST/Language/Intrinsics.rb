@@ -5,10 +5,10 @@ module BOAST
   INTRINSICS = { :X86 => Hash::new { |h, k| h[k] = {} }, :ARM => Hash::new { |h, k| h[k] = {} } }
 
 
-  def vector_type_name( type, size, vector_size, sign = :signed )
+  def self.vector_type_name( type, size, vector_size, sign = :signed )
     s = ""
     case type
-    when :integer
+    when :int
       case sign
       when :signed
         s += "int"
@@ -23,14 +23,14 @@ module BOAST
       raise "Invalid type!"
     end
     s += "#{size}"
-    s += "x#{vector_size/int_size}"
+    s += "x#{vector_size/size}"
     return s.to_sym
   end
 
-  def type_name_ARM( type, size, sign = :signed )
+  def self.type_name_ARM( type, size, sign = :signed )
     s = ""
     case type
-    when :integer
+    when :int
       case sign
       when :signed
         s += "s"
@@ -48,7 +48,7 @@ module BOAST
     return s
   end
 
-  def type_name_X86( type, size, vector_size, sign = :signed )
+  def self.type_name_X86( type, size, vector_size, sign = :signed )
     s = ""
     e = ( vector_size > 64 ? "e" : "" )
     case type
@@ -56,9 +56,9 @@ module BOAST
       s += "#{e}p"
       case sign
       when :signed
-        s += "#{i}"
+        s += "i"
       when :unsigned
-        s += "#{u}"
+        s += "u"
       else
         raise "Invalid sign!"
       end
@@ -110,24 +110,28 @@ module BOAST
        [:FMADD, "fmadd"], [:FMSUB, "fmsub"], [:FNMADD, "fnmadd"], [:FNMSUB, "fnmsub"],
        [:ADDSUB, "addsub"], [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
        [:LOAD, "loadu"], [:LOADA, "load"], [:SET, "set"], [:SET1, "set1"] ].each { |cl, ins|
-        vtype = vector_type_name( :float, size, vector_size, sign )
+        vtype = vector_type_name( :float, size, vector_size)
         type = type_name_X86( :float, size, vector_size )
         INTRINSICS[:X86][cl][vtype] = "_mm#{vs}_#{ins}_#{type}".to_sym
       }
     }
   }
+  INTRINSICS[:X86][:CVT] = Hash::new { |h,k| h[k] = {} }
   [128, 256].each { |bvsize|
-    svsize = bvsize/2
     [16, 32, 64].each { |bsize|
       ssize = bsize/2
-      [:signed, :unsigned].each { |sign|
-        stype = type_name_X86( :int, ssize,  sign )
-        btype = type_name_X86( :int, bsize, sign )
-        svtype = vector_type_name( :int, ssize, svsize, sign )
-        bvtype = vector_type_name( :int, bsize, bvsize, sign )
-        INTRINSICS[:X86][:CVT][svtype][bvtype] = "".to_sym
-        INTRINSICS[:X86][:CVT][bvtype][svtype] = "".to_sym
-      }
+      while ssize >= 8
+        svsize = (bvsize/bsize)*ssize
+        [:signed, :unsigned].each { |sign|
+          stype = type_name_X86( :int, ssize, 128,  sign )
+          btype = type_name_X86( :int, bsize, bvsize, :signed )
+          svtype = vector_type_name( :int, ssize, svsize, sign )
+          bvtype = vector_type_name( :int, bsize, bvsize, :signed )
+          vs = ( bvsize < 256 ? "" : "#{bvsize}" )
+          INTRINSICS[:X86][:CVT][bvtype][svtype] = "_mm#{vs}_cvt#{stype}_#{btype}".to_sym
+        }
+        ssize /= 2
+      end
     }
   }
 
