@@ -347,7 +347,7 @@ module BOAST
         }.join("][")
         s += "]"
       else
-        if dimension? and not constant? and not allocate? and (not local? or (local? and device)) then
+        if dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) then
           s += " *"
           if restrict? and not decl_module? then
             if lang == CL
@@ -364,13 +364,13 @@ module BOAST
         if dimension? and constant? then
           s += "[]"
         end
-        if dimension? and ((local? and not device) or (allocate? and not constant?)) then
+        if dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) then
           s +="[("
           s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
           s +=")]"
         end 
       end
-      if dimension? and (align? or default_align > 1) and (constant? or allocate?) then
+      if dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) then
         a = ( align? ? align : 1 )
         a = ( a >= default_align ? a : default_align )
         s+= " __attribute((aligned(#{a})))"
@@ -448,21 +448,75 @@ module BOAST
       end
     end
 
+    def alloc_fortran( dims = nil )
+      s = ""
+      s += indent
+      s += "allocate( #{name}("
+      s += dims.collect { |d| d.to_s }.join(", ")
+      s += ") )"
+      s += finalize
+      output.print s
+      return self
+    end
+
+    def alloc_c( dims = nil )
+      s = ""
+      s += indent
+      s += "#{name} = (#{@type.decl} *)malloc( sizeof(#{@type.decl})*("
+      s += dims.collect { |d| d.to_s }.reverse.join(")*(")
+      s += ") )"
+      s += finalize
+      output.print s
+      return self
+    end
+
+    def alloc( dims = nil )
+      dims = [dims].flatten if dims
+      dims = @dimension unless dims
+      raise "Cannot allocate array with unknown dimension!" unless dims
+      return alloc_fortran(dims) if lang == FORTRAN
+      return alloc_c(dims) if lang == C
+    end
+
+    def dealloc_fortran
+      s = ""
+      s += indent
+      s += "deallocate( #{name} )"
+      s += finalize
+      output.print s
+      return self
+    end
+
+    def dealloc_c
+      s = ""
+      s += indent
+      s += "free( #{name} )"
+      s += finalize
+      output.print s
+      return self
+    end
+
+    def dealloc
+      return dealloc_fortran if lang == FORTRAN
+      return dealloc_c if lang == C
+    end
+
     def decl_fortran
       s = ""
       s += indent
       s += @type.decl
       s += ", intent(#{@direction})" if @direction
       s += ", optional" if optional?
+      s += ", allocatable" if allocate? and @allocate == :heap
       s += ", parameter" if constant?
       if dimension? then
         s += ", dimension("
         s += @dimension.collect { |d|
           dim = d.to_s
-          if dim then
-            dim.to_s
-          elsif deferred_shape?
+          if deferred_shape? or ( allocate? and @allocate == :heap )
             ":"
+          elsif dim then
+            dim.to_s
           else
             "*"
           end
@@ -476,7 +530,7 @@ module BOAST
       end
       s += finalize
       output.print s
-      if dimension? and (align? or default_align > 1) and (constant? or allocate?) then
+      if dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) then
         a = ( align? ? align : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
