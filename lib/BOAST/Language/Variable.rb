@@ -471,8 +471,8 @@ module BOAST
     end
 
     def alloc( dims = nil )
-      dims = [dims].flatten if dims
-      dims = @dimension unless dims
+      @dimension = [dims].flatten if dims
+      dims = @dimension
       raise "Cannot allocate array with unknown dimension!" unless dims
       return alloc_fortran(dims) if lang == FORTRAN
       return alloc_c(dims) if lang == C
