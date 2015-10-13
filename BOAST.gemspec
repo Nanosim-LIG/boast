@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'BOAST'
-  s.version = "1.0.6"
+  s.version = "1.0.7"
   s.author = "Brice Videau"
   s.email = "brice.videau@imag.fr"
   s.homepage = "https://github.com/Nanosim-LIG/boast"
