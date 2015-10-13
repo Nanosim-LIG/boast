@@ -53,7 +53,7 @@ module BOAST
     end
 
     module_function :vector_type_name
-  
+
     def type_name_ARM( type, size, sign = :signed )
       s = ""
       case type
@@ -74,9 +74,9 @@ module BOAST
       s += "#{size}"
       return s
     end
- 
+
     module_function :type_name_ARM
- 
+
     def type_name_X86( type, size, vector_size, sign = :signed )
       s = ""
       e = ( vector_size > 64 ? "e" : "" )
@@ -105,11 +105,11 @@ module BOAST
       else
         raise "Invalid type!"
       end
-      return s   
+      return s
     end
 
     module_function :type_name_X86
- 
+
     [64, 128, 256].each { |vector_size|
       vs = ( vector_size < 256 ? "" : "#{vector_size}" )
       sizes = [8, 16, 32]
@@ -171,8 +171,8 @@ module BOAST
         end
       }
     }
-  
-  
+
+
     [64, 128].each { |vector_size|
       q = (vector_size == 128 ? "q" : "")
       [8, 16, 32, 64].each { |size|
