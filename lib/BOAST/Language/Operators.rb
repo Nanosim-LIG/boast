@@ -127,7 +127,7 @@ module BOAST
           end
 
           return "vload#{return_type.type.vector_length}(0, #{a2})" if lang == CL
-          return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and arg2.type.total_size*8 == 64
+          return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and return_type.type.total_size*8 == 64
 
           if arg2.align == return_type.type.total_size then
             instruction = intrinsics[get_architecture][:LOADA][get_vector_name(return_type.type)]
