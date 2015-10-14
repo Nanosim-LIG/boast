@@ -11,7 +11,7 @@ module BOAST
     def Operator.convert(arg, type)
       return "convert_#{type.decl}( #{arg} )" if lang == CL
 
-      instruction = intrinsics[get_architecture][:CVT][get_vector_name(type)][get_vector_name(arg.type)]
+      instruction = intrinsics(:CVT, type, arg.type)
       raise "Unavailable conversion from #{get_vector_name(arg.type)} to #{get_vector_name(type)}!" if not instruction
       return "#{instruction}( #{arg} )"
     end
@@ -25,7 +25,7 @@ module BOAST
       if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
         #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
-        instruction = intrinsics[get_architecture][intr_symbol][get_vector_name(return_type.type)]
+        instruction = intrinsics(intr_symbol, return_type.type)
         raise "Unavailable operator #{symbol} for #{get_vector_name(return_type.type)}!" unless instruction
         a1 = ( arg1.type != return_type.type ? convert(arg1, return_type.type) : "#{arg1}" )
         a2 = ( arg2.type != return_type.type ? convert(arg2, return_type.type) : "#{arg2}" )
@@ -46,9 +46,9 @@ module BOAST
             raise "Invalid array length!" unless arg2.length == arg1.type.vector_length
             return "#{arg1} = (#{arg1.type.decl})( #{arg2.join(", ")} )" if lang == CL
 
-            instruction = intrinsics[get_architecture][:SET][get_vector_name(arg1.type)]
+            instruction = intrinsics(:SET, arg1.type)
             if not instruction then
-              instruction = intrinsics[get_architecture][:SET_LANE][get_vector_name(arg1.type)]
+              instruction = intrinsics(:SET_LANE, arg1.type)
               raise "Unavailable operator set for #{get_vector_name(arg1.type)}!" unless instruction
               s = "#{arg1}"
               arg2.each_with_index { |v,i|
@@ -61,7 +61,7 @@ module BOAST
           elsif arg2.class != Variable or arg2.type.vector_length == 1 then
             return "#{arg1} = (#{arg1.type.decl})( #{arg2} )" if lang == CL
 
-            instruction = intrinsics[get_architecture][:SET1][get_vector_name(arg1.type)]
+            instruction = intrinsics(:SET1, arg1.type)
             raise "Unavailable operator set1 for #{get_vector_name(arg1.type)}!" unless instruction
             return "#{arg1} = #{instruction}( #{arg2} )"
           elsif arg1.type == arg2.type then
@@ -130,9 +130,9 @@ module BOAST
           return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and return_type.type.total_size*8 == 64
 
           if arg2.align == return_type.type.total_size then
-            instruction = intrinsics[get_architecture][:LOADA][get_vector_name(return_type.type)]
+            instruction = intrinsics(:LOADA, return_type.type)
           else
-            instruction = intrinsics[get_architecture][:LOAD][get_vector_name(return_type.type)]
+            instruction = intrinsics(:LOAD, return_type.type)
           end
           raise "Unavailable operator load for #{get_vector_name(return_type.type)}!" unless instruction
           return "#{instruction}( #{a2} )"
@@ -161,9 +161,9 @@ module BOAST
         return "*((int64_t * ) #{a1}) = _m_to_int64( #{arg2} )" if get_architecture == X86 and arg2.type.total_size*8 == 64
 
         if arg1.align == arg2.type.total_size then
-          instruction = intrinsics[get_architecture][:STOREA][get_vector_name(arg2.type)]
+          instruction = intrinsics(:STOREA, arg2.type)
         else
-          instruction = intrinsics[get_architecture][:STORE][get_vector_name(arg2.type)]
+          instruction = intrinsics(:STORE, arg2.type)
         end
         raise "Unavailable operator store for #{get_vector_name(arg2.type)}!" unless instruction
         p_type = arg2.type.copy(:vector_length => 1)

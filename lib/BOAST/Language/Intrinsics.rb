@@ -4,10 +4,12 @@ module BOAST
   ARM = 2
 
   module Intrinsics
+    extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
 
-    def intrinsics
-      return INTRINSICS
+    def intrinsics(intr_symbol, type, type2=nil)
+      return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)][get_vector_name(type2)] if type2
+      return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)]
     end
 
     module_function :intrinsics
