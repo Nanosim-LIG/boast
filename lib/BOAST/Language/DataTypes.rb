@@ -80,14 +80,8 @@ module BOAST
       else
         @size = get_default_real_size
       end
-#      @getters = {}
-#      @setters = {}
       if hash[:vector_length] and hash[:vector_length] > 1 then
         @vector_length = hash[:vector_length]
-#        @vector_length.times{ |indx|
-#          @getters["s#{indx}"] = indx
-#          @setters["s#{indx}="] = indx
-#        }
       else
         @vector_length = 1
       end
