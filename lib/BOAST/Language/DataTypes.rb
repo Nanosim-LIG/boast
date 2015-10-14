@@ -55,10 +55,6 @@ module BOAST
 
     def suffix
       s = ""
-#      if [C, CL, CUDA].include?( lang ) then
-#        s += "U" if not @signed
-#        s += "LL" if @size == 8
-#      end
       return s
     end
 
@@ -168,15 +164,9 @@ module BOAST
       else
         @signed = get_default_int_signed
       end
-#      @getters = {}
-#      @setters = {}
       if hash[:vector_length] and hash[:vector_length] > 1 then
         @vector_length = hash[:vector_length]
-#        @vector_length.times{ |indx|
-#          @getters["s#{indx}"] = indx
-#          @setters["s#{indx}="] = indx
-#        }
-         raise "Vectors need to have their element size specified!" if not @size
+        raise "Vectors need to have their element size specified!" if not @size
       else
         @vector_length = 1
       end
