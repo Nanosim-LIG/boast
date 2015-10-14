@@ -14,6 +14,53 @@ module BOAST
 
     module_function :intrinsics
 
+    def get_vector_decl_X86( data_type )
+      raise "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
+      s = "__m#{data_type.total_size*8}"
+      case data_type
+      when Int
+        raise "Unsupported data size for int vector on X86: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
+        return s+= "#{data_type.total_size*8>64 ? "i" : ""}"
+      when Real
+        return s if data_type.size == 4
+        return s += "d" if data_type.size == 8
+        raise "Unsupported data size for real vector on X86: #{data_type.size*8}!"
+      else
+        raise "Unsupported data type #{data_type} for vector!"
+      end
+    end
+
+    module_function :get_vector_decl_X86
+
+    def get_vector_decl_ARM( data_type )
+      raise "Unsupported vector size on ARM: #{data_type.total_size*8}!" unless [64,128].include?( data_type.total_size*8 )
+      case data_type
+      when Int
+        raise "Unsupported data size for int vector on ARM: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
+        return get_vector_name( data_type ).to_s
+      when Real
+        raise "Unsupported data size for real vector on ARM: #{data_type.size*8}!" if data_type.size != 4
+        return get_vector_name( data_type ).to_s
+      else
+        raise "Unsupported data type #{data_type} for vector on ARM!"
+      end
+    end
+
+    module_function :get_vector_decl_ARM
+
+    def get_vector_decl( data_type )
+      case get_architecture
+      when X86
+        get_vector_decl_X86( data_type )
+      when ARM
+        get_vector_decl_ARM( data_type )
+      else
+        return get_vector_name( data_type )
+      end
+    end
+
+    module_function :get_vector_decl
+
     def get_vector_name( type )
       s = ""
       case type
@@ -26,7 +73,7 @@ module BOAST
         raise "Undefined vector type!"
       end
       s += "#{type.size*8}"
-      s += "x#{type.vector_length}"
+      s += "x#{type.vector_length}_t"
       return s.to_sym
     end
 
@@ -50,7 +97,7 @@ module BOAST
         raise "Invalid type!"
       end
       s += "#{size}"
-      s += "x#{vector_size/size}"
+      s += "x#{vector_size/size}_t"
       return s.to_sym
     end
 
