@@ -203,66 +203,37 @@ module BOAST
         elsif @vector_length > 1 then
           return get_vector_decl(self)
         end
-      elsif lang == CL then
-        #char="cl_"
-        char=""
-        char += "u" if not @signed
+      else
+        s =""
+        s += "u" if not @signed
+        s += "nsigned " if not @signed and lang == CUDA and @vector_length == 1
         case @size
         when 1
-          char += "char"
+          s += "char"
         when 2
-          char += "short"
+          s += "short"
         when 4
-          char += "int"
+          s += "int"
         when 8
-          char += "long"
+          if lang == CUDA
+            case @vector_length
+            when 1
+              s += "long long"
+            else
+              s += "longlong"
+            end
+          else
+            s += "long"
+          end
         when nil
-          char += "int"
+          s += "int"
         else
           raise "Unsupported integer size!"
         end
         if @vector_length > 1 then
-          char += "#{@vector_length}"
+          s += "#{@vector_length}"
         end
-        return char
-      elsif lang == CUDA then
-        if @vector_length > 1 then
-          char=""
-          char += "u" if not @signed
-          case @size
-          when 1
-            char += "char"
-          when 2
-            char += "short"
-          when 4
-            char += "int"
-          when 8
-            char += "longlong"
-          when nil
-            char += "int"
-          else
-            raise "Unsupported integer size!"
-          end
-          return char + "#{@vector_length}"
-        else
-          char = ""
-          char += "unsigned " if not @signed
-          case @size
-          when 1
-            char += "char"
-          when 2
-            char += "short"
-          when 4
-            char += "int"
-          when 8
-            char += "longlong"
-          when nil
-            char += "int"
-          else
-            raise "Unsupported integer size!"
-          end
-          return char
-        end
+        return s
       end
     end
 
