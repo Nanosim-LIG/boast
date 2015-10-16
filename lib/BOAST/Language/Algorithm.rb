@@ -12,7 +12,7 @@ module BOAST
 
   module PrivateStateAccessor
 
-    private_state_accessor :output, :lang, :architecture
+    private_state_accessor :output, :lang, :architecture, :model
     private_state_accessor :default_int_size, :default_real_size
     private_state_accessor :default_align
     private_state_accessor :array_start
@@ -48,7 +48,7 @@ module BOAST
 
   end
 
-  state_accessor :output, :lang, :architecture
+  state_accessor :output, :lang, :architecture, :model
   state_accessor :default_int_size, :default_real_size
   state_accessor :default_align
   state_accessor :array_start
@@ -81,6 +81,20 @@ module BOAST
     return use_vla
   end
 
+  def get_default_model
+    model = ENV["MODEL"] if ENV["MODEL"]
+    return model if model
+    return "native"
+  end
+
+  def get_default_architecture
+    architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]
+    architecture = const_get(ENV["ARCH"]) if not architecture and ENV["ARCH"]
+    return architecture if architecture
+    return ARM if YAML::load( OS.report )["host_cpu"].match("arm")
+    return X86
+  end
+
   @@output = STDOUT
   @@lang = get_default_lang
   @@replace_constants = true
@@ -92,7 +106,8 @@ module BOAST
   @@indent_increment = 2
   @@array_start = 1
   @@chain_code = false
-  @@architecture = X86
+  @@architecture = get_default_architecture
+  @@model = get_default_model
   @@debug = get_default_debug
   @@use_vla = get_default_use_vla
   @@decl_module = false

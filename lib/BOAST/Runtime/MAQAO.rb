@@ -2,6 +2,13 @@ module BOAST
 
   module CompiledRuntime
     def maqao_analysis(options={})
+      maqao_models = {
+        "core2" => "CORE2_45", 
+        "nehalem" => "NEHALEM",
+        "sandybridge" => "SANDY_BRIDGE",
+        "ivybridge" => "IVY_BRIDGE",
+        "haswell" => "HASWELL"
+      }
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
 
@@ -14,11 +21,11 @@ module BOAST
       @source.rewind
       f2.write( @source.read )
       f2.close
-
+      maqao_model = maqao_models[get_model]
       if verbose? then
-        puts "#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}"
+        puts "#{compiler_options[:MAQAO]} cqa #{maqao_model ? "--uarch=#{maqao_model} " : ""}#{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}"
       end
-      result = `#{compiler_options[:MAQAO]} cqa #{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}`
+      result = `#{compiler_options[:MAQAO]} cqa #{maqao_model ? "--uarch=#{maqao_model} " : ""}#{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}`
       File::unlink(library_object)
       File::unlink(library_source)
       return result

@@ -46,6 +46,7 @@ module BOAST
       c_mppa_compiler = "k1-gcc"
       c_compiler = options[:CC]
       cflags = options[:CFLAGS]
+      cflags += " -march=#{get_model}"
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
       cflags += " -I/usr/local/k1tools/include" if @architecture == MPPA
@@ -93,6 +94,7 @@ module BOAST
     def setup_fortran_compiler(options, runner)
       f_compiler = options[:FC]
       fcflags = options[:FCFLAGS]
+      fcflags += " -march=#{get_model}"
       fcflags += " -fPIC"
       fcflags += " -fno-second-underscore" if f_compiler == 'g95'
       if options[:openmp] and @lang == FORTRAN then
@@ -140,6 +142,7 @@ module BOAST
 
     def setup_linker(options)
       ldflags = options[:LDFLAGS]
+      ldflags += " -march=#{get_model}"
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
       ldflags += " -lrt" if not OS.mac?
       ldflags += " -lcudart" if @lang == CUDA
