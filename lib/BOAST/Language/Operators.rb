@@ -288,6 +288,83 @@ module BOAST
 
   end
 
+  class FMA < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :operand1
+    attr_reader :operand2
+    attr_reader :operand3
+    attr_reader :return_type
+
+    def initialize(a,b,c)
+      @operand1 = a
+      @operand2 = b
+      @operand3 = c
+      @return_type = nil
+    end
+
+    def get_return_type
+      if @operand3.kind_of?(Variable) then
+        @return_type = @operand3
+      else
+        @return_type = @operand3.to_var if @operand3.respond_to?(:to_var)
+      end
+    end
+
+    private :get_return_type
+
+    def convert_operand(op)
+      if op.type == @return_type.type then
+        return op.to_s
+      elsif op.type.vector_length == @return_type.type.vector_length then
+        return  "#{Operator.convert(op, @return_type.type)}"
+      else
+        raise "Unknown convertion between vector of different length!"
+      end
+    end
+
+    private :convert_operand
+
+    def to_var
+      get_return_type
+      return (@operand1 * @operand2 + @operand3).to_var unless lang != FORTRAN and @return_type and ( supported(:FMADD, @return_type.type) or ( [CL, CUDA].include?(lang) ) )
+      op1 = convert_operand(@operand1)
+      op2 = convert_operand(@operand2)
+      op3 = convert_operand(@operand3)
+      if [CL, CUDA].include?(lang)
+        ret_name = "fma(#{op1},#{op2},#{op3})"
+      else
+        case architecture
+        when X86
+          ret_name = "#{intrinsics(:FMADD,@return_type.type)}(#{op1},#{op2},#{op3})"
+        when ARM
+          ret_name = "#{intrinsics(:FMADD,@return_type.type)}(#{op2},#{op3},#{op1})"
+        else
+          return (@operand1 * @operand2 + @operand3).to_var
+        end
+      end
+      return @return_type.copy( ret_name, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
   class Ternary
     extend Functor
     include Arithmetic
