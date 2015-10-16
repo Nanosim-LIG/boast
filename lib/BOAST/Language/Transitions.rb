@@ -34,7 +34,7 @@ module BOAST
          signed = (signed or var2.type.signed)
          size = [var1.type.size, var2.type.size].max
          vector_length = [var1.type.vector_length, var2.type.vector_length].max
-         [Variable::new("dummy", return_type, :size => size, :signed => signed, :vector_length => vector_length), operator]
+         return [Variable::new("dummy", return_type, :size => size, :signed => signed, :vector_length => vector_length), operator]
        elsif var1.type.class == return_type then
          return [var1, operator]
        else # var2.type.class == return_type then
