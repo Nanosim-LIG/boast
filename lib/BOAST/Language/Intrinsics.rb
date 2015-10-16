@@ -256,7 +256,7 @@ module BOAST
           vtype = vector_type_name( :int, size, vector_size, sign )
           type = type_name_ARM( :int, size, sign )
           instructions = [[:ADD, "add"], [:SUB, "sub"]]
-          instructions.push( [:MUL, "mul"], [:FMADD, "mla"], [:FNMSUB, "mls"] ) if size < 64
+          instructions.push( [:MUL, "mul"], [:FMADD, "mla"], [:FNMADD, "mls"] ) if size < 64
           instructions.push( [:LOAD, "ldl"], [:LOADA, "ldl"] )
           instructions.push( [:STORE, "stl"], [:STOREA, "stl"] )
           instructions.each { |cl, ins|
