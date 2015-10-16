@@ -1,7 +1,21 @@
+require 'os'
+require 'yaml'
+
 module BOAST
 
   X86 = 1
   ARM = 2
+
+  native_flags = nil
+
+  if OS.mac? then
+    native_flags = `sysctl -n machdep.cpu.features`.split
+  else
+    native_flags = YAML::load(`cat /proc/cpuinfo`)["flags"].upcase.gsub("_",".").split
+  end
+
+  MODELS={ "native" => native_flags }
+  MODELS.update(X86architectures)
 
   module Intrinsics
     extend PrivateStateAccessor
