@@ -16,10 +16,23 @@ module BOAST
 
   MODELS={ "native" => native_flags }
   MODELS.update(X86architectures)
+  INSTRUCTIONS = {}
+  INSTRUCTIONS.update(X86CPUID_by_name)
 
   module Intrinsics
     extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
+
+    def supported(intr_symbol, type, type2=nil)
+      instruction = intrinsics(intr_symbol, type, type2)
+      return false unless instruction
+      INSTRUCTIONS[instruction.to_s].each { |flag|
+        return true if MODELS[get_model].include?(flag)
+      }
+      return false
+    end
+
+    module_function :supported
 
     def intrinsics(intr_symbol, type, type2=nil)
       return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)][get_vector_name(type2)] if type2
