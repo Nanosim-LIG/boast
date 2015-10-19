@@ -1,5 +1,7 @@
 require 'os'
 require 'yaml'
+require 'rgl/adjacency'
+require 'rgl/dijkstra'
 
 module BOAST
 
@@ -22,6 +24,7 @@ module BOAST
   module Intrinsics
     extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
+    CONVERSIONS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
 
     def supported(intr_symbol, type, type2=nil)
       instruction = intrinsics(intr_symbol, type, type2)
@@ -40,6 +43,12 @@ module BOAST
     end
 
     module_function :intrinsics
+
+    def get_conversion_path(type_dest, type_orig)
+      return CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
+    end
+
+    module_function :get_conversion_path
 
     def get_vector_decl_X86( data_type )
       raise "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
@@ -331,6 +340,29 @@ module BOAST
         bvtype = vector_type_name( :int, bsize, bvsize, sign )
         INTRINSICS[ARM][:CVT][svtype][bvtype] = "vmovl_#{stype}".to_sym
         INTRINSICS[ARM][:CVT][bvtype][svtype] = "vmovn_#{btype}".to_sym
+      }
+    }
+
+    [X86, ARM].each { |arch|
+      cvt_dgraph = RGL::DirectedAdjacencyGraph::new
+      INTRINSICS[arch][:CVT].each { |dest, origs|
+        origs.each { |orig, intrinsic|
+          cvt_dgraph.add_edge(orig, dest)
+        }
+      }
+      cvt_dgraph.vertices.each { |source|
+        paths = cvt_dgraph.dijkstra_shortest_paths(cvt_dgraph.edges.map { |e| [e.to_a,1]}.to_h, source )
+        paths.each { |dest, path|
+          CONVERSIONS[arch][dest][source] = path if path
+        }
+      }
+      types = []
+      INTRINSICS[arch].each { |intrinsic, instructions|
+        types += instructions.keys
+      }
+      types.uniq
+      types.each { |type|
+        CONVERSIONS[arch][type][type] = [type]
       }
     }
 

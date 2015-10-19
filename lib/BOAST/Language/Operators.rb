@@ -11,9 +11,16 @@ module BOAST
     def Operator.convert(arg, type)
       return "convert_#{type.decl}( #{arg} )" if lang == CL
 
-      instruction = intrinsics(:CVT, type, arg.type)
-      raise "Unavailable conversion from #{get_vector_name(arg.type)} to #{get_vector_name(type)}!" if not instruction
-      return "#{instruction}( #{arg} )"
+      path = get_conversion_path(type, arg.type)
+      raise "Unavailable conversion from #{get_vector_name(arg.type)} to #{get_vector_name(type)}!" if not path
+      s = "#{arg}"
+      if path.length > 1 then
+        path.each_cons(2) { |slice|
+          instruction = intrinsics(:CVT, slice[1], slice[0])
+          s = "#{instruction}( #{s} )"
+        }
+      end
+      return s
     end
 
   end
@@ -21,14 +28,11 @@ module BOAST
   class BasicBinaryOperator < Operator
 
     def BasicBinaryOperator.to_s(arg1, arg2, return_type)
-      #puts "#{arg1.class} * #{arg2.class} : #{arg1} * #{arg2}"
       if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
-        raise "Vectors have different length: #{arg1} #{arg1.type.vector_length}, #{arg2} #{arg2.type.vector_length}" if arg1.type.vector_length != arg2.type.vector_length
-        #puts "#{arg1.type.signed} #{arg2.type.signed} #{return_type.type.signed}"
         instruction = intrinsics(intr_symbol, return_type.type)
         raise "Unavailable operator #{symbol} for #{get_vector_name(return_type.type)}!" unless instruction
-        a1 = ( arg1.type != return_type.type ? convert(arg1, return_type.type) : "#{arg1}" )
-        a2 = ( arg2.type != return_type.type ? convert(arg2, return_type.type) : "#{arg2}" )
+        a1 = convert(arg1, return_type.type)
+        a2 = convert(arg2, return_type.type)
         return "#{instruction}( #{a1}, #{a2} )"
       else
         return basic_usage( arg1, arg2 )
@@ -66,10 +70,8 @@ module BOAST
             return "#{arg1} = #{instruction}( #{arg2} )"
           elsif arg1.type == arg2.type then
             return basic_usage(arg1, arg2)
-          elsif arg1.type.vector_length == arg2.type.vector_length then
-            return "#{arg1} = #{convert(arg2, arg1.type)}"
           else
-            raise "Unknown convertion between vector of different length!"
+            return "#{arg1} = #{convert(arg2, arg1.type)}"
           end
         else
           return basic_usage(arg1, arg2)
@@ -108,12 +110,10 @@ module BOAST
               return Set.to_s(arg1, arg2, return_type)
             elsif arg1.type == arg2.type then
               return Affectation.basic_usage(arg1, arg2)
-            elsif arg1.type.vector_length == arg2.type.vector_length then
-              return "#{arg1} = #{convert(arg2, arg1.type)}"
             elsif arg2.type.vector_length == 1 then
               return "#{arg1} = #{Load.to_s(nil, arg2, arg1)}"
             else
-              raise "Unknown convertion between vectors of different length!"
+              return "#{arg1} = #{convert(arg2, arg1.type)}"
             end
           else
             Affectation.basic_usage(arg1, arg2)
@@ -318,13 +318,7 @@ module BOAST
     private :get_return_type
 
     def convert_operand(op)
-      if op.type == @return_type.type then
-        return op.to_s
-      elsif op.type.vector_length == @return_type.type.vector_length then
-        return  "#{Operator.convert(op, @return_type.type)}"
-      else
-        raise "Unknown convertion between vector of different length!"
-      end
+      return  "#{Operator.convert(op, @return_type.type)}"
     end
 
     private :convert_operand
