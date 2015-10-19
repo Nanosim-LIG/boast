@@ -155,9 +155,9 @@ module BOAST
 
     def type_name_X86( type, size, vector_size, sign = :signed )
       s = ""
-      e = ( vector_size > 64 ? "e" : "" )
       case type
       when :int
+        e = ( vector_size > 64 ? "e" : "" )
         s += "#{e}p"
         case sign
         when :signed
