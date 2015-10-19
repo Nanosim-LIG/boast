@@ -246,6 +246,28 @@ module BOAST
           ssize /= 2
         end
       }
+      [64].each { |bsize|
+        ssize = bsize/2
+        svsize = (bvsize/bsize)*ssize
+        stype = type_name_X86( :float, ssize, 128 )
+        btype = type_name_X86( :float, bsize, bvsize )
+        svtype = vector_type_name( :float, ssize, svsize )
+        bvtype = vector_type_name( :float, bsize, bvsize )
+        vs = ( bvsize < 256 ? "" : "#{bvsize}" )
+        INTRINSICS[X86][:CVT][bvtype][svtype] = "_mm#{vs}_cvt#{stype}_#{btype}".to_sym
+        INTRINSICS[X86][:CVT][svtype][bvtype] = "_mm#{vs}_cvt#{btype}_#{stype}".to_sym
+      }
+      [64].each { |fsize|
+        [32].each { |isize|
+          ftype = type_name_X86( :float, fsize, bvsize )
+          itype = type_name_X86( :int, isize, isize*(bvsize/fsize), :signed )
+          fvtype = vector_type_name( :float, fsize, bvsize )
+          ivtype = vector_type_name( :int, isize, isize*(bvsize/fsize), :signed )
+          vs = ( bvsize < 256 ? "" : "#{bvsize}" )
+          INTRINSICS[X86][:CVT][fvtype][ivtype] = "_mm#{vs}_cvt#{itype}_#{ftype}".to_sym
+          INTRINSICS[X86][:CVT][ivtype][fvtype] = "_mm#{vs}_cvt#{ftype}_#{itype}".to_sym
+        }
+      }
     }
 
 
