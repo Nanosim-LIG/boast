@@ -41,52 +41,6 @@ module BOAST
 
   end
 
-  class Set < Operator
-
-    def Set.to_s(arg1, arg2, return_type)
-      if lang == C or lang == CL then
-        if arg1.class == Variable and arg1.type.vector_length > 1 then
-          if arg2.kind_of?( Array ) then
-            raise "Invalid array length!" unless arg2.length == arg1.type.vector_length
-            return "#{arg1} = (#{arg1.type.decl})( #{arg2.join(", ")} )" if lang == CL
-
-            instruction = intrinsics(:SET, arg1.type)
-            if not instruction then
-              instruction = intrinsics(:SET_LANE, arg1.type)
-              raise "Unavailable operator set for #{get_vector_name(arg1.type)}!" unless instruction
-              s = "#{arg1}"
-              arg2.each_with_index { |v,i|
-                s = "#{instruction}(#{v}, #{s}, #{i})"
-              }
-            return "#{arg1} = #{s}"
-            else
-              return "#{arg1} = #{instruction}( #{arg2.join(", ")} )"
-            end
-          elsif arg2.class != Variable or arg2.type.vector_length == 1 then
-            return "#{arg1} = (#{arg1.type.decl})( #{arg2} )" if lang == CL
-
-            instruction = intrinsics(:SET1, arg1.type)
-            raise "Unavailable operator set1 for #{get_vector_name(arg1.type)}!" unless instruction
-            return "#{arg1} = #{instruction}( #{arg2} )"
-          elsif arg1.type == arg2.type then
-            return basic_usage(arg1, arg2)
-          else
-            return "#{arg1} = #{convert(arg2, arg1.type)}"
-          end
-        else
-          return basic_usage(arg1, arg2)
-        end
-      else
-        return basic_usage(arg1, arg2)
-      end
-    end
-
-    def Set.basic_usage(arg1, arg2)
-      return "(#{arg1} = #{arg2})"
-    end
-
-  end
-
   class Different < Operator
 
     def Different.to_s(arg1, arg2, return_type)
@@ -100,47 +54,72 @@ module BOAST
 
   end
 
-  class Load < Operator
+  class Set < Operator
 
-    def Load.to_s(arg1, arg2, return_type)
-      if lang == C or lang == CL then
-        if arg1 then
-          if arg1.class == Variable and arg1.type.vector_length > 1 then
-            if arg2.kind_of?( Array ) then
-              return Set.to_s(arg1, arg2, return_type)
-            elsif arg1.type == arg2.type then
-              return Affectation.basic_usage(arg1, arg2)
-            elsif arg2.type.vector_length == 1 then
-              return "#{arg1} = #{Load.to_s(nil, arg2, arg1)}"
-            else
-              return "#{arg1} = #{convert(arg2, arg1.type)}"
-            end
-          else
-            Affectation.basic_usage(arg1, arg2)
-          end
-        elsif arg2.class == Variable and arg2.type.vector_length == 1 then
-          a2 = "#{arg2}"
-          if a2[0] != "*" then
-            a2 = "&" + a2
-          else
-            a2 = a2[1..-1]
-          end
+    def Set.to_s(arg1, arg2, return_type)
+      s = ""
+      s += "#{arg1} = " if arg1
+      return_type = arg1.to_var unless return_type
+      if lang == C or lang == CL and return_type.type.vector_length > 1 then
+        if arg2.kind_of?( Array ) then
+          raise "Invalid array length!" unless arg2.length == return_type.type.vector_length
+          return s += "(#{return_type.type.decl})( #{arg2.join(", ")} )" if lang == CL
 
-          return "vload#{return_type.type.vector_length}(0, #{a2})" if lang == CL
-          return "#{arg1} = _m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and return_type.type.total_size*8 == 64
+          instruction = intrinsics(:SET, return_type.type)
+          return s += "#{instruction}( #{arg2.join(", ")} )" if instruction
 
-          if arg2.align == return_type.type.total_size then
-            instruction = intrinsics(:LOADA, return_type.type)
-          else
-            instruction = intrinsics(:LOAD, return_type.type)
-          end
-          raise "Unavailable operator load for #{get_vector_name(return_type.type)}!" unless instruction
-          return "#{instruction}( #{a2} )"
-        else
-          return "#{arg2}"
+          instruction = intrinsics(:SET_LANE, return_type.type)
+          raise "Unavailable operator set for #{get_vector_name(return_type.type)}!" unless instruction
+          ss = Set.to_s(0, return_type)
+          arg2.each_with_index { |v,i|
+            ss = "#{instruction}(#{v}, #{ss}, #{i})"
+          }
+          return s += ss
+        elsif arg2.class != Variable or arg2.type.vector_length == 1 then
+          return s += "(#{return_type.type.decl})( #{arg2} )" if lang == CL
+
+          instruction = intrinsics(:SET1, return_type.type)
+          raise "Unavailable operator set1 for #{get_vector_name(return_type.type)}!" unless instruction
+          return s += "#{instruction}( #{arg2} )"
+        elsif return_type.type != arg2.type
+          return s+= "#{convert(arg2, return_type.type)}"
         end
       end
-      return Affectation.basic_usage(arg1, arg2) if arg1
+      return s += "#{arg2}"
+    end
+
+  end
+
+  class Load < Operator
+
+    def Load.to_s(arg2, return_type)
+      if lang == C or lang == CL then
+        if arg2.kind_of?(Array) then
+          return Set.to_s(nil, arg2, return_type)
+        elsif arg2.class == Variable or arg2.respond_to?(:to_var) then
+          if arg2.to_var.type == return_type.type
+            return "#{arg2}"
+          elsif arg2.type.vector_length == 1 then
+            a2 = "#{arg2}"
+            if a2[0] != "*" then
+              a2 = "&" + a2
+            else
+              a2 = a2[1..-1]
+            end
+            return "vload#{return_type.type.vector_length}(0, #{a2})" if lang == CL
+            return "_m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and return_type.type.total_size*8 == 64
+            if arg2.align == return_type.type.total_size then
+              instruction = intrinsics(:LOADA, return_type.type)
+            else
+              instruction = intrinsics(:LOAD, return_type.type)
+            end
+            raise "Unavailable operator load for #{get_vector_name(return_type.type)}!" unless instruction
+            return "#{instruction}( #{a2} )"
+          else
+            return "#{convert(arg2, return_type.type)}"
+          end
+        end
+      end
       return "#{arg2}"
     end
 
@@ -179,7 +158,7 @@ module BOAST
 
     def Affectation.to_s(arg1, arg2, return_type)
       if arg1.class == Variable and arg1.type.vector_length > 1 then
-        return Load.to_s(arg1, arg2, return_type)
+        return "#{arg1} = #{Load.to_s(arg2, arg1)}"
       elsif arg2.class == Variable and arg2.type.vector_length > 1 then
         return Store.to_s(arg1, arg2, return_type)
       end
