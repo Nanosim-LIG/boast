@@ -287,11 +287,7 @@ module BOAST
     end
 
     def get_return_type
-      if @operand3.kind_of?(Variable) then
-        @return_type = @operand3
-      else
-        @return_type = @operand3.to_var if @operand3.respond_to?(:to_var)
-      end
+      @return_type = @operand3.to_var
     end
 
     private :get_return_type
