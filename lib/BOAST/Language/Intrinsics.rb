@@ -238,7 +238,7 @@ module BOAST
          [:ADDSUB, "addsub"], [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
          [:LOAD, "loadu"],    [:LOADA, "load"],
          [:STORE, "storeu"],  [:STOREA, "store"],
-         [:SET, "set"],       [:SET1, "set1"] ].each { |cl, ins|
+         [:SET, "setr"],      [:SET1, "set1"] ].each { |cl, ins|
           vtype = vector_type_name( :float, size, vector_size)
           type = type_name_X86( :float, size, vector_size )
           INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_#{type}".to_sym
