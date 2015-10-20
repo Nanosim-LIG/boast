@@ -302,7 +302,8 @@ module BOAST
       else
         src = src[1..-1]
       end
-      s += "#{intrinsics(:MASKLOAD, @return_type.type)}(#{src}, #{get_mask})"
+      p_type = @return_type.type.copy(:vector_length => 1)
+      s += "#{intrinsics(:MASKLOAD, @return_type.type)}((#{p_type.decl} * )#{src}, #{get_mask})"
       return @return_type.copy( s, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
     end
 
