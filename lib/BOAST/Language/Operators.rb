@@ -321,6 +321,58 @@ module BOAST
 
   end
 
+  class MaskStore < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :dest
+    attr_reader :source
+    attr_reader :mask
+
+    def initialize(dest, source, mask, store_type = nil)
+      @dest = dest
+      @source = source
+      @mask = mask
+      @store_type = store_type
+      @store_type = source unless @store_type
+    end
+
+    def get_mask
+      raise "Mask size is wrong: #{@mask.length} for #{@store_type.type.vector_length}!" if @mask.length != @store_type.type.vector_length
+      return Load.to_s(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @store_type.type.size, :vector_length => @store_type.type.vector_length ) )
+    end
+
+    private :get_mask
+
+    def to_s
+      raise "Cannot store unknown type!" unless @store_type
+      raise "Unsupported language!" unless lang == C
+      raise "MaskStore not supported!"unless supported(:MASKSTORE, @store_type.type)
+      s = ""
+      dst = "#{@dest}"
+      if dst[0] != "*" then
+        dst = "&" + dst
+      else
+        dst = dst[1..-1]
+      end
+      p_type = @store_type.type.copy(:vector_length => 1)
+      return s += "#{intrinsics(:MASKSTORE, @store_type.type)}((#{p_type.decl} * )#{dst}, #{Operator.convert(@source, @store_type.type)}, #{get_mask})"
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
   class FMA < Operator
     extend Functor
     include Intrinsics
