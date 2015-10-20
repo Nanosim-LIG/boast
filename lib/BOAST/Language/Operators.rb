@@ -267,6 +267,60 @@ module BOAST
 
   end
 
+  class MaskLoad < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :source
+    attr_reader :mask
+    attr_reader :return_type
+
+    def initialize(source, mask, return_type)
+      @source = source
+      @mask = mask
+      @return_type = return_type
+    end
+
+    def get_mask
+      raise "Mask size is wrong: #{@mask.length} for #{@return_type.type.vector_length}!" if @mask.length != @return_type.type.vector_length
+      return Load.to_s(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @return_type.type.size, :vector_length => @return_type.type.vector_length ) )
+    end
+
+    private :get_mask
+
+    def to_var
+      raise "Cannot load unlown type!" unless @return_type
+      raise "Unsupported language!" unless lang == C
+      raise "MaskLoad not supported!"unless supported(:MASKLOAD, @return_type.type)
+      s = ""
+      src = "#{@source}"
+      if src[0] != "*" then
+        src = "&" + src
+      else
+        src = src[1..-1]
+      end
+      s += "#{intrinsics(:MASKLOAD, @return_type.type)}(#{src}, #{get_mask})"
+      return @return_type.copy( s, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
   class FMA < Operator
     extend Functor
     include Intrinsics
