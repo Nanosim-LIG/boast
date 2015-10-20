@@ -37,6 +37,13 @@ module BOAST
 
     module_function :supported
 
+    def intrinsics_by_vector_name(intr_symbol, type, type2=nil)
+      return INTRINSICS[get_architecture][intr_symbol][type][type2] if type2
+      return INTRINSICS[get_architecture][intr_symbol][type]
+    end
+
+    module_function :intrinsics_by_vector_name
+
     def intrinsics(intr_symbol, type, type2=nil)
       return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)][get_vector_name(type2)] if type2
       return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)]

@@ -16,7 +16,7 @@ module BOAST
       s = "#{arg}"
       if path.length > 1 then
         path.each_cons(2) { |slice|
-          instruction = intrinsics(:CVT, slice[1], slice[0])
+          instruction = intrinsics_by_vector_name(:CVT, slice[1], slice[0])
           s = "#{instruction}( #{s} )"
         }
       end
