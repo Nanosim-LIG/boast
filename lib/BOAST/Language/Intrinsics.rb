@@ -236,7 +236,7 @@ module BOAST
         [[:ADD, "add"],       [:SUB, "sub"],           [:MUL, "mul"],       [:DIV, "div"],
          [:FMADD, "fmadd"],   [:FMSUB, "fmsub"],       [:FNMADD, "fnmadd"], [:FNMSUB, "fnmsub"],
          [:ADDSUB, "addsub"], [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
-         [:LOAD, "loadu"],    [:LOADA, "load"],
+         [:LOAD, "loadu"],    [:LOADA, "load"],        [:MASKLOAD, "maskload"],
          [:STORE, "storeu"],  [:STOREA, "store"],
          [:SET, "setr"],      [:SET1, "set1"] ].each { |cl, ins|
           vtype = vector_type_name( :float, size, vector_size)
