@@ -292,7 +292,7 @@ module BOAST
     private :get_mask
 
     def to_var
-      raise "Cannot load unlown type!" unless @return_type
+      raise "Cannot load unknown type!" unless @return_type
       raise "Unsupported language!" unless lang == C
       raise "MaskLoad not supported!"unless supported(:MASKLOAD, @return_type.type)
       s = ""
