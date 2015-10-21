@@ -218,6 +218,7 @@ module BOAST
           }
           if size == 64 and vector_size < 512 then
             INTRINSICS[X86][:SET1][vtype] = "_mm#{vs}_set1_#{type}x".to_sym
+            INTRINSICS[X86][:SET][vtype] = "_mm#{vs}_setr_#{type}x".to_sym
           end
         }
       }

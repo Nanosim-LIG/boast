@@ -360,7 +360,7 @@ module BOAST
         dst = dst[1..-1]
       end
       p_type = @store_type.type.copy(:vector_length => 1)
-      return s += "#{intrinsics(:MASKSTORE, @store_type.type)}((#{p_type.decl} * )#{dst}, #{Operator.convert(@source, @store_type.type)}, #{get_mask})"
+      return s += "#{intrinsics(:MASKSTORE, @store_type.type)}((#{p_type.decl} * )#{dst}, #{get_mask}, #{Operator.convert(@source, @store_type.type)})"
     end
 
     def pr
