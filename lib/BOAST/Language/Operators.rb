@@ -407,7 +407,7 @@ module BOAST
 
     def to_var
       get_return_type
-      return (@operand1 * @operand2 + @operand3).to_var unless lang != FORTRAN and @return_type and ( supported(:FMADD, @return_type.type) or ( [CL, CUDA].include?(lang) ) )
+      return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( supported(:FMADD, @return_type.type) or ( [CL, CUDA].include?(lang) ) )
       op1 = convert_operand(@operand1)
       op2 = convert_operand(@operand2)
       op3 = convert_operand(@operand3)
