@@ -78,7 +78,30 @@ module BOAST
 
     def to_s
       @code.rewind
-      return code.read
+      if @lang == FORTRAN then
+        out = StringIO::new
+        @code.each_line { |line|
+          # check for omp pragmas
+          if line.match(/^\s*!\$/) then
+            if line.match(/^\s*!\$(omp|OMP)/) then
+              chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-7}}/)
+              out.puts chunks.join("&\n!$omp&")
+            else
+              chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-4}}/)
+              out.puts chunks.join("&\n!$&")
+            end
+          elsif line.match(/^\w*!/) then
+            out.write line
+          else
+            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-2}}/)
+            out.puts chunks.join("&\n&")
+          end
+        } 
+        out.rewind
+        return out.read
+      else
+        return code.read
+      end
     end
 
     def method_missing(meth, *args, &block)
