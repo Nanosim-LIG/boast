@@ -27,6 +27,10 @@ module BOAST
       return to_var.copy(*args)
     end
 
+    def type
+      return to_var.type
+    end
+
     def to_s
       if get_replace_constants then
         begin
