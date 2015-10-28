@@ -19,6 +19,14 @@ module BOAST
       return var
     end
 
+    def set(x)
+      return to_var === Set(x,to_var)
+    end
+
+    def copy(*args)
+      return to_var.copy(*args)
+    end
+
     def to_s
       if get_replace_constants then
         begin

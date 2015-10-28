@@ -259,7 +259,7 @@ module BOAST
     end
 
     def set(x)
-      return Expression::new(Set, self, x)
+      return self === Set(x,self)
     end
 
     def dereference

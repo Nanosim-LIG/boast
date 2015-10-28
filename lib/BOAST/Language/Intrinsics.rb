@@ -108,7 +108,7 @@ module BOAST
       s = ""
       case type
       when Int
-        s += "u" if type.signed?
+        s += "u" unless type.signed?
         s += "int"
       when Real
         s += "float"

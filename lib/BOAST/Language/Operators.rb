@@ -4,6 +4,8 @@ module BOAST
     extend PrivateStateAccessor
     extend Intrinsics
 
+    DISCARD_OPTIONS = { :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil }
+
     def Operator.inspect
       return "#{name}"
     end
@@ -54,113 +56,13 @@ module BOAST
 
   end
 
-  class Set < Operator
-
-    def Set.to_s(arg1, arg2, return_type)
-      s = ""
-      s += "#{arg1} = " if arg1
-      return_type = arg1.to_var unless return_type
-      if lang == C or lang == CL and return_type.type.vector_length > 1 then
-        if arg2.kind_of?( Array ) then
-          raise "Invalid array length!" unless arg2.length == return_type.type.vector_length
-          return s += "(#{return_type.type.decl})( #{arg2.join(", ")} )" if lang == CL
-
-          instruction = intrinsics(:SET, return_type.type)
-          return s += "#{instruction}( #{arg2.join(", ")} )" if instruction
-
-          instruction = intrinsics(:SET_LANE, return_type.type)
-          raise "Unavailable operator set for #{get_vector_name(return_type.type)}!" unless instruction
-          ss = Set.to_s(0, return_type)
-          arg2.each_with_index { |v,i|
-            ss = "#{instruction}(#{v}, #{ss}, #{i})"
-          }
-          return s += ss
-        elsif arg2.class != Variable or arg2.type.vector_length == 1 then
-          return s += "(#{return_type.type.decl})( #{arg2} )" if lang == CL
-
-          instruction = intrinsics(:SET1, return_type.type)
-          raise "Unavailable operator set1 for #{get_vector_name(return_type.type)}!" unless instruction
-          return s += "#{instruction}( #{arg2} )"
-        elsif return_type.type != arg2.type
-          return s+= "#{convert(arg2, return_type.type)}"
-        end
-      end
-      return s += "#{arg2}"
-    end
-
-  end
-
-  class Load < Operator
-
-    def Load.to_s(arg2, return_type)
-      if lang == C or lang == CL then
-        if arg2.kind_of?(Array) then
-          return Set.to_s(nil, arg2, return_type)
-        elsif arg2.class == Variable or arg2.respond_to?(:to_var) then
-          if arg2.to_var.type == return_type.type
-            return "#{arg2}"
-          elsif arg2.type.vector_length == 1 then
-            a2 = "#{arg2}"
-            if a2[0] != "*" then
-              a2 = "&" + a2
-            else
-              a2 = a2[1..-1]
-            end
-            return "vload#{return_type.type.vector_length}(0, #{a2})" if lang == CL
-            return "_m_from_int64( *((int64_t * ) #{a2} ) )" if get_architecture == X86 and return_type.type.total_size*8 == 64
-            if arg2.align == return_type.type.total_size then
-              instruction = intrinsics(:LOADA, return_type.type)
-            else
-              instruction = intrinsics(:LOAD, return_type.type)
-            end
-            raise "Unavailable operator load for #{get_vector_name(return_type.type)}!" unless instruction
-            return "#{instruction}( #{a2} )"
-          else
-            return "#{convert(arg2, return_type.type)}"
-          end
-        end
-      end
-      return "#{arg2}"
-    end
-
-  end
-
-  class Store < Operator
-
-    def Store.to_s(arg1, arg2, return_type)
-      if lang == C or lang == CL then
-        a1 = "#{arg1}"
-        if a1[0] != "*" then
-          a1 = "&" + a1
-        else
-          a1 = a1[1..-1]
-        end
-
-        return "vstore#{arg2.type.vector_length}(#{arg2}, 0, #{a1})" if lang == CL
-        return "*((int64_t * ) #{a1}) = _m_to_int64( #{arg2} )" if get_architecture == X86 and arg2.type.total_size*8 == 64
-
-        if arg1.align == arg2.type.total_size then
-          instruction = intrinsics(:STOREA, arg2.type)
-        else
-          instruction = intrinsics(:STORE, arg2.type)
-        end
-        raise "Unavailable operator store for #{get_vector_name(arg2.type)}!" unless instruction
-        p_type = arg2.type.copy(:vector_length => 1)
-        p_type = arg2.type if get_architecture == X86 and arg2.type.kind_of?(Int)
-        return "#{instruction}( (#{p_type.decl} * ) #{a1}, #{arg2} )"
-      end
-      return Affectation.basic_usage(arg1, arg2)
-    end
-
-  end
-
   class Affectation < Operator
 
     def Affectation.to_s(arg1, arg2, return_type)
       if arg1.class == Variable and arg1.type.vector_length > 1 then
-        return "#{arg1} = #{Load.to_s(arg2, arg1)}"
+        return "#{arg1} = #{Load(arg2, arg1)}"
       elsif arg2.class == Variable and arg2.type.vector_length > 1 then
-        return Store.to_s(arg1, arg2, return_type)
+        return "#{Store(arg1, arg2, return_type)}"
       end
       return basic_usage(arg1, arg2)
     end
@@ -267,6 +169,134 @@ module BOAST
 
   end
 
+  class Set < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :source
+    attr_reader :return_type
+
+    def initialize(source, return_type)
+      @source = source
+      @return_type = return_type
+    end
+
+    def type
+      return @return_type.type
+    end
+
+    def to_var
+      if lang == C or lang == CL and @return_type.type.vector_length > 1 then
+        if @source.kind_of?( Array ) then
+          raise "Invalid array length!" unless @source.length == @return_type.type.vector_length
+          return @return_type.copy("(#{@return_type.type.decl})( #{@source.join(", ")} )", DISCARD_OPTIONS) if lang == CL
+
+          instruction = intrinsics(:SET, @return_type.type)
+          return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS) if instruction
+
+          instruction = intrinsics(:SET_LANE, @return_type.type)
+          raise "Unavailable operator set for #{get_vector_name(@return_type.type)}!" unless instruction
+          s = Set(0, @return_type).to_s
+          @source.each_with_index { |v,i|
+            s = "#{instruction}(#{v}, #{s}, #{i})"
+          }
+          return @return_type.copy(s, DISCARD_OPTIONS)
+        elsif @source.class != Variable or @source.type.vector_length == 1 then
+          return @return_type.copy("(#{@return_type.type.decl})( #{@source} )", DISCARD_OPTIONS) if lang == CL
+
+          instruction = intrinsics(:SET1, @return_type.type)
+          raise "Unavailable operator set1 for #{get_vector_name(@return_type.type)}!" unless instruction
+          return @return_type.copy("#{instruction}( #{@source} )", DISCARD_OPTIONS)
+        elsif @return_type.type != @source.type
+          return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
+        end
+      end
+      return @return_type.copy("#{@source}", DISCARD_OPTIONS)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
+  class Load < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :source
+    attr_reader :return_type
+
+    def initialize(source, return_type)
+      @source = source
+      @return_type = return_type
+    end
+
+    def type
+      return @return_type.type
+    end
+
+    def to_var
+      if lang == C or lang == CL then
+        if @source.kind_of?(Array) then
+          return Set(@source, @return_type).to_var
+        elsif @source.class == Variable or @source.respond_to?(:to_var) then
+          if @source.to_var.type == @return_type.type
+            return @source.to_var
+          elsif @source.to_var.type.vector_length == 1 then
+            a2 = "#{@source}"
+            if a2[0] != "*" then
+              a2 = "&" + a2
+            else
+              a2 = a2[1..-1]
+            end
+            return @return_type.copy("vload#{@return_type.type.vector_length}(0, #{a2})", DISCARD_OPTIONS) if lang == CL
+            return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
+            if @source.align == @return_type.type.total_size then
+              instruction = intrinsics(:LOADA, @return_type.type)
+            else
+              instruction = intrinsics(:LOAD, @return_type.type)
+            end
+            raise "Unavailable operator load for #{get_vector_name(@return_type.type)}!" unless instruction
+            return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
+          else
+            return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
+          end
+        end
+      end
+      return @return_type.copy("#{@source}", DISCARD_OPTIONS)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
   class MaskLoad < Operator
     extend Functor
     include Intrinsics
@@ -286,10 +316,14 @@ module BOAST
 
     def get_mask
       raise "Mask size is wrong: #{@mask.length} for #{@return_type.type.vector_length}!" if @mask.length != @return_type.type.vector_length
-      return Load.to_s(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @return_type.type.size, :vector_length => @return_type.type.vector_length ) )
+      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @return_type.type.size, :vector_length => @return_type.type.vector_length ) )
     end
 
     private :get_mask
+
+    def type
+      return @return_type.type
+    end
 
     def to_var
       raise "Cannot load unknown type!" unless @return_type
@@ -304,11 +338,65 @@ module BOAST
       end
       p_type = @return_type.type.copy(:vector_length => 1)
       s += "#{intrinsics(:MASKLOAD, @return_type.type)}((#{p_type.decl} * )#{src}, #{get_mask})"
-      return @return_type.copy( s, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
+      return @return_type.copy( s, DISCARD_OPTIONS)
     end
 
     def to_s
       return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
+  class Store < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :dest
+    attr_reader :source
+    attr_reader :store_type
+
+    def initialize(dest, source, mask, store_type = nil)
+      @dest = dest
+      @source = source
+      @store_type = store_type
+      @store_type = source unless @store_type
+    end
+
+    def to_s
+      if lang == C or lang == CL then
+        dst = "#{@dest}"
+        if dst[0] != "*" then
+          dst = "&" + dst
+        else
+          dst = dst[1..-1]
+        end
+
+        return "vstore#{@source.type.vector_length}(#{@source}, 0, #{dst})" if lang == CL
+        return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and @source.type.total_size*8 == 64
+
+        if @dest.align == @source.type.total_size then
+          instruction = intrinsics(:STOREA, @source.type)
+        else
+          instruction = intrinsics(:STORE, @source.type)
+        end
+        raise "Unavailable operator store for #{get_vector_name(@source.type)}!" unless instruction
+        p_type = @source.type.copy(:vector_length => 1)
+        p_type = @source.type if get_architecture == X86 and @source.type.kind_of?(Int)
+        return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
+      end
+      return Affectation.basic_usage(@dest, @source)
     end
 
     def pr
@@ -332,6 +420,7 @@ module BOAST
     attr_reader :dest
     attr_reader :source
     attr_reader :mask
+    attr_reader :store_type
 
     def initialize(dest, source, mask, store_type = nil)
       @dest = dest
@@ -391,13 +480,8 @@ module BOAST
       @operand2 = b
       @operand3 = c
       @return_type = nil
+      @return_type = @operand3.to_var unless @return_type
     end
-
-    def get_return_type
-      @return_type = @operand3.to_var
-    end
-
-    private :get_return_type
 
     def convert_operand(op)
       return  "#{Operator.convert(op, @return_type.type)}"
@@ -405,9 +489,12 @@ module BOAST
 
     private :convert_operand
 
+    def type
+      return @return_type.type
+    end
+
     def to_var
-      get_return_type
-      return (@operand1 * @operand2 + @operand3).to_var unless lang != FORTRAN and @return_type and ( supported(:FMADD, @return_type.type) or ( [CL, CUDA].include?(lang) ) )
+      return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( supported(:FMADD, @return_type.type) or ( [CL, CUDA].include?(lang) ) )
       op1 = convert_operand(@operand1)
       op2 = convert_operand(@operand2)
       op3 = convert_operand(@operand3)
@@ -423,7 +510,7 @@ module BOAST
           return (@operand1 * @operand2 + @operand3).to_var
         end
       end
-      return @return_type.copy( ret_name, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
+      return @return_type.copy( ret_name, DISCARD_OPTIONS)
     end
 
     def to_s
