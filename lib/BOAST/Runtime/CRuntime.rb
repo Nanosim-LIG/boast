@@ -4,6 +4,7 @@ module BOAST
     include CompiledRuntime
 
     def fill_library_header
+      get_output.puts "#include <stdlib.h>"
       get_output.puts "#include <inttypes.h>"
       get_output.puts "#define __assume_aligned(lvalueptr, align) lvalueptr = __builtin_assume_aligned (lvalueptr, align)" if @compiler_options[:CC].match("gcc")
     end
