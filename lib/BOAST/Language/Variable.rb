@@ -66,6 +66,8 @@ module BOAST
     include PrivateStateAccessor
     include Inspectable
 
+    attr_accessor :shape
+
     def initialize(array,type = nil)
       super(array)
       @type = type::new if type
@@ -77,25 +79,30 @@ module BOAST
     end
 
     def to_s_fortran
+      arr = self.flatten
       s = ""
-      return s if first.nil?
+      return s if arr.first.nil?
+      s += "reshape(" if @shape
       s += "(/ &\n"
-      s += first.to_s
+      s += arr.first.to_s
       s += @type.suffix if @type
-      self[1..-1].each { |v|
+      arr[1..-1].each { |v|
         s += ", &\n"+v.to_s
         s += @type.suffix if @type
       }
       s += " /)"
+      s += ", shape(#{@shape}))" if @shape
+      return s
     end
 
     def to_s_c
+      arr = self.flatten
       s = ""
-      return s if first.nil?
+      return s if arr.first.nil?
       s += "{\n"
-      s += first.to_s
+      s += arr.first.to_s
       s += @type.suffix if @type 
-      self[1..-1].each { |v|
+      arr[1..-1].each { |v|
         s += ",\n"+v.to_s
         s += @type.suffix if @type
       }
@@ -525,6 +532,7 @@ module BOAST
       end
       s += " :: #{@name}"
       if constant? then
+        @constant.shape = self if dimension? and @constant.kind_of?(ConstArray)
         s += " = #{@constant}"
         s += @type.suffix if not dimension? and @type
       end
