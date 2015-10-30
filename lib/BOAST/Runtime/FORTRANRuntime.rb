@@ -7,25 +7,30 @@ module BOAST
       return @procedure.name + "_"
     end
 
-    def fill_library_source
+    def line_limited_source
+      s = ""
       @code.rewind
       @code.each_line { |line|
-        # check for omp pragmas
         if line.match(/^\s*!\$/) then
           if line.match(/^\s*!\$(omp|OMP)/) then
             chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-7}}/)
-            get_output.puts chunks.join("&\n!$omp&")
+            s += chunks.join("&\n!$omp&") + "\n"
           else
             chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-4}}/)
-            get_output.puts chunks.join("&\n!$&")
+            s += chunks.join("&\n!$&") + "\n"
           end
         elsif line.match(/^\w*!/) then
-          get_output.write line
+          s += line
         else
           chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-2}}/)
-          get_output.puts chunks.join("&\n&")
+          s += chunks.join("&\n&") + "\n"
         end
       }
+      return s
+    end
+
+    def fill_library_source
+      get_output.print line_limited_source
     end
 
     def create_procedure_call_parameters
