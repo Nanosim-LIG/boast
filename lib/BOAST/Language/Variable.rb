@@ -466,10 +466,14 @@ module BOAST
       return self
     end
 
-    def alloc_c( dims = nil )
+    def alloc_c( dims = nil, align = 0)
       s = ""
       s += indent
-      s += "#{name} = (#{@type.decl} *)malloc( sizeof(#{@type.decl})*("
+      if align != 0 then
+        s += "(#{@type.decl} *)posix_memalign( &#{name},#{align},sizeof(#{@type.decl})*("
+      else
+        s += "#{name} = (#{@type.decl} *)malloc( sizeof(#{@type.decl})*("
+      end
       s += dims.collect { |d| d.to_s }.reverse.join(")*(")
       s += ") )"
       s += finalize
@@ -477,12 +481,12 @@ module BOAST
       return self
     end
 
-    def alloc( dims = nil )
+    def alloc( dims = nil, align = 0 )
       @dimension = [dims].flatten if dims
       dims = @dimension
       raise "Cannot allocate array with unknown dimension!" unless dims
       return alloc_fortran(dims) if lang == FORTRAN
-      return alloc_c(dims) if lang == C
+      return alloc_c(dims, align) if lang == C
     end
 
     def dealloc_fortran
