@@ -466,13 +466,15 @@ module BOAST
       return self
     end
 
-    def alloc_c( dims = nil, align = 0)
+    def alloc_c( dims = nil, align = get_address_size)
       s = ""
       s += indent
-      if align != 0 then
-        s += "(#{@type.decl} *)posix_memalign( &#{name},#{align},sizeof(#{@type.decl})*("
+      if align > (OS.bits/8) then
+        # check alignment is a power of 2
+        raise "Invalid alignment #{align}!" if align & (align - 1) != 0
+        s += "(#{@type.decl} *) posix_memalign( &#{name}, #{align}, sizeof(#{@type.decl})*("
       else
-        s += "#{name} = (#{@type.decl} *)malloc( sizeof(#{@type.decl})*("
+        s += "#{name} = (#{@type.decl} *) malloc( sizeof(#{@type.decl})*("
       end
       s += dims.collect { |d| d.to_s }.reverse.join(")*(")
       s += ") )"
@@ -481,7 +483,7 @@ module BOAST
       return self
     end
 
-    def alloc( dims = nil, align = 0 )
+    def alloc( dims = nil, align = get_address_size )
       @dimension = [dims].flatten if dims
       dims = @dimension
       raise "Cannot allocate array with unknown dimension!" unless dims

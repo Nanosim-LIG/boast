@@ -12,7 +12,7 @@ module BOAST
 
   module PrivateStateAccessor
 
-    private_state_accessor :output, :lang, :architecture, :model
+    private_state_accessor :output, :lang, :architecture, :model, :address_size
     private_state_accessor :default_int_size, :default_real_size
     private_state_accessor :default_align
     private_state_accessor :array_start
@@ -48,7 +48,7 @@ module BOAST
 
   end
 
-  state_accessor :output, :lang, :architecture, :model
+  state_accessor :output, :lang, :architecture, :model, :address_size
   state_accessor :default_int_size, :default_real_size
   state_accessor :default_align
   state_accessor :array_start
@@ -62,6 +62,12 @@ module BOAST
   boolean_state_accessor :decl_module
 
   module_function
+
+  def get_default_address_size
+    address_size = const_get(ENV["ADDRESS_SIZE"]) if ENV["ADDRESS_SIZE"]
+    return address_size if address_size
+    return OS.bits/8
+  end
 
   def get_default_lang
     lang = const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
@@ -101,6 +107,7 @@ module BOAST
   @@default_int_size = 4
   @@default_int_signed = true
   @@default_real_size = 8
+  @@address_size = get_default_address_size
   @@default_align = 1
   @@indent_level = 0
   @@indent_increment = 2
