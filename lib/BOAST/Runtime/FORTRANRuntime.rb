@@ -11,18 +11,21 @@ module BOAST
       s = ""
       @code.rewind
       @code.each_line { |line|
-        if line.match(/^\s*!\$/) then
+        if line.match(/^\s*!\w*?\$/) then
           if line.match(/^\s*!\$(omp|OMP)/) then
-            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-7}}/)
+            chunks = line.scan(/.{1,#{fortran_line_length-7}}/)
             s += chunks.join("&\n!$omp&") + "\n"
+          elsif line.match(/^\s*!(DIR|dir)\$/) then
+            chunks = line.scan(/.{1,#{fortran_line_length-7}}/)
+            s += chunks.join("&\n!DIR$&") + "\n"
           else
-            chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-4}}/)
+            chunks = line.scan(/.{1,#{fortran_line_length-4}}/)
             s += chunks.join("&\n!$&") + "\n"
           end
-        elsif line.match(/^\w*!/) then
+        elsif line.match(/^\s*!/) then
           s += line
         else
-          chunks = line.scan(/.{1,#{FORTRAN_LINE_LENGTH-2}}/)
+          chunks = line.scan(/.{1,#{fortran_line_length-2}}/)
           s += chunks.join("&\n&") + "\n"
         end
       }
