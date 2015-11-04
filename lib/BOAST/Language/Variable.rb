@@ -334,16 +334,57 @@ module BOAST
       return decl_c if [C, CL, CUDA].include?( lang )
     end
 
+    def __const?
+      return !!( constant? or @direction == :in )
+    end
+
+    def __global?
+      return !!( lang == CL and @direction and dimension? and not (@options[:register] or @options[:private] or local?) )
+    end
+
+    def __local?
+      return !!( lang == CL and local? )
+    end
+
+    def __shared?(device = false)
+      return !!( lang == CUDA and local? and not device )
+    end
+
+    def __vla_array?
+      return !!( use_vla? and dimension? and not decl_module? )
+    end
+
+    def __pointer_array?(device = false)
+      return !!( dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) )
+    end
+
+    def __pointer?(device = false)
+      return !!( ( not dimension? and ( @direction == :out or @direction == :inout ) ) or __pointer_array?(device) )
+    end
+
+    def __restrict?
+      return !!( restrict? and not decl_module? )
+    end
+
+    def __dimension?(device = false)
+      return !!( dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) )
+    end
+
+    def __align?
+      return !!( dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) )
+    end
+
     def decl_c_s(device = false)
       return decl_texture_s if texture?
       s = ""
-      s += "const " if constant? or @direction == :in
-      s += "__global " if @direction and dimension? and not (@options[:register] or @options[:private] or local?) and lang == CL
-      s += "__local " if local? and lang == CL
-      s += "__shared__ " if local? and not device and lang == CUDA
+      s += "const " if __const?
+      s += "__global " if __global?
+      s += "__local " if __local?
+      s += "__shared__ " if __shared?(device)
       s += @type.decl
-      if use_vla? and dimension? and not decl_module? then
+      if __vla_array? then
         s += " #{@name}["
+        s += "__restrict__ " if __restrict?
         s += @dimension.reverse.collect { |d|
           dim = d.to_s
           if dim then
@@ -354,30 +395,25 @@ module BOAST
         }.join("][")
         s += "]"
       else
-        if dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) then
-          s += " *"
-          if restrict? and not decl_module? then
-            if lang == CL
-              s += " restrict"
-            else
-              s += " __restrict__" unless use_vla?
-            end
+        s += " *" if __pointer?(device)
+        if __pointer_array?(device) and __restrict? then
+          if lang == CL
+            s += " restrict"
+          else
+            s += " __restrict__" unless use_vla?
           end
-        end
-        if not dimension? and ( @direction == :out or @direction == :inout ) then
-          s += " *"
         end
         s += " #{@name}"
         if dimension? and constant? then
           s += "[]"
         end
-        if dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) then
+        if __dimension?(device) then
           s +="[("
           s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
           s +=")]"
         end 
       end
-      if dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) then
+      if __align? then
         a = ( align? ? align : 1 )
         a = ( a >= default_align ? a : default_align )
         s+= " __attribute((aligned(#{a})))"

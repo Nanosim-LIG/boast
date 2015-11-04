@@ -191,7 +191,7 @@ EOF
     end
 
     def fill_decl_module_params
-      set_decl_module(true)
+      push_env(:decl_module => true)
       @procedure.parameters.each { |param|
         param_copy = param.copy
         param_copy.constant = nil
@@ -209,7 +209,7 @@ EOF
         get_output.puts "  VALUE _boast_refs = rb_hash_new();"
         get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);"
       end
-      set_decl_module(false)
+      pop_env(:decl_module)
     end
 
     def copy_scalar_param_from_ruby( param, ruby_param )
@@ -242,7 +242,7 @@ EOF
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
-      set_decl_module(true)
+      push_env(:decl_module => true)
       @procedure.parameters.each_index do |i|
         param = @procedure.parameters[i]
         if not param.dimension then
@@ -251,7 +251,7 @@ EOF
           copy_array_param_from_ruby(param, argv[i])
         end
       end
-      set_decl_module(false)
+      pop_env(:decl_module)
     end
 
     def create_procedure_call
@@ -280,7 +280,7 @@ EOF
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
-      set_decl_module(true)
+      push_env(:decl_module => true)
       @procedure.parameters.each_index do |i|
         param = @procedure.parameters[i]
         if not param.dimension then
@@ -289,7 +289,7 @@ EOF
           copy_array_param_to_ruby(param, argv[i])
         end
       end
-      set_decl_module(false)
+      pop_env(:decl_module)
     end
 
     def store_results
