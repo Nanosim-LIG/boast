@@ -218,7 +218,7 @@ module BOAST
     end
 
     def open_c
-      s = decl_c_s + "{"
+      s = indent + decl_c_s + "{"
       output.puts s
       increment_indent_level
       constants.each { |c|
