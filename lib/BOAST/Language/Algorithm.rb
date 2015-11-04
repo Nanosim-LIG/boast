@@ -68,6 +68,9 @@ module BOAST
   default_state_getter :use_vla, false, :USE_VLA
 
   alias use_vla_old? use_vla?
+  class << self
+    alias use_vla_old? use_vla?
+  end
 
   def use_vla?
     return false if [CL,CUDA].include?(lang)
