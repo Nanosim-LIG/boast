@@ -2,6 +2,13 @@ module BOAST
 
   module FORTRANRuntime
     include CompiledRuntime
+    alias create_module_file_source_old create_module_file_source
+
+    def create_module_file_source
+      push_env(:use_vla => false)
+      create_module_file_source_old
+      pop_env(:use_vla)
+    end
 
     def method_name
       return @procedure.name + "_"

@@ -37,6 +37,19 @@ EOF
     }
   end
 
+  def self.default_state_getter(arg, default, env, get_env_string=nil)
+    envs = "ENV['#{env}']"
+    s = <<EOF
+  def get_default_#{arg}
+    #{arg} = #{default.inspect}
+    #{arg} = #{get_env_string ? eval( "#{get_env_string}" ) : envs} if #{envs}
+    return #{arg}
+  end
+  module_function :get_default_#{arg}
+EOF
+    eval s
+  end
+
   module PrivateStateAccessor
 
     def self.private_state_accessor(*args)

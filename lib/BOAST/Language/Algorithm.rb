@@ -61,37 +61,22 @@ module BOAST
   boolean_state_accessor :use_vla
   boolean_state_accessor :decl_module
 
+  default_state_getter :address_size, OS.bits/8, :ADDRESS_SIZE, '"#{envs}.to_i"'
+  default_state_getter :lang, FORTRAN, :BOAST_LANG, '"const_get(#{envs})"'
+  default_state_getter :model, "native", :MODEL
+  default_state_getter :debug, false, :DEBUG
+  default_state_getter :use_vla, false, :USE_VLA
+
+  alias use_vla_old? use_vla?
+
+  def use_vla?
+    return false if [CL,CUDA].include?(lang)
+    return use_vla_old?
+  end
+
+  module_function :use_vla?
+
   module_function
-
-  def get_default_address_size
-    address_size = const_get(ENV["ADDRESS_SIZE"]) if ENV["ADDRESS_SIZE"]
-    return address_size if address_size
-    return OS.bits/8
-  end
-
-  def get_default_lang
-    lang = const_get(ENV["BOAST_LANG"]) if ENV["BOAST_LANG"]
-    return lang if lang
-    return FORTRAN
-  end
-
-  def get_default_debug
-    debug = false
-    debug = ENV["DEBUG"] if ENV["DEBUG"]
-    return debug
-  end
-
-  def get_default_use_vla
-    use_vla = false
-    use_vla = ENV["USE_VLA"] if ENV["USE_VLA"]
-    return use_vla
-  end
-
-  def get_default_model
-    model = ENV["MODEL"] if ENV["MODEL"]
-    return model if model
-    return "native"
-  end
 
   def get_default_architecture
     architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]

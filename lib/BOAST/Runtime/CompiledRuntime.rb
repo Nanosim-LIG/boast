@@ -341,10 +341,8 @@ EOF
 
     def create_module_file_source
       f = File::open(module_file_source, "w+")
-      previous_lang = get_lang
-      previous_output = get_output
-      set_output(f)
-      set_lang(C)
+      push_env(:lang => C)
+      push_env(:output => f)
 
       fill_module_file_source
 
@@ -352,8 +350,7 @@ EOF
         f.rewind
         puts f.read
       end
-      set_output(previous_output)
-      set_lang(previous_lang)
+      pop_env(:lang, :output)
       f.close
     end
 
