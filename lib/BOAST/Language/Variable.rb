@@ -301,13 +301,13 @@ module BOAST
       s += "const " if constant? or @direction == :in
       s += @type.decl
       if dimension? then
-        s += " *" unless use_vla?
+        s += " *" unless (use_vla? and lang != FORTRAN)
       end
       if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout ) then
         s += " *"
       end
       s += " #{@name}"
-      if dimension? and use_vla? then
+      if dimension? and use_vla? and lang != FORTRAN  then
         s += "["
         s += @dimension.reverse.collect { |d|
           dim = d.to_s
