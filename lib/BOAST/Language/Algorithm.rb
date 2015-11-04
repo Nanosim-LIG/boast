@@ -61,11 +61,19 @@ module BOAST
   boolean_state_accessor :use_vla
   boolean_state_accessor :decl_module
 
-  default_state_getter :address_size, OS.bits/8, :ADDRESS_SIZE, '"#{envs}.to_i"'
-  default_state_getter :lang, FORTRAN, :BOAST_LANG, '"const_get(#{envs})"'
-  default_state_getter :model, "native", :MODEL
-  default_state_getter :debug, false, :DEBUG
-  default_state_getter :use_vla, false, :USE_VLA
+  default_state_getter :address_size,       OS.bits/8
+  default_state_getter :lang,               FORTRAN, '"const_get(#{envs})"', :BOAST_LANG
+  default_state_getter :model,              "native"
+  default_state_getter :debug,              false
+  default_state_getter :use_vla,            false
+  default_state_getter :replace_constants,  true
+  default_state_getter :default_int_signed, true
+  default_state_getter :default_int_size,   4
+  default_state_getter :default_real_size,  8
+  default_state_getter :default_align,      1
+  default_state_getter :indent_level,       0
+  default_state_getter :indent_increment,   2
+  default_state_getter :array_start,        1
 
   alias use_vla_old? use_vla?
   class << self
@@ -90,21 +98,8 @@ module BOAST
   end
 
   @@output = STDOUT
-  @@lang = get_default_lang
-  @@replace_constants = true
-  @@default_int_size = 4
-  @@default_int_signed = true
-  @@default_real_size = 8
-  @@address_size = get_default_address_size
-  @@default_align = 1
-  @@indent_level = 0
-  @@indent_increment = 2
-  @@array_start = 1
   @@chain_code = false
   @@architecture = get_default_architecture
-  @@model = get_default_model
-  @@debug = get_default_debug
-  @@use_vla = get_default_use_vla
   @@decl_module = false
 
   @@env = Hash::new{|h, k| h[k] = []}

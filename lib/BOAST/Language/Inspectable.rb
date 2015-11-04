@@ -1,7 +1,7 @@
 module BOAST
 
   boolean_state_accessor :boast_inspect
-  @@boast_inspect = false
+  default_state_getter :boast_inspect, false, nil, :INSPECT
 
   module Inspectable
 

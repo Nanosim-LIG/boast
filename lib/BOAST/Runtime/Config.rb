@@ -40,10 +40,11 @@ module BOAST
   boolean_state_accessor :verbose
   boolean_state_accessor :debug_source
   boolean_state_accessor :ffi
-  @@ffi = false
-  @@verbose = false
-  @@debug_source = false
-  FORTRAN_LINE_LENGTH = 72
+  state_accessor         :fortran_line_length
+  default_state_getter :ffi,                 false
+  default_state_getter :verbose,             false
+  default_state_getter :debug_source,        false
+  default_state_getter :fortran_line_length, 72
 
   module_function
 
@@ -78,9 +79,6 @@ module BOAST
       @@compiler_default_options[k] = ENV[k.to_s] if ENV[k.to_s]
     }
     @@compiler_default_options[:LD] = ENV["LD"] if ENV["LD"]
-    @@verbose = ENV["VERBOSE"] if ENV["VERBOSE"]
-    @@ffi = ENV["FFI"] if ENV["FFI"]
-    @@debug_source = ENV["DEBUG_SOURCE"] if ENV["DEBUG_SOURCE"]
   end
 
   read_boast_config

@@ -37,15 +37,16 @@ EOF
     }
   end
 
-  def self.default_state_getter(arg, default, env, get_env_string=nil)
+  def self.default_state_getter(arg, default, get_env_string=nil, env = arg.upcase)
     envs = "ENV['#{env}']"
     s = <<EOF
   def get_default_#{arg}
     #{arg} = #{default.inspect}
-    #{arg} = #{get_env_string ? eval( "#{get_env_string}" ) : envs} if #{envs}
+    #{arg} = #{get_env_string ? eval( "#{get_env_string}" ) : "YAML::load(#{envs})" } if #{envs}
     return #{arg}
   end
   module_function :get_default_#{arg}
+  @@#{arg} = get_default_#{arg}
 EOF
     eval s
   end
