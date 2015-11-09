@@ -359,7 +359,9 @@ module BOAST
         }
       }
       cvt_dgraph.vertices.each { |source|
-        paths = cvt_dgraph.dijkstra_shortest_paths(cvt_dgraph.edges.map { |e| [e.to_a,1]}.to_h, source )
+        hash = {}
+        cvt_dgraph.edges.each { |e| hash[e.to_a] = 1 }
+        paths = cvt_dgraph.dijkstra_shortest_paths( hash, source )
         paths.each { |dest, path|
           CONVERSIONS[arch][dest][source] = path if path
         }
