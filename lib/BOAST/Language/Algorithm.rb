@@ -46,6 +46,10 @@ module BOAST
       BOAST::indent
     end
 
+    def get_architecture_name
+      BOAST::get_architecture_name
+    end
+
   end
 
   state_accessor :output, :lang, :architecture, :model, :address_size
@@ -95,6 +99,19 @@ module BOAST
     return architecture if architecture
     return ARM if YAML::load( OS.report )["host_cpu"].match("arm")
     return X86
+  end
+
+  def get_architecture_name
+    case architecture
+    when X86
+      return :X86
+    when ARM
+      return :ARM
+    when MPPA
+      return :MPPA
+    else
+      return nil
+    end
   end
 
   @@output = STDOUT

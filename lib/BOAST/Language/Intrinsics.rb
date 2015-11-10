@@ -26,33 +26,33 @@ module BOAST
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
     CONVERSIONS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
 
-    def supported(intr_symbol, type, type2=nil)
-      instruction = intrinsics(intr_symbol, type, type2)
-      return false unless instruction
-      INSTRUCTIONS[instruction.to_s].each { |flag|
-        return true if MODELS[get_model].include?(flag)
-      }
-      return false
-    end
-
-    module_function :supported
-
     def intrinsics_by_vector_name(intr_symbol, type, type2=nil)
-      return INTRINSICS[get_architecture][intr_symbol][type][type2] if type2
-      return INTRINSICS[get_architecture][intr_symbol][type]
+      if type2 then
+        instruction = INTRINSICS[get_architecture][intr_symbol][type][type2]
+      else
+        instruction = INTRINSICS[get_architecture][intr_symbol][type]
+      end
+      raise "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
+      supported = false
+      INSTRUCTIONS[instruction.to_s].each { |flag|
+        supported = true if MODELS[get_model].include?(flag)
+      }
+      raise "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
+      return instruction
     end
 
     module_function :intrinsics_by_vector_name
 
     def intrinsics(intr_symbol, type, type2=nil)
-      return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)][get_vector_name(type2)] if type2
-      return INTRINSICS[get_architecture][intr_symbol][get_vector_name(type)]
+      return intrinsics_by_vector_name(intr_symbol, get_vector_name(type), type2 ? get_vector_name(type2) : nil)
     end
 
     module_function :intrinsics
 
     def get_conversion_path(type_dest, type_orig)
-      return CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
+      conversion_path = CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
+      raise "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}!" unless conversion_path
+      return conversion_path
     end
 
     module_function :get_conversion_path
