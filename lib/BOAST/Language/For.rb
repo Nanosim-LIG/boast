@@ -6,6 +6,7 @@ module BOAST
     attr_reader :begin
     attr_reader :end
     attr_reader :step
+    attr_accessor :block
 
     def initialize(i, b, e, options={}, &block)
       default_options = {:step => 1}
