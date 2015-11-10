@@ -32,7 +32,7 @@ module BOAST
     def BasicBinaryOperator.to_s(arg1, arg2, return_type)
       if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         instruction = intrinsics(intr_symbol, return_type.type)
-        raise "Unavailable operator #{symbol} for #{get_vector_name(return_type.type)}!" unless instruction
+        raise "Unavailable operator #{symbol} for #{get_vector_name(return_type.type)} on #{get_model}!" unless instruction and supported(intr_symbol, return_type.type)
         a1 = convert(arg1, return_type.type)
         a2 = convert(arg2, return_type.type)
         return "#{instruction}( #{a1}, #{a2} )"
@@ -195,10 +195,10 @@ module BOAST
           return @return_type.copy("(#{@return_type.type.decl})( #{@source.join(", ")} )", DISCARD_OPTIONS) if lang == CL
 
           instruction = intrinsics(:SET, @return_type.type)
-          return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS) if instruction
+          return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS) if instruction and supported(:SET, @return_type.type)
 
           instruction = intrinsics(:SET_LANE, @return_type.type)
-          raise "Unavailable operator set for #{get_vector_name(@return_type.type)}!" unless instruction
+          raise "Unavailable operator set for #{get_vector_name(@return_type.type)} on #{get_model}!" unless instruction and supported(:SET_LANE, @return_type.type)
           s = Set(0, @return_type).to_s
           @source.each_with_index { |v,i|
             s = "#{instruction}(#{v}, #{s}, #{i})"
@@ -208,7 +208,7 @@ module BOAST
           return @return_type.copy("(#{@return_type.type.decl})( #{@source} )", DISCARD_OPTIONS) if lang == CL
 
           instruction = intrinsics(:SET1, @return_type.type)
-          raise "Unavailable operator set1 for #{get_vector_name(@return_type.type)}!" unless instruction
+          raise "Unavailable operator set1 for #{get_vector_name(@return_type.type)} on #{get_model}!" unless instruction and supported(:SET1, @return_type.type)
           return @return_type.copy("#{instruction}( #{@source} )", DISCARD_OPTIONS)
         elsif @return_type.type != @source.type
           return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
@@ -269,10 +269,11 @@ module BOAST
             return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
             if @source.align == @return_type.type.total_size then
               instruction = intrinsics(:LOADA, @return_type.type)
+              raise "Unavailable operator loada for #{get_vector_name(@return_type.type)} on #{get_model}!" unless instruction and supported(:LOADA, @return_type.type)
             else
               instruction = intrinsics(:LOAD, @return_type.type)
+              raise "Unavailable operator load for #{get_vector_name(@return_type.type)} on #{get_model}!" unless instruction and supported(:LOAD, @return_type.type)
             end
-            raise "Unavailable operator load for #{get_vector_name(@return_type.type)}!" unless instruction
             return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
           else
             return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
@@ -328,7 +329,7 @@ module BOAST
     def to_var
       raise "Cannot load unknown type!" unless @return_type
       raise "Unsupported language!" unless lang == C
-      raise "MaskLoad not supported!"unless supported(:MASKLOAD, @return_type.type)
+      raise "MaskLoad not supported for #{get_vector_name(@return_type.type)} on #{get_model}!"unless supported(:MASKLOAD, @return_type.type)
       s = ""
       src = "#{@source}"
       if src[0] != "*" then
@@ -388,10 +389,11 @@ module BOAST
 
         if @dest.align == @source.type.total_size then
           instruction = intrinsics(:STOREA, @source.type)
+          raise "Unavailable operator storea for #{get_vector_name(@source.type)} on #{get_model}!" unless instruction and supported(:STOREA, @source.type)
         else
           instruction = intrinsics(:STORE, @source.type)
+          raise "Unavailable operator store for #{get_vector_name(@source.type)} on #{get_model}!" unless instruction and supported(:STORE, @source.type)
         end
-        raise "Unavailable operator store for #{get_vector_name(@source.type)}!" unless instruction
         p_type = @source.type.copy(:vector_length => 1)
         p_type = @source.type if get_architecture == X86 and @source.type.kind_of?(Int)
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
@@ -440,7 +442,7 @@ module BOAST
     def to_s
       raise "Cannot store unknown type!" unless @store_type
       raise "Unsupported language!" unless lang == C
-      raise "MaskStore not supported!"unless supported(:MASKSTORE, @store_type.type)
+      raise "MaskStore not supported for #{get_vector_name(@store_type.type)} on #{get_model}!"unless supported(:MASKSTORE, @store_type.type)
       s = ""
       dst = "#{@dest}"
       if dst[0] != "*" then
