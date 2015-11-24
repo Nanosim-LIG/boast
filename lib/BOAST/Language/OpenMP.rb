@@ -11,7 +11,7 @@ module BOAST
         elsif lang == C then
           s += "#pragma omp"
         else
-          raise "Language does not support OpenMP!"
+          raise LanguageError, "Language does not support OpenMP!"
         end
         return s
       end

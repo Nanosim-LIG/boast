@@ -1,5 +1,8 @@
 module BOAST
 
+  class OperatorError < Error
+  end
+
   class Operator
     extend PrivateStateAccessor
     extend Intrinsics
@@ -189,13 +192,13 @@ module BOAST
     def to_var
       if lang == C or lang == CL and @return_type.type.vector_length > 1 then
         if @source.kind_of?( Array ) then
-          raise "Invalid array length!" unless @source.length == @return_type.type.vector_length
+          raise OperatorError,  "Invalid array length!" unless @source.length == @return_type.type.vector_length
           return @return_type.copy("(#{@return_type.type.decl})( #{@source.join(", ")} )", DISCARD_OPTIONS) if lang == CL
 
           begin
             instruction = intrinsics(:SET, @return_type.type)
             return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS)
-          rescue
+          rescue IntrinsicsError
             instruction = intrinsics(:SET_LANE, @return_type.type)
             s = Set(0, @return_type).to_s
             @source.each_with_index { |v,i|
@@ -312,7 +315,7 @@ module BOAST
     end
 
     def get_mask
-      raise "Mask size is wrong: #{@mask.length} for #{@return_type.type.vector_length}!" if @mask.length != @return_type.type.vector_length
+      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{@return_type.type.vector_length}!" if @mask.length != @return_type.type.vector_length
       return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @return_type.type.size, :vector_length => @return_type.type.vector_length ) )
     end
 
@@ -323,8 +326,8 @@ module BOAST
     end
 
     def to_var
-      raise "Cannot load unknown type!" unless @return_type
-      raise "Unsupported language!" unless lang == C
+      raise OperatorError,  "Cannot load unknown type!" unless @return_type
+      raise LanguageError,  "Unsupported language!" unless lang == C
       instruction = intrinsics(:MASKLOAD, @return_type.type)
       s = ""
       src = "#{@source}"
@@ -427,15 +430,15 @@ module BOAST
     end
 
     def get_mask
-      raise "Mask size is wrong: #{@mask.length} for #{@store_type.type.vector_length}!" if @mask.length != @store_type.type.vector_length
+      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{@store_type.type.vector_length}!" if @mask.length != @store_type.type.vector_length
       return Load.to_s(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @store_type.type.size, :vector_length => @store_type.type.vector_length ) )
     end
 
     private :get_mask
 
     def to_s
-      raise "Cannot store unknown type!" unless @store_type
-      raise "Unsupported language!" unless lang == C
+      raise OperatorError,  "Cannot store unknown type!" unless @store_type
+      raise LanguageError,  "Unsupported language!" unless lang == C
       instruction = intrinsics(:MASKSTORE, @store_type.type)
       s = ""
       dst = "#{@dest}"
@@ -546,7 +549,7 @@ module BOAST
     end
 
     def to_s
-      raise "Ternary operator unsupported in FORTRAN!" if lang == FORTRAN
+      raise LanguageError,  "Ternary operator unsupported in FORTRAN!" if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 

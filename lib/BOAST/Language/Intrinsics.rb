@@ -21,6 +21,12 @@ module BOAST
   INSTRUCTIONS = {}
   INSTRUCTIONS.update(X86CPUID_by_name)
 
+  class IntrinsicsError < Error
+  end
+
+  class InternalIntrinsicsError < Error
+  end
+
   module Intrinsics
     extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
@@ -32,12 +38,12 @@ module BOAST
       else
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
-      raise "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
+      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
       supported = false
       INSTRUCTIONS[instruction.to_s].each { |flag|
         supported = true if MODELS[get_model].include?(flag)
       }
-      raise "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
+      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
       return instruction
     end
 
@@ -51,41 +57,41 @@ module BOAST
 
     def get_conversion_path(type_dest, type_orig)
       conversion_path = CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
-      raise "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}!" unless conversion_path
+      raise IntrinsicsError, "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}!" unless conversion_path
       return conversion_path
     end
 
     module_function :get_conversion_path
 
     def get_vector_decl_X86( data_type )
-      raise "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
+      raise IntrinsicsError, "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
       s = "__m#{data_type.total_size*8}"
       case data_type
       when Int
-        raise "Unsupported data size for int vector on X86: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
+        raise IntrinsicsError, "Unsupported data size for int vector on X86: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
         return s+= "#{data_type.total_size*8>64 ? "i" : ""}"
       when Real
         return s if data_type.size == 4
         return s += "d" if data_type.size == 8
-        raise "Unsupported data size for real vector on X86: #{data_type.size*8}!"
+        raise IntrinsicsError, "Unsupported data size for real vector on X86: #{data_type.size*8}!"
       else
-        raise "Unsupported data type #{data_type} for vector!"
+        raise IntrinsicsError, "Unsupported data type #{data_type} for vector on X86!"
       end
     end
 
     module_function :get_vector_decl_X86
 
     def get_vector_decl_ARM( data_type )
-      raise "Unsupported vector size on ARM: #{data_type.total_size*8}!" unless [64,128].include?( data_type.total_size*8 )
+      raise IntrinsicsError, "Unsupported vector size on ARM: #{data_type.total_size*8}!" unless [64,128].include?( data_type.total_size*8 )
       case data_type
       when Int
-        raise "Unsupported data size for int vector on ARM: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
+        raise IntrinsicsError, "Unsupported data size for int vector on ARM: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
         return get_vector_name( data_type ).to_s
       when Real
-        raise "Unsupported data size for real vector on ARM: #{data_type.size*8}!" if data_type.size != 4
+        raise IntrinsicsError, "Unsupported data size for real vector on ARM: #{data_type.size*8}!" if data_type.size != 4
         return get_vector_name( data_type ).to_s
       else
-        raise "Unsupported data type #{data_type} for vector on ARM!"
+        raise IntrinsicsError, "Unsupported data type #{data_type} for vector on ARM!"
       end
     end
 
@@ -113,7 +119,7 @@ module BOAST
       when Real
         s += "float"
       else
-        raise "Undefined vector type!"
+        raise InternalIntrinsicsError, "Undefined vector type!"
       end
       s += "#{type.size*8}"
       s += "x#{type.vector_length}_t"
@@ -132,12 +138,12 @@ module BOAST
         when :unsigned
           s += "uint"
         else
-          raise "Invalid sign!"
+          raise InternalIntrinsicsError, "Invalid sign!"
         end
       when :float
         s += "float"
       else
-        raise "Invalid type!"
+        raise InternalIntrinsicsError, "Invalid type!"
       end
       s += "#{size}"
       s += "x#{vector_size/size}_t"
@@ -156,12 +162,12 @@ module BOAST
         when :unsigned
           s += "u"
         else
-          raise "Invalid sign!"
+          raise InternalIntrinsicsError, "Invalid sign!"
         end
       when :float
         s += "f"
       else
-        raise "Invalid type!"
+        raise InternalIntrinsicsError, "Invalid type!"
       end
       s += "#{size}"
       return s
@@ -181,7 +187,7 @@ module BOAST
         when :unsigned
           s += "u"
         else
-          raise "Invalid sign!"
+          raise InternalIntrinsicsError, "Invalid sign!"
         end
         s += "#{size}"
       when :float
@@ -192,10 +198,10 @@ module BOAST
         when 64
           s += "d"
         else
-          raise "Invalid size!"
+          raise InternalIntrinsicsError, "Invalid size!"
         end
       else
-        raise "Invalid type!"
+        raise InternalIntrinsicsError, "Invalid type!"
       end
       return s
     end
