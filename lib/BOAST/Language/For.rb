@@ -11,6 +11,7 @@ module BOAST
     def initialize(i, b, e, options={}, &block)
       default_options = {:step => 1}
       default_options.update( options )
+      @options = options
       @iterator = i
       @begin = b
       @end = e
@@ -63,6 +64,11 @@ module BOAST
       return s
     end
 
+#    def u(s = 2)
+#      return [For::new(@iterator, @begin, @end - (@step*s - 1), @options.dup.update( { :step => (@step*s) } ), &@block),
+#              For::new(@iterator, @begin.to_var + ((@end - @begin + 1)/(@step*s))*(@step*s), @end, @options, &@block) ]
+#    end
+#
     def unroll(*args)
       raise "Block not given!" if not @block
       push_env( :replace_constants => true )
