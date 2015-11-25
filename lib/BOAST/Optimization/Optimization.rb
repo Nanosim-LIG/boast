@@ -78,17 +78,16 @@ module BOAST
     end
 
   end
- 
+
   class GenericOptimization
 
     attr_accessor :repeat
     attr_reader :parameters
-  
- 
+
     def size
       return @parameters.size
     end
- 
+
     def points
       params2 = @parameters.dup
       param = params2.shift
