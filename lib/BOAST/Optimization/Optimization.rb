@@ -35,6 +35,8 @@ module BOAST
   end
 
   class BruteForceOptimizer
+    attr_reader :experiments
+
     def initialize(search_space, options = {} )
       @search_space = search_space
       @randomize = options[:randomize]
@@ -67,10 +69,12 @@ module BOAST
     end
 
     def optimize(&block)
+      @experiments = 0
       best = [nil, Float::INFINITY]
       pts = points
       pts.shuffle! if @randomize
       enumerator = pts.each { |config|
+        @experiments += 1
         metric = block.call(config)
         best = [config, metric] if metric < best[1]
       }

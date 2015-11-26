@@ -1,0 +1,27 @@
+---
+:x_component_number:
+- 1
+- 2
+- 4
+- 8
+- 16
+:vector_length:
+- 1
+- 2
+- 4
+- 8
+- 16
+:y_component_number:
+- 1
+- 2
+- 3
+- 4
+:temporary_size:
+- 2
+- 4
+:vector_recompute:
+- true
+- false
+:load_overlap:
+- true
+- false
