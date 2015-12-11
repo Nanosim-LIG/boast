@@ -74,7 +74,6 @@ EOF
       s += <<EOF
         def initialize(*args)
           super
-          @fitness = nil
         end
 
         def fitness

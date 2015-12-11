@@ -7,12 +7,12 @@ oracle = YAML::load( File::read(ARGV[1]) )
 
 optimizer = BruteForceOptimizer::new( opt_space )
 puts optimizer.optimize { |opts|
-  oracle[opts]
+  oracle[opts]*1000000000
 }
 puts optimizer.experiments
 
 optimizer = GeneticOptimizer::new( opt_space )
 puts optimizer.optimize { |opts|
-  oracle[opts]
+  oracle[opts]*1000000000
 } 
 puts optimizer.experiments
