@@ -1,6 +1,7 @@
 require 'BOAST/Language/Error.rb'
 require 'BOAST/Language/State.rb'
 require 'BOAST/Language/Functors.rb'
+require 'BOAST/Language/Comment.rb'
 require 'BOAST/Language/Inspectable.rb'
 require 'BOAST/Language/Transitions.rb'
 require 'BOAST/Language/Arithmetic.rb'

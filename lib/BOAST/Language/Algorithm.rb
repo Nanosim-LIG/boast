@@ -17,6 +17,7 @@ module BOAST
     private_state_accessor :default_align
     private_state_accessor :array_start
     private_state_accessor :indent_level, :indent_increment
+    private_state_accessor :annotate_list
 
     private_boolean_state_accessor :replace_constants
     private_boolean_state_accessor :default_int_signed
@@ -24,6 +25,7 @@ module BOAST
     private_boolean_state_accessor :debug
     private_boolean_state_accessor :use_vla
     private_boolean_state_accessor :decl_module
+    private_boolean_state_accessor :annotate
 
     private
     def push_env(*args)
@@ -57,6 +59,7 @@ module BOAST
   state_accessor :default_align
   state_accessor :array_start
   state_accessor :indent_level, :indent_increment
+  state_accessor :annotate_list
 
   boolean_state_accessor :replace_constants
   boolean_state_accessor :default_int_signed
@@ -64,6 +67,7 @@ module BOAST
   boolean_state_accessor :debug
   boolean_state_accessor :use_vla
   boolean_state_accessor :decl_module
+  boolean_state_accessor :annotate
 
   default_state_getter :address_size,       OS.bits/8
   default_state_getter :lang,               FORTRAN, '"const_get(#{envs})"', :BOAST_LANG
@@ -78,6 +82,8 @@ module BOAST
   default_state_getter :indent_level,       0
   default_state_getter :indent_increment,   2
   default_state_getter :array_start,        1
+  default_state_getter :annotate,           false
+  default_state_getter :annotate_list,      ["For"], '"#{envs}.split(\",\").collect { |arg| YAML::load(arg) }"'
 
   alias use_vla_old? use_vla?
   class << self
@@ -118,6 +124,7 @@ module BOAST
   @@chain_code = false
   @@architecture = get_default_architecture
   @@decl_module = false
+  @@annotate_numbers = Hash::new { |h,k| h[k] = 0 }
 
   @@env = Hash::new{|h, k| h[k] = []}
 
@@ -155,7 +162,17 @@ module BOAST
      return " "*get_indent_level
   end
 
+  def pr_annotate(a)
+    name = a.class.name.gsub("BOAST::","")
+    if annotate_list.include?(name) then
+      count = @@annotate_numbers[name]
+      Comment("#{name}#{count}").pr
+      @@annotate_numbers[name] = count + 1
+    end
+  end
+
   def pr(a)
+    pr_annotate(a) if annotate?
     a.pr
   end
 
