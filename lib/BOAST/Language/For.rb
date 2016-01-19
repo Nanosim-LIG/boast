@@ -43,6 +43,10 @@ module BOAST
       end
     end
 
+    def annotation
+      return { :iterator => @iterator.to_s, :begin => @begin.to_s, :end => @end.to_s, :step => @step.to_s, :operator => @operator.to_s }
+    end
+
     def get_c_strings
       return { :for => '"for (#{i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
                :end => '"}"' }

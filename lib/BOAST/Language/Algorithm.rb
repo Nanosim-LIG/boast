@@ -166,7 +166,8 @@ module BOAST
     name = a.class.name.gsub("BOAST::","")
     if annotate_list.include?(name) then
       count = @@annotate_numbers[name]
-      Comment("#{name}#{count}").pr
+      annotation = { "#{name}#{count}" => a.respond_to?(:annotation) ? a.annotation : nil }
+      Comment(YAML::dump(annotation)).pr
       @@annotate_numbers[name] = count + 1
     end
   end
