@@ -15,7 +15,9 @@ module BOAST
     end
 
     def to_s_c
-      return "/* #{@comment} */"
+      s = ""
+      @comment.each_line { |l| s += "/* #{l.delete("\n")} */\n" }
+      return s
     end
 
     def to_s
