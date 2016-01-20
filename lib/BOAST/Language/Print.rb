@@ -1,11 +1,11 @@
 module BOAST
 
    def self.print(a)
-     a.pr
+     pr(a)
    end
 
    def self.open(a)
-     a.open
+     opn(a)
    end
 
 end
