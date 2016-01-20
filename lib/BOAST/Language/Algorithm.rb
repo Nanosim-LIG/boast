@@ -18,6 +18,8 @@ module BOAST
     private_state_accessor :array_start
     private_state_accessor :indent_level, :indent_increment
     private_state_accessor :annotate_list
+    private_state_accessor :annotate_indepth_list
+    private_state_accessor :annotate_level
 
     private_boolean_state_accessor :replace_constants
     private_boolean_state_accessor :default_int_signed
@@ -52,6 +54,10 @@ module BOAST
       BOAST::get_architecture_name
     end
 
+    def annotate_number(*args)
+      BOAST::annotate_number(*args)
+    end
+
   end
 
   state_accessor :output, :lang, :architecture, :model, :address_size
@@ -60,6 +66,8 @@ module BOAST
   state_accessor :array_start
   state_accessor :indent_level, :indent_increment
   state_accessor :annotate_list
+  state_accessor :annotate_indepth_list
+  state_accessor :annotate_level
 
   boolean_state_accessor :replace_constants
   boolean_state_accessor :default_int_signed
@@ -69,21 +77,23 @@ module BOAST
   boolean_state_accessor :decl_module
   boolean_state_accessor :annotate
 
-  default_state_getter :address_size,       OS.bits/8
-  default_state_getter :lang,               FORTRAN, '"const_get(#{envs})"', :BOAST_LANG
-  default_state_getter :model,              "native"
-  default_state_getter :debug,              false
-  default_state_getter :use_vla,            false
-  default_state_getter :replace_constants,  true
-  default_state_getter :default_int_signed, true
-  default_state_getter :default_int_size,   4
-  default_state_getter :default_real_size,  8
-  default_state_getter :default_align,      1
-  default_state_getter :indent_level,       0
-  default_state_getter :indent_increment,   2
-  default_state_getter :array_start,        1
-  default_state_getter :annotate,           false
-  default_state_getter :annotate_list,      ["For"], '"#{envs}.split(\",\").collect { |arg| YAML::load(arg) }"'
+  default_state_getter :address_size,          OS.bits/8
+  default_state_getter :lang,                  FORTRAN, '"const_get(#{envs})"', :BOAST_LANG
+  default_state_getter :model,                 "native"
+  default_state_getter :debug,                 false
+  default_state_getter :use_vla,               false
+  default_state_getter :replace_constants,     true
+  default_state_getter :default_int_signed,    true
+  default_state_getter :default_int_size,      4
+  default_state_getter :default_real_size,     8
+  default_state_getter :default_align,         1
+  default_state_getter :indent_level,          0
+  default_state_getter :indent_increment,      2
+  default_state_getter :array_start,           1
+  default_state_getter :annotate,              false
+  default_state_getter :annotate_list,         ["For"], '"#{envs}.split(\",\").collect { |arg| YAML::load(arg) }"'
+  default_state_getter :annotate_indepth_list, ["For"], '"#{envs}.split(\",\").collect { |arg| YAML::load(arg) }"'
+  default_state_getter :annotate_level,        0
 
   alias use_vla_old? use_vla?
   class << self
@@ -158,6 +168,12 @@ module BOAST
     set_indent_level( get_indent_level - increment )
   end
 
+  def annotate_number(name)
+    num = @@annotate_numbers[name]
+    @@annotate_numbers[name] = num + 1
+    return num
+  end
+
   def indent
      return " "*get_indent_level
   end
@@ -165,10 +181,12 @@ module BOAST
   def pr_annotate(a)
     name = a.class.name.gsub("BOAST::","")
     if annotate_list.include?(name) then
-      count = @@annotate_numbers[name]
-      annotation = { "#{name}#{count}" => a.respond_to?(:annotation) ? a.annotation : nil }
+      description = nil
+      if a.is_a?(Annotation) and a.annotate_indepth?(0) then
+        description = a.annotation(0)
+      end
+      annotation = { "#{name}#{annotate_number(name)}" => description }
       Comment(YAML::dump(annotation)).pr
-      @@annotate_numbers[name] = count + 1
     end
   end
 

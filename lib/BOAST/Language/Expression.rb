@@ -12,6 +12,9 @@ module BOAST
     include Inspectable
     extend Functor
     include TypeTransition
+    include Annotation
+
+    ANNOTATIONS = [:operator, :operand1, :operand2]
 
     attr_reader :operator
     attr_reader :operand1

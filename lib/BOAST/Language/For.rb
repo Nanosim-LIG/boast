@@ -1,6 +1,8 @@
 module BOAST
 
   class For < ControlStructure
+    include Annotation
+    ANNOTATIONS = [ :iterator, :begin, :end, :step, :operator ]
 
     attr_reader :iterator
     attr_reader :begin
@@ -41,10 +43,6 @@ module BOAST
       ensure
         pop_env( :replace_constants )
       end
-    end
-
-    def annotation
-      return { :iterator => @iterator.to_s, :begin => @begin.to_s, :end => @end.to_s, :step => @step.to_s, :operator => @operator.to_s }
     end
 
     def get_c_strings
