@@ -20,7 +20,10 @@ module BOAST
       elsif s.is_a?(Numeric)
         return s
       else
-        return s.to_s
+        str = s.to_s
+        str = str.to_s unless str.is_a?(String) #Dimension.to_s can return something else than a String... FIXME
+        str = nil if str == ''
+        return str
       end
     end
 

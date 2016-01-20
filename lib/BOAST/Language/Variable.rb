@@ -115,6 +115,8 @@ module BOAST
     include Arithmetic
     include Inspectable
     extend Functor
+    include Annotation
+    ANNOTATIONS = [ :name, :type, :dimension ]
 
     alias_method :orig_method_missing, :method_missing
 
