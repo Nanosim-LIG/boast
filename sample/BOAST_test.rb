@@ -21,7 +21,7 @@ module BOAST
       rts.type.define
       ts.type.define
     end
-    print p = Procedure(function_name, [n,a,b,c]) {
+    pr p = Procedure(function_name, [n,a,b,c]) {
       if get_lang == FORTRAN then
         rts.type.define
         ts.type.define
@@ -29,16 +29,16 @@ module BOAST
       decl ts
       if (get_lang == CL or get_lang == CUDA) then
         decl ig
-        print ig === get_global_id(0)
-        print c[ig] === a[ig] + b[ig]
+        pr ig === get_global_id(0)
+        pr c[ig] === a[ig] + b[ig]
       else
         decl i
-        print For(i,0,n-1) {
-          print c[i] === a[i] + b[i]
+        pr For(i,0,n-1) {
+          pr c[i] === a[i] + b[i]
         }
       end
-      print ts.r === 0.0
-      print ts.rts.i === 0
+      pr ts.r === 0.0
+      pr ts.rts.i === 0
     }
     kernel.procedure = p
     return kernel
