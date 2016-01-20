@@ -21,7 +21,7 @@ module BOAST
         return s
       else
         str = s.to_s
-        str = str.to_s unless str.is_a?(String) #Dimension.to_s can return something else than a String... FIXME
+        str = annotate_var(str, level) unless str.is_a?(String) #Dimension.to_s can return something else than a String... FIXME
         str = nil if str == ''
         return str
       end
