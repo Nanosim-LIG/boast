@@ -2,6 +2,8 @@ module BOAST
 
   class Comment
     extend Functor
+    include PrivateStateAccessor
+    include Inspectable
     attr_reader :comment
 
     def initialize(string)
