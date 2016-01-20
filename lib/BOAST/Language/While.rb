@@ -1,6 +1,8 @@
 module BOAST
 
   class While < ControlStructure
+    include Annotation
+    ANNOTATIONS = [ :condition ]
 
     attr_reader :condition
 

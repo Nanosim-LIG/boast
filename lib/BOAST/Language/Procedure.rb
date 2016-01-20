@@ -4,6 +4,8 @@ module BOAST
     include PrivateStateAccessor
     include Inspectable
     extend Functor
+    include Annotation
+    ANNOTATIONS = [ :name, :parameters, :constants ]
 
     attr_reader :name
     attr_reader :parameters
