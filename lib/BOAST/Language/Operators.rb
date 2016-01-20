@@ -31,7 +31,7 @@ module BOAST
 
   class BasicBinaryOperator < Operator
 
-    def BasicBinaryOperator.to_s(arg1, arg2, return_type)
+    def BasicBinaryOperator.string(arg1, arg2, return_type)
       if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         instruction = intrinsics(intr_symbol, return_type.type)
         a1 = convert(arg1, return_type.type)
@@ -46,7 +46,7 @@ module BOAST
 
   class Different < Operator
 
-    def Different.to_s(arg1, arg2, return_type)
+    def Different.string(arg1, arg2, return_type)
       return basic_usage(arg1, arg2)
     end
 
@@ -59,7 +59,7 @@ module BOAST
 
   class Affectation < Operator
 
-    def Affectation.to_s(arg1, arg2, return_type)
+    def Affectation.string(arg1, arg2, return_type)
       if arg1.class == Variable and arg1.type.vector_length > 1 then
         return "#{arg1} = #{Load(arg2, arg1)}"
       elsif arg2.class == Variable and arg2.type.vector_length > 1 then
@@ -156,7 +156,7 @@ module BOAST
 
   class Minus < Operator
 
-    def Minus.to_s(arg1, arg2, return_type)
+    def Minus.string(arg1, arg2, return_type)
       return " -(#{arg2})"
     end
 
@@ -164,7 +164,7 @@ module BOAST
 
   class Not < Operator
 
-    def Not.to_s(arg1, arg2, return_type)
+    def Not.string(arg1, arg2, return_type)
       return " ! #{arg2}"
     end
 

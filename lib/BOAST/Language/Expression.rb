@@ -23,7 +23,7 @@ module BOAST
     end
 
     def to_s_base(op1, op2, oper, return_type = nil)
-      return oper.to_s(op1, op2, return_type) if not oper.kind_of?(String)
+      return oper.string(op1, op2, return_type) unless oper.kind_of?(String)
       s = ""
       if op1 then
         s += "(" if (oper == "*" or oper == "/") 
