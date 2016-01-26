@@ -29,8 +29,10 @@ module BOAST
         return "#{@val1}:#{@val2}"
       elsif lang == FORTRAN and get_array_start != 1 then
         return "#{get_array_start}:#{@size-(1+get_array_start)}"
+      elsif lang == FORTRAN and size.nil?
+        return "*"
       else
-        return @size
+        return @size.to_s
       end 
     end
 
@@ -312,12 +314,7 @@ module BOAST
       if dimension? and use_vla? and lang != FORTRAN  then
         s += "["
         s += @dimension.reverse.collect { |d|
-          dim = d.to_s
-          if dim then
-            dim.to_s
-          else
-            ""
-          end
+          d.to_s
         }.join("][")
         s += "]"
       end
@@ -388,12 +385,7 @@ module BOAST
         s += " #{@name}["
         s += "__restrict__ " if __restrict?
         s += @dimension.reverse.collect { |d|
-          dim = d.to_s
-          if dim then
-            dim.to_s
-          else
-            ""
-          end
+          d.to_s
         }.join("][")
         s += "]"
       else
@@ -563,13 +555,10 @@ module BOAST
       if dimension? then
         s += ", dimension("
         s += @dimension.collect { |d|
-          dim = d.to_s
           if deferred_shape? or ( allocate? and @allocate == :heap )
             ":"
-          elsif dim then
-            dim.to_s
           else
-            "*"
+            d.to_s
           end
         }.join(", ")
         s += ")"
