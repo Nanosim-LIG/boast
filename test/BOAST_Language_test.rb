@@ -3,6 +3,7 @@ require 'minitest/autorun'
 require 'BOAST'
 include BOAST
 require_relative 'Language/Array'
+require_relative 'Language/For'
 require_relative 'helper'
 
 class TestLanguage < Minitest::Test
