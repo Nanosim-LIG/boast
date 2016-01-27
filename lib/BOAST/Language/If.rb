@@ -10,13 +10,13 @@ module BOAST
       @conditions = []
       @blocks = []
       if conditions.size == 1 then
-        @conditions.push(conditions[0])
+        @conditions.push conditions.shift
       else
-        (0...conditions.size-1).step(2) { |i|
-          @conditions.push(conditions[i])
-          @blocks.push(conditions[i+1])
-        }
-        @blocks.push(conditions.last) if conditions.size.odd?
+        while conditions.size >= 2 do
+          @conditions.push conditions.shift
+          @blocks.push conditions.shift
+        end
+        @blocks.push conditions.shift if conditions.size > 0
       end
     end
 
