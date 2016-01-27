@@ -11,17 +11,12 @@ module BOAST
       @blocks = []
       if conditions.size == 1 then
         @conditions.push(conditions[0])
-      elsif conditions.size.even? then
-        (0..conditions.size-1).step(2) { |i|
-          @conditions.push(conditions[i])
-          @blocks.push(conditions[i+1])
-        }
       else
-        (0..conditions.size-2).step(2) { |i|
+        (0...conditions.size-1).step(2) { |i|
           @conditions.push(conditions[i])
           @blocks.push(conditions[i+1])
         }
-        @blocks.push(conditions.last)
+        @blocks.push(conditions.last) if conditions.size.odd?
       end
     end
 
