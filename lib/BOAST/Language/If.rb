@@ -5,22 +5,21 @@ module BOAST
     attr_reader :conditions
 
     def initialize(*conditions, &block)
+      raise "Illegal if construct!" if conditions.size == 0
+      conditions.push(block) if block
       @conditions = []
       @blocks = []
-      if conditions.size == 0 then
-        raise "Illegal if construct!"
-      elsif conditions.size == 1 then
+      if conditions.size == 1 then
         @conditions.push(conditions[0])
-        @blocks.push(block)
       elsif conditions.size.even? then
         (0..conditions.size-1).step(2) { |i|
-          @conditions[i/2] = conditions[i]
-          @blocks[i/2] = conditions[i+1]
+          @conditions.push(conditions[i])
+          @blocks.push(conditions[i+1])
         }
       else
         (0..conditions.size-2).step(2) { |i|
-          @conditions[i/2] = conditions[i]
-          @blocks[i/2] = conditions[i+1]
+          @conditions.push(conditions[i])
+          @blocks.push(conditions[i+1])
         }
         @blocks.push(conditions.last)
       end
