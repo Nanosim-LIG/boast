@@ -57,7 +57,7 @@ module BOAST
     end
 
     def open
-      s=""
+      s = ""
       s += indent
       s += to_s
       output.puts s
@@ -70,7 +70,7 @@ module BOAST
         increment_indent_level
         @blocks.each_index { |indx|
           decrement_indent_level
-          s=""
+          s = ""
           s += indent
           s += to_s(indx)
           output.puts s
