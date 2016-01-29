@@ -5,29 +5,25 @@ module BOAST
     attr_reader :expression
     attr_reader :constants_list
 
-    def initialize(expression, *control)
+    def initialize(expression, *control, &block)
       @expression = expression
       @constants_list = []
       @blocks = []
+      control.push(block) if block
       if control.size < 1 then
         raise "No block given!"
-      elsif control.size.even? then
-        (0..control.size-1).step(2) { |i|
-          @constants_list[i/2] = [control[i]].flatten
-          @blocks[i/2] = control[i+1]
-        }
       else
-        (0..control.size-2).step(2) { |i|
-          @constants_list[i/2] = [control[i]].flatten
-          @blocks[i/2] = control[i+1]
-        }
-        @blocks.push(control.last)
+        while control.size >= 2 do
+          @constants_list.push [control.shift].flatten
+          @blocks.push control.shift
+        end
+        @blocks.push control.shift if control.size > 0
       end
     end
 
     def get_c_strings
       return { :switch => '"switch (#{expr}) {"',
-               :case => '"case #{constants.join(" : case")} :"',
+               :case => '"case #{constants.join(" : case ")} :"',
                :default => '"default :"',
                :break => '"break;"',
                :end => '"}"' }
@@ -35,7 +31,7 @@ module BOAST
 
     def get_fortran_strings
       return { :switch => '"select case (#{expr})"',
-               :case => '"case (#{constants.join(" : ")})"',
+               :case => '"case (#{constants.join(", ")})"',
                :default => '"case default"',
                :break => 'nil',
                :end => '"end select"' }
@@ -50,29 +46,33 @@ module BOAST
     eval token_string_generator( * %w{break})
     eval token_string_generator( * %w{end})
 
-    def to_s(block_number = nil)
+    def to_s
       s = ""
-      if block_number then
-        if block_number != 0 then
-          s += indent + break_string + "\n" if break_string
-          decrement_indent_level
-        end
-        s += indent
-        if @constants_list[block_number] and @constants_list[block_number].size > 0 then
-          s += case_string(@constants_list[block_number])
-        else
-          s += default_string
-        end
-      else
-        s += indent
-        s += switch_string(@expression)
-      end
-      increment_indent_level
+      s += switch_string(@expression)
       return s
     end
 
+    def pr_block(block_number, *args)
+      c = @constants_list[block_number] and @constants_list[block_number].size > 0
+      if c then
+        output.puts indent + case_string(@constants_list[block_number])
+      else
+        output.puts indent + default_string
+      end
+      increment_indent_level
+      @blocks[block_number].call(*args)
+      if c then
+        output.puts indent + break_string + "\n" if break_string
+      end
+      decrement_indent_level
+    end
+
     def open
-      output.puts to_s
+      s = ""
+      s += indent
+      s += to_s
+      output.puts s
+      increment_indent_level
       return self
     end
 
@@ -80,9 +80,7 @@ module BOAST
       open
       if @blocks.size > 0 then
         @blocks.each_index { |indx|
-          s = to_s(indx)
-          output.puts s
-          @blocks[indx].call(*args)
+          pr_block(indx, *args)
         }
         close
       end
@@ -90,12 +88,10 @@ module BOAST
     end
 
     def close
-      s = ""
-      s += indent + break_string + "\n" if break_string
       decrement_indent_level      
+      s = ""
       s += indent
       s += end_string
-      decrement_indent_level      
       output.puts s
       return self
     end
