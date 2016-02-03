@@ -3,7 +3,7 @@ require 'BOAST'
 include BOAST
 require_relative '../helper'
 
-class TestIf < Minitest::Test
+class TestCase < Minitest::Test
 
   def setup
     n = Int("n")
@@ -134,6 +134,78 @@ switch ((n) * (2)) {
     break;
   default :
     a[i - (1)] = 0;
+}
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
+  def test_open_close_multiple_case_default
+    c1 = Case(@expr, @const1, @block1, @const2, @block3,  @block2)
+    c2 = Case(@expr, @const1, @block1, @const2, @block3, &@block2)
+    begin
+      [c1, c2].each { |c|
+        block = lambda { pr c }
+        set_lang(FORTRAN)
+        assert_subprocess_output( <<EOF, "" ) { opn c }
+select case ((n) * (2))
+EOF
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[0] }
+  case (2)
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[0].block.call }
+    a(i) = i
+EOF
+        assert_subprocess_output( "", "" ) { close c.case_conditions[0] }
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[1] }
+  case (8)
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[1].block.call }
+    a(i) =  -(i)
+EOF
+        assert_subprocess_output( "", "" ) { close c.case_conditions[1] }
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[2] }
+  case default
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[2].block.call }
+    a(i) = 0
+EOF
+        assert_subprocess_output( "", "" ) { close c.case_conditions[2] }
+        assert_subprocess_output( <<EOF, "" ) { close c }
+end select
+EOF
+        set_lang(C)
+        assert_subprocess_output( <<EOF, "" ) { opn c }
+switch ((n) * (2)) {
+EOF
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[0] }
+  case 2 :
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[0].block.call }
+    a[i - (1)] = i;
+EOF
+        assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[0] }
+    break;
+EOF
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[1] }
+  case 8 :
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[1].block.call }
+    a[i - (1)] =  -(i);
+EOF
+        assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[1] }
+    break;
+EOF
+        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[2] }
+  default :
+EOF
+        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[2].block.call }
+    a[i - (1)] = 0;
+EOF
+        assert_subprocess_output( "", "" ) { close c.case_conditions[2] }
+        assert_subprocess_output( <<EOF, "" ) { close c }
 }
 EOF
       }
