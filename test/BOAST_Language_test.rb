@@ -16,6 +16,10 @@ class TestLanguage < Minitest::Test
     assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
     set_lang(C)
     assert_subprocess_output( "int32_t a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "int a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "int a;\n", "", &block )
   end
 
   def test_decl_int_64
@@ -26,6 +30,10 @@ class TestLanguage < Minitest::Test
       assert_subprocess_output( "integer(kind=8) :: a\n", "", &block )
       set_lang(C)
       assert_subprocess_output( "int64_t a;\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "long long a;\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "long a;\n", "", &block )
     ensure
       pop_env(:default_int_size)
     end

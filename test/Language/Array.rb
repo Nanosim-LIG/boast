@@ -13,9 +13,18 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "integer(kind=4), dimension(5:15, n1) :: a\n", "", &block )
     set_lang(C)
     assert_subprocess_output( "int32_t * a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "int * a;\n", "", &block )
     begin
       push_env(:use_vla => true)
+      set_lang(C)
       assert_subprocess_output( "int32_t a[n1][11];\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "int * a;\n", "", &block )
     ensure
       pop_env(:use_vla)
     end
@@ -28,9 +37,18 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "integer(kind=4), dimension(5:15, *) :: a\n", "", &block )
     set_lang(C)
     assert_subprocess_output( "int32_t * a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "int * a;\n", "", &block )
     begin
       push_env(:use_vla => true)
+      set_lang(C)
       assert_subprocess_output( "int32_t a[][11];\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "int * a;\n", "", &block )
     ensure
       pop_env(:use_vla)
     end
@@ -38,10 +56,15 @@ class TestArray < Minitest::Test
 
   def test_decl_int_array_deffered_shape
     arr = Int(:a, :dim => [Dim(5,15), Dim()], :deferred_shape => true)
+    block = lambda { decl arr }
     set_lang(FORTRAN)
-    assert_subprocess_output( "integer(kind=4), dimension(:, :) :: a\n", "" ) do
-      decl arr
-    end
+    assert_subprocess_output( "integer(kind=4), dimension(:, :) :: a\n", "", &block )
+    set_lang(C)
+    assert_subprocess_output( "int32_t * a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "int * a;\n", "", &block )
   end
 
   def test_pr_int_array_index
@@ -50,11 +73,18 @@ class TestArray < Minitest::Test
     block = lambda { pr arr[6,7] }
     set_lang(FORTRAN)
     assert_subprocess_output( "a(6, 7)\n", "", &block )
-    set_lang(C)
-    assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
+    }
     begin
       push_env(:use_vla => true)
+      set_lang(C)
       assert_subprocess_output( "a[7 - (1)][6 - (5)];\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
     ensure
       pop_env(:use_vla)
     end
@@ -66,11 +96,18 @@ class TestArray < Minitest::Test
     block = lambda { pr arr[6,7] }
     set_lang(FORTRAN)
     assert_subprocess_output( "a(6, 7)\n", "", &block )
-    set_lang(C)
-    assert_subprocess_output( "a[6 - (1) + (n1) * (7 - (1))];\n", "", &block )
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( "a[6 - (1) + (n1) * (7 - (1))];\n", "", &block )
+    }
     begin
       push_env(:use_vla => true, :array_start => 0)
+      set_lang(C)
       assert_subprocess_output( "a[7][6];\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
     ensure
       pop_env(:use_vla, :array_start)
     end

@@ -30,14 +30,16 @@ select case ((n) * (2))
     a(i) = i
 end select
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
   case 2 :
     a[i - (1)] = i;
     break;
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -59,8 +61,9 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
   case 2 :
     a[i - (1)] = i;
@@ -69,6 +72,7 @@ switch ((n) * (2)) {
     a[i - (1)] = 0;
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -90,8 +94,9 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
   case 2 : case 8 :
     a[i - (1)] = i;
@@ -100,6 +105,7 @@ switch ((n) * (2)) {
     a[i - (1)] = 0;
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -123,8 +129,9 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
   case 2 :
     a[i - (1)] = i;
@@ -136,6 +143,7 @@ switch ((n) * (2)) {
     a[i - (1)] = 0;
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -176,38 +184,40 @@ EOF
         assert_subprocess_output( <<EOF, "" ) { close c }
 end select
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "" ) { opn c }
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "" ) { opn c }
 switch ((n) * (2)) {
 EOF
-        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[0] }
+          assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[0] }
   case 2 :
 EOF
-        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[0].block.call }
+          assert_subprocess_output( <<EOF, "" ) { c.case_conditions[0].block.call }
     a[i - (1)] = i;
 EOF
-        assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[0] }
+          assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[0] }
     break;
 EOF
-        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[1] }
+          assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[1] }
   case 8 :
 EOF
-        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[1].block.call }
+          assert_subprocess_output( <<EOF, "" ) { c.case_conditions[1].block.call }
     a[i - (1)] =  -(i);
 EOF
-        assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[1] }
+          assert_subprocess_output( <<EOF, "" ) { close c.case_conditions[1] }
     break;
 EOF
-        assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[2] }
+          assert_subprocess_output( <<EOF, "" ) { opn c.case_conditions[2] }
   default :
 EOF
-        assert_subprocess_output( <<EOF, "" ) { c.case_conditions[2].block.call }
+          assert_subprocess_output( <<EOF, "" ) { c.case_conditions[2].block.call }
     a[i - (1)] = 0;
 EOF
-        assert_subprocess_output( "", "" ) { close c.case_conditions[2] }
-        assert_subprocess_output( <<EOF, "" ) { close c }
+          assert_subprocess_output( "", "" ) { close c.case_conditions[2] }
+          assert_subprocess_output( <<EOF, "" ) { close c }
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)

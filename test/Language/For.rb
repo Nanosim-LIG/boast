@@ -18,12 +18,14 @@ do i = 1, n, 1
   a(i) = i
 end do
 EOF
-      set_lang(C)
-      assert_subprocess_output( <<EOF, "", &block )
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n; i += 1) {
   a[i - (1)] = i;
 }
 EOF
+      }
     ensure
       set_indent_level(0)
     end
@@ -48,16 +50,18 @@ EOF
       assert_subprocess_output( <<EOF, "", &block3 )
 end do
 EOF
-      set_lang(C)
-      assert_subprocess_output( <<EOF, "", &block1 )
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block1 )
 for (i = 1; i <= n; i += 1) {
 EOF
-      assert_subprocess_output( <<EOF, "", &block2 )
+        assert_subprocess_output( <<EOF, "", &block2 )
   a[i - (1)] = i;
 EOF
-      assert_subprocess_output( <<EOF, "", &block3 )
+        assert_subprocess_output( <<EOF, "", &block3 )
 }
 EOF
+      }
     ensure
       set_indent_level(0)
     end
@@ -74,12 +78,14 @@ a(1) = 1
 a(2) = 2
 a(3) = 3
 EOF
-    set_lang(C)
-    assert_subprocess_output( <<EOF, "", &block )
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = 1;
 a[2 - (1)] = 2;
 a[3 - (1)] = 3;
 EOF
+    }
   end
 
 end

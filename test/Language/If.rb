@@ -28,12 +28,14 @@ if (i < n) then
   a(i) = i
 end if
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
   a[i - (1)] = i;
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -54,14 +56,16 @@ else
   a(i) =  -(i)
 end if
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
   a[i - (1)] = i;
 } else {
   a[i - (1)] =  -(i);
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -84,8 +88,9 @@ else
   a(i) =  -(i)
 end if
 EOF
-        set_lang(C)
-        assert_subprocess_output( <<EOF, "", &block )
+        [C, CL, CUDA].each { |l|
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
   a[i - (1)] = i;
 } else if (i == n) {
@@ -94,6 +99,7 @@ if (i < n) {
   a[i - (1)] =  -(i);
 }
 EOF
+        }
       }
     ensure
       set_indent_level(0)
@@ -115,8 +121,9 @@ EOF
       assert_subprocess_output( <<EOF, "", &close_block )
 end if
 EOF
-      set_lang(C)
-      assert_subprocess_output( <<EOF, "", &opn_block )
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &opn_block )
 if (i < n) {
 EOF
       assert_subprocess_output( <<EOF, "", &@block1 )
@@ -125,6 +132,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &close_block )
 }
 EOF
+      }
     ensure
       set_indent_level(0)
     end
