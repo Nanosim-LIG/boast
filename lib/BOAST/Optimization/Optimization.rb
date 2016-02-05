@@ -98,13 +98,18 @@ EOF
           return fitness
         end
 
-        def to_s
+        def to_a
           opts = {}
           genes.each { |gene|
             opts[gene.name] = genotypes[gene]
           }
+          return [opts, fitness]
+        end
+
+        def to_s
           return [opts, fitness].to_s
         end
+
       end
 EOF
       eval s
@@ -121,7 +126,7 @@ EOF
       population = Darwinning::Population.new(opts)
       population.evolve!
       @experiments = @organism.experiments
-      return population.best_member
+      return population.best_member.to_a
     end
 
   end
