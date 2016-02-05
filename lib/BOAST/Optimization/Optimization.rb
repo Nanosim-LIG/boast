@@ -32,15 +32,26 @@ module BOAST
       end
     end
 
+    def to_h
+      h = {}
+      @parameters.each { |p|
+        h[p.name] = p.values
+      }
+      return h
+    end
+
   end
 
   class Optimizer
+    include PrivateStateAccessor
     attr_reader :experiments
     attr_reader :search_space
+    attr_reader :log
 
     def initialize(search_space, options = {} )
       @search_space = search_space
       @experiments = 0
+      @log = {}
     end
   end
 
@@ -150,14 +161,24 @@ EOF
 
     def optimize(&block)
       @experiments = 0
+      @log = {}
       best = [nil, Float::INFINITY]
       pts = points
       pts.shuffle! if @randomize
       enumerator = pts.each { |config|
         @experiments += 1
         metric = block.call(config)
+        @log[config] = metric if optimizer_log
         best = [config, metric] if metric < best[1]
       }
+      if optimizer_log_file then
+        File::open(File::basename(optimizer_log_file,".yaml")+".yaml", "w") { |f|
+          f.print YAML::dump(@log)
+        }
+        File::open(File::basename(optimizer_log_file,".yaml")+"_parameters.yaml", "w") { |f|
+          f.print YAML::dump(@search_space.to_h)
+        }
+      end
       return best
     end
 
