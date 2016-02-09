@@ -486,31 +486,18 @@ module BOAST
     end
 
     def alloc_fortran( dims = nil )
-      s = ""
-      s += indent
-      s += "allocate( #{name}("
-      s += dims.collect { |d| d.to_s }.join(", ")
-      s += ") )"
-      s += finalize
-      output.print s
-      return self
+      return FuncCall::new(:allocate, FuncCall(name, * dims ) )
     end
 
     def alloc_c( dims = nil, align = get_address_size)
-      s = ""
-      s += indent
+      d = dims.collect { |d| d.to_s }.reverse.join(")*(")
       if align > (OS.bits/8) then
         # check alignment is a power of 2
         raise "Invalid alignment #{align}!" if align & (align - 1) != 0
-        s += "(#{@type.decl} *) posix_memalign( &#{name}, #{align}, sizeof(#{@type.decl})*("
+        return FuncCall::new(:posix_memalign, self.address, align, FuncCall::new(:sizeof, @type.decl) * d)
       else
-        s += "#{name} = (#{@type.decl} *) malloc( sizeof(#{@type.decl})*("
+        return self === FuncCall::new(:malloc, FuncCall::new(:sizeof, @type.decl) * d).cast(self)
       end
-      s += dims.collect { |d| d.to_s }.reverse.join(")*(")
-      s += ") )"
-      s += finalize
-      output.print s
-      return self
     end
 
     def alloc( dims = nil, align = get_address_size )
@@ -522,21 +509,11 @@ module BOAST
     end
 
     def dealloc_fortran
-      s = ""
-      s += indent
-      s += "deallocate( #{name} )"
-      s += finalize
-      output.print s
-      return self
+      return FuncCall::new(:deallocate, self)
     end
 
     def dealloc_c
-      s = ""
-      s += indent
-      s += "free( #{name} )"
-      s += finalize
-      output.print s
-      return self
+      return FuncCall::new(:free, self)
     end
 
     def dealloc
