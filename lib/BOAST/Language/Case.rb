@@ -79,9 +79,9 @@ module BOAST
       @case_conditions = []
       control.push(block) if block
       while control.size >= 2 do
-        @case_conditions.push CaseCondition([control.shift].flatten, &(control.shift))
+        @case_conditions.push CaseCondition::new([control.shift].flatten, &(control.shift))
       end
-      @case_conditions.push CaseCondition(&(control.shift)) if control.size > 0
+      @case_conditions.push CaseCondition::new(&(control.shift)) if control.size > 0
     end
 
     def get_c_strings
