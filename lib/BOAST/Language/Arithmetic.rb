@@ -69,6 +69,10 @@ module BOAST
       return Expression::new("||", self, x)
     end
 
+    def cast(type)
+      return type.copy("(#{type.type.decl} *)#{self}")
+    end
+
     def components( range )
       if self.type.vector_length == 1
         return self
