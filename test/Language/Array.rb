@@ -143,7 +143,7 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "free(a);\n", "", &block3 )
   end
 
-  def test_decl_int_array_allocate
+  def test_decl_int_array_allocate_align
     n1 = Int("n1")
     arr = Int(:a, :dim => [Dim(5,15), Dim(n1)], :allocate => :heap, :align => 32)
     block = lambda { decl arr }

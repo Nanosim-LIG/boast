@@ -8,7 +8,7 @@ module BOAST
     attr_reader :name
     attr_reader :options
 
-    def initialize(name, options)
+    def initialize(name, *options)
       @name = name
       @options = options
     end
@@ -16,9 +16,9 @@ module BOAST
     def to_s
       s = ""
       if lang == FORTRAN then
-        s += "$!"
+        s += "!#{@name}$"
       else
-        s += "#pragma"
+        s += "#pragma #{name}"
       end
       @options.each{ |opt|
         s += " #{opt}"

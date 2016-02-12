@@ -150,7 +150,7 @@ module BOAST
     attr_reader :restrict
     attr_reader :deferred_shape
     attr_reader :optional
-    attr_accessor :align
+    attr_accessor :alignment
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
 
@@ -195,7 +195,7 @@ module BOAST
     end
 
     def align?
-      !!@align
+      !!@alignment
     end
 
     def deferred_shape?
@@ -211,7 +211,7 @@ module BOAST
       @texture = hash[:texture]
       @allocate = hash[:allocate]
       @restrict = hash[:restrict]
-      @align = hash[:align]
+      @alignment = hash[:align]
       @deferred_shape = hash[:deferred_shape]
       @optional = hash[:optional]
       @force_replace_constant = false
@@ -408,7 +408,7 @@ module BOAST
         end 
       end
       if __align? then
-        a = ( align? ? align : 1 )
+        a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s+= " __attribute((aligned(#{a})))"
       end
@@ -448,41 +448,24 @@ module BOAST
       return self
     end
 
-    def pr_align_c_s(a)
-      return "__assume_aligned(#{@name}, #{a})"
+    def align_c(a)
+      return FuncCall::new("__assume_aligned", @name, a)
     end
 
-    def pr_align_c(a)
-      s = ""
-      s += indent
-      s += pr_align_c_s(a)
-      s += finalize
-      output.print s
-      return self
+    def align_fortran(a)
+      return Pragma::new("DIR", "ASSUME_ALIGNED", "#{@name}: #{a}")
     end
 
-    def pr_align_fortran_s(a)
-      return "!DIR$ ASSUME_ALIGNED #{@name}: #{a}"
-    end
-
-    def pr_align_fortran(a)
-      s = ""
-      s += indent
-      s += pr_align_fortran_s(a)
-      s += finalize
-      output.print s
-      return self
-    end
-
-    def pr_align
+    def align
       if dimension? then
         if align? or default_align > 1 then
-          a = ( align? ? align : 1 )
+          a = ( align? ? alignment : 1 )
           a = ( a >= default_align ? a : default_align )
-          return pr_align_c(a) if lang == C
-          return pr_align_fortran(a) if lang == FORTRAN
+          return align_c(a) if lang == C
+          return align_fortran(a) if lang == FORTRAN
         end
       end
+      return nil
     end
 
     def alloc_fortran( dims = nil )
@@ -549,7 +532,7 @@ module BOAST
       s += finalize
       output.print s
       if dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) then
-        a = ( align? ? align : 1 )
+        a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
         s += indent

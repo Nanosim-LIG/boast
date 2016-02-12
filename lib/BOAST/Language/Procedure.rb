@@ -216,19 +216,17 @@ module BOAST
       s += ")"
     end
 
-    def pr_align
-    end
-
     def open_c
       s = indent + decl_c_s + "{"
       output.puts s
       increment_indent_level
       constants.each { |c|
-        c.decl
+        BOAST::decl c
       }
       if lang == C then
         parameters.each { |p|
-          p.pr_align
+          align = p.align
+          BOAST::pr align if align
         }
       end
       return self
@@ -241,11 +239,12 @@ module BOAST
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
       constants.each { |c|
-        c.decl
+        BOAST::decl c
       }
       parameters.each { |p|
-        p.decl
-        p.pr_align
+        BOAST::decl p
+        align = p.align
+        BOAST::pr align if align
       }
       return self
     end
