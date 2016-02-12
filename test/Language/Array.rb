@@ -148,15 +148,35 @@ class TestArray < Minitest::Test
     arr = Int(:a, :dim => [Dim(5,15), Dim(n1)], :allocate => :heap, :align => 32)
     block = lambda { decl arr }
     block2 = lambda { pr arr.alloc(nil, 32) }
-    block3 = lambda { pr arr.dealloc }
+    block3 = lambda { pr arr.align }
+    block4 = lambda { pr arr.dealloc }
     set_lang(FORTRAN)
     assert_subprocess_output( "integer(kind=4), allocatable, dimension(:, :) :: a\n", "", &block )
     assert_subprocess_output( "allocate(a(5:15, n1))\n", "", &block2 )
-    assert_subprocess_output( "deallocate(a)\n", "", &block3 )
+    assert_subprocess_output( "!DIR$ ASSUME_ALIGNED a: 32\n", "", &block3 )
+    assert_subprocess_output( "deallocate(a)\n", "", &block4 )
     set_lang(C)
     assert_subprocess_output( "int32_t * a;\n", "", &block )
     assert_subprocess_output( "posix_memalign( &a, 32, (sizeof(int32_t)) * (n1)*(11));\n", "", &block2 )
-    assert_subprocess_output( "free(a);\n", "", &block3 )
+    assert_subprocess_output( "__assume_aligned(a, 32);\n", "", &block3 )
+    assert_subprocess_output( "free(a);\n", "", &block4 )
+  end
+
+  def test_decl_int_array_allocate_align_stack
+    n1 = Int("n1")
+    arr = Int(:a, :dim => [Dim(5,15), Dim(n1)], :allocate => :stack, :align => 32)
+    block = lambda { decl arr }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+integer(kind=4), dimension(5:15, n1) :: a
+!DIR$ ATTRIBUTES ALIGN: 32:: a
+EOF
+    set_lang(C)
+    assert_subprocess_output( "int32_t a[(n1)*(11)] __attribute((aligned(32)));\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "int a[(n1)*(11)] __attribute((aligned(32)));\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "int a[(n1)*(11)];\n", "", &block )
   end
 
 end

@@ -407,7 +407,7 @@ module BOAST
           s +=")]"
         end 
       end
-      if __align? then
+      if __align? and lang != CUDA then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s+= " __attribute((aligned(#{a})))"
