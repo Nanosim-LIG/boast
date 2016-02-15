@@ -14,6 +14,9 @@ class TestIf < Minitest::Test
     @block1 = lambda { pr a[i] ===  i }
     @block2 = lambda { pr a[i] ===  0 }
     @block3 = lambda { pr a[i] === -i }
+    @block4 = lambda { |x| pr a[i] ===  i * x }
+    @block5 = lambda { |x| pr a[i] ===  0 * x }
+    @block6 = lambda { |x| pr a[i] === -i * x }
   end
 
   def test_pr_if
@@ -97,6 +100,43 @@ if (i < n) {
   a[i - (1)] = 0;
 } else {
   a[i - (1)] =  -(i);
+}
+EOF
+        }
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
+  def test_pr_if_elsif_else_args
+    f1 = If(@cond1, @block4, @cond2, @block5,  @block6)
+    f2 = If(@cond1, @block4, @cond2, @block5, &@block6)
+    y = nil
+    begin
+      [f1, f2].each { |f|
+        y = rand(100)
+        block = lambda { pr f[y] }
+        set_lang(FORTRAN)
+        assert_subprocess_output( <<EOF, "", &block )
+if (i < n) then
+  a(i) = (i) * (#{y})
+else if (i == n) then
+  a(i) = 0
+else
+  a(i) = ( -(i)) * (#{y})
+end if
+EOF
+        [C, CL, CUDA].each { |l|
+          y = rand(100)
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
+if (i < n) {
+  a[i - (1)] = (i) * (#{y});
+} else if (i == n) {
+  a[i - (1)] = 0;
+} else {
+  a[i - (1)] = ( -(i)) * (#{y});
 }
 EOF
         }
