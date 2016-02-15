@@ -196,9 +196,9 @@ module BOAST
     end
   end
 
-  def pr(a)
+  def pr(a, *args)
     pr_annotate(a) if annotate?
-    a.pr
+    a.pr(*args)
   end
 
   def decl(*a)
