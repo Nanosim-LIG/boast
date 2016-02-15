@@ -1,7 +1,7 @@
 module BOAST
 
-   def self.print(a)
-     pr(a)
+   def self.print(a, *args)
+     pr(a, *args)
    end
 
    def self.open(a)
