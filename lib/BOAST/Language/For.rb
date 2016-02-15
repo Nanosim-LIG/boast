@@ -89,37 +89,42 @@ module BOAST
 
     def pr_unroll(*args)
       raise "Block not given!" if not @block
-      push_env( :replace_constants => true )
       begin
-        if @begin.kind_of?(Variable) then
-          start = @begin.constant
-        elsif @begin.kind_of?(Expression) then
-          start = eval "#{@begin}"
-        else
-          start = @begin.to_i
-        end
-        if @end.kind_of?(Variable) then
-          e = @end.constant
-        elsif @end.kind_of?(Expression) then
-          e = eval "#{@end}"
-        else
-          e = @end.to_i
-        end
-        if @step.kind_of?(Variable) then
-          step = @step.constant
-        elsif @step.kind_of?(Expression) then
-          step = eval "#{@step}"
-        else
-          step = @step.to_i
-        end
-        raise "Invalid bounds (not constants)!" if not ( start and e and step )
-      rescue Exception => ex
-        if not ( start and e and step ) then
+        begin
+          push_env( :replace_constants => true )
+          if @begin.kind_of?(Variable) then
+            start = @begin.constant
+          elsif @begin.kind_of?(Expression) then
+            start = eval "#{@begin}"
+          else
+            start = @begin.to_i
+          end
+          if @end.kind_of?(Variable) then
+            e = @end.constant
+          elsif @end.kind_of?(Expression) then
+            e = eval "#{@end}"
+          else
+            e = @end.to_i
+          end
+          if @step.kind_of?(Variable) then
+            step = @step.constant
+          elsif @step.kind_of?(Expression) then
+            step = eval "#{@step}"
+          else
+            step = @step.to_i
+          end
+          raise "Invalid bounds (not constants)!" if not ( start and e and step )
+        ensure
           pop_env( :replace_constants )
-          return pr(*args) if not ( start and e and step )
         end
+      rescue Exception => ex
+        open
+        if @block then
+          @block.call(*args)
+          close
+        end
+        return self
       end
-      pop_env( :replace_constants )
       range = start..e
       @iterator.force_replace_constant = true
       range.step(step) { |i|
