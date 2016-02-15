@@ -31,6 +31,38 @@ EOF
     end
   end
 
+  def test_pr_for_args
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    f = For(i, 1, n) { |x| pr a[i] === i * x }
+    y = nil
+    block1 = lambda { pr f, y }
+    block2 = lambda { pr f[y] }
+    begin
+      [block1, block2].each { |block|
+        y = rand(100)
+        set_lang(FORTRAN)
+        assert_subprocess_output( <<EOF, "", &block )
+do i = 1, n, 1
+  a(i) = (i) * (#{y})
+end do
+EOF
+        [C, CL, CUDA].each { |l|
+          y = rand(100)
+          set_lang(l)
+          assert_subprocess_output( <<EOF, "", &block )
+for (i = 1; i <= n; i += 1) {
+  a[i - (1)] = (i) * (#{y});
+}
+EOF
+        }
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
   def test_opn_close_for
     i = Int("i")
     n = Int("n")
@@ -71,7 +103,7 @@ EOF
     i = Int("i")
     a = Int("a", :dim => Dim(3))
     f = For(i, 1, 3) { pr a[i] === i }
-    block = lambda { f.unroll }
+    block = lambda { pr f.unroll }
     set_lang(FORTRAN)
     assert_subprocess_output( <<EOF, "", &block )
 a(1) = 1
@@ -84,6 +116,27 @@ EOF
 a[1 - (1)] = 1;
 a[2 - (1)] = 2;
 a[3 - (1)] = 3;
+EOF
+    }
+  end
+
+  def test_for_unroll_args
+    i = Int("i")
+    a = Int("a", :dim => Dim(3))
+    f = For(i, 1, 3) { |x| pr a[i] === i * x }
+    block = lambda { pr f.unroll[2] }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+a(1) = (1) * (2)
+a(2) = (2) * (2)
+a(3) = (3) * (2)
+EOF
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
+a[1 - (1)] = (1) * (2);
+a[2 - (1)] = (2) * (2);
+a[3 - (1)] = (3) * (2);
 EOF
     }
   end

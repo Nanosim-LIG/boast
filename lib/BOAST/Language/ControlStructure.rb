@@ -4,6 +4,8 @@ module BOAST
     include PrivateStateAccessor
     include Inspectable
 
+    attr_accessor :args
+
     def self.inherited(child)
       child.extend Functor
     end
@@ -21,6 +23,11 @@ module BOAST
       return eval get_strings[get_lang][:#{name}] 
     end
 EOF
+    end
+
+    def [](*args)
+      @args = args
+      return self
     end
 
   end

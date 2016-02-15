@@ -66,6 +66,7 @@ module BOAST
     end
 
     def pr(*args)
+      args = @args if args.length == 0 and @args
       if @blocks.size > 0 then
         increment_indent_level
         @blocks.each_index { |indx|

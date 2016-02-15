@@ -30,6 +30,7 @@ module BOAST
       @block = block
       @openmp = default_options[:openmp]
       @unroll = default_options[:unroll]
+      @args = default_options[:args]
       if @openmp then
         if @openmp.kind_of?(Hash) then
           @openmp = OpenMP::For(@openmp)
@@ -140,6 +141,7 @@ module BOAST
     end 
 
     def pr(*args)
+      args = @args if args.length == 0 and @args
       return pr_unroll(*args) if unroll?
       open
       if @block then

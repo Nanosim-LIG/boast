@@ -59,6 +59,7 @@ module BOAST
     end
 
     def pr(*args)
+      args = @args if args.length == 0 and @args
       open
       if @block then
         @block.call(*args)
@@ -116,6 +117,7 @@ module BOAST
     end
 
     def pr(*args)
+      args = @args if args.length == 0 and @args
       open
       if @case_conditions.size > 0 then
         @case_conditions.each { |cond|
