@@ -10,6 +10,14 @@ module BOAST
     attr_reader :step
     attr_accessor :block
 
+    def unroll?
+      return !!@unroll
+    end
+
+    def unroll=(val)
+      @unroll = val
+    end
+
     def initialize(i, b, e, options={}, &block)
       default_options = {:step => 1}
       default_options.update( options )
@@ -21,6 +29,7 @@ module BOAST
       @operator = "<="
       @block = block
       @openmp = default_options[:openmp]
+      @unroll = default_options[:unroll]
       if @openmp then
         if @openmp.kind_of?(Hash) then
           @openmp = OpenMP::For(@openmp)
@@ -71,7 +80,13 @@ module BOAST
 #              For::new(@iterator, @begin.to_var + ((@end - @begin + 1)/(@step*s))*(@step*s), @end, @options, &@block) ]
 #    end
 #
-    def unroll(*args)
+    def unroll
+      opts = @options.clone
+      opts[:unroll] = true
+      return For::new(@iterator, @begin, @end, opts, &block)
+    end
+
+    def pr_unroll(*args)
       raise "Block not given!" if not @block
       push_env( :replace_constants => true )
       begin
@@ -125,6 +140,7 @@ module BOAST
     end 
 
     def pr(*args)
+      return pr_unroll(*args) if unroll?
       open
       if @block then
         @block.call(*args)
