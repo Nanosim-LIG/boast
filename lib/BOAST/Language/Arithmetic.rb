@@ -53,6 +53,10 @@ module BOAST
       return Expression::new(Minus,nil,self)
     end
 
+    def +@
+      return Expression::new(Plus,nil,self)
+    end
+
     def address
       return Expression::new("&",nil,self)
     end
@@ -62,11 +66,11 @@ module BOAST
     end
 
     def and(x)
-      return Expression::new("&&", self, x)
+      return Expression::new(And, self, x)
     end
 
     def or(x)
-      return Expression::new("||", self, x)
+      return Expression::new(Or, self, x)
     end
 
     def cast(type)
