@@ -57,6 +57,32 @@ module BOAST
 
   end
 
+  class And < Operator
+
+    def And.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def And.basic_usage(arg1, arg2)
+      return "(#{arg1}) .and. (#{arg2})" if lang == FORTRAN
+      return "(#{arg1}) && (#{arg2})"
+    end
+
+  end
+
+  class Or < Operator
+
+    def Or.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def Or.basic_usage(arg1, arg2)
+      return "(#{arg1}) .or. (#{arg2})" if lang == FORTRAN
+      return "(#{arg1}) || (#{arg2})"
+    end
+
+  end
+
   class Affectation < Operator
 
     def Affectation.string(arg1, arg2, return_type)
@@ -162,10 +188,19 @@ module BOAST
 
   end
 
+  class Plus < Operator
+
+    def Plus.string(arg1, arg2, return_type)
+      return " +#{arg2}"
+    end
+
+  end
+
   class Not < Operator
 
     def Not.string(arg1, arg2, return_type)
-      return " ! #{arg2}"
+      return " .not. (#{arg2})" if lang == FORTRAN
+      return " !(#{arg2})"
     end
 
   end
