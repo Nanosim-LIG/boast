@@ -170,7 +170,7 @@ EOF
       best = [nil, Float::INFINITY]
       pts = points
       pts.shuffle! if @randomize
-      enumerator = pts.each { |config|
+      pts.each { |config|
         @experiments += 1
         metric = block.call(config)
         @log[config] = metric if optimizer_log
