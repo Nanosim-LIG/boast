@@ -10,7 +10,7 @@ module BOAST
     end
 
     def ==(x)
-      return Expression::new("==",self,x)
+      return Expression::new(Equal,self,x)
     end
 
     def !=(x)
@@ -18,19 +18,19 @@ module BOAST
     end
 
     def >(x)
-      return Expression::new(">",self,x)
+      return Expression::new(Greater,self,x)
     end
  
     def <(x)
-      return Expression::new("<",self,x)
+      return Expression::new(Less,self,x)
     end
  
     def >=(x)
-      return Expression::new(">=",self,x)
+      return Expression::new(GreaterOrEqual,self,x)
     end
  
     def <=(x)
-      return Expression::new("<=",self,x)
+      return Expression::new(LessOrEqual,self,x)
     end
  
     def +(x)
@@ -69,9 +69,13 @@ module BOAST
       return Expression::new(And, self, x)
     end
 
+    alias & and
+
     def or(x)
       return Expression::new(Or, self, x)
     end
+
+    alias | or
 
     def cast(type)
       return type.copy("(#{type.type.decl} *)#{self}")

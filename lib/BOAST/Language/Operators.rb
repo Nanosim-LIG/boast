@@ -44,6 +44,43 @@ module BOAST
 
   end
 
+  class Minus < Operator
+
+    def Minus.string(arg1, arg2, return_type)
+      return " -(#{arg2})"
+    end
+
+  end
+
+  class Plus < Operator
+
+    def Plus.string(arg1, arg2, return_type)
+      return " +#{arg2}"
+    end
+
+  end
+
+  class Not < Operator
+
+    def Not.string(arg1, arg2, return_type)
+      return " (.not. #{arg2})" if lang == FORTRAN
+      return " !#{arg2}"
+    end
+
+  end
+
+  class Equal < Operator
+
+    def Equal.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def Equal.basic_usage(arg1, arg2)
+      return "#{arg1} == #{arg2}"
+    end
+
+  end
+
   class Different < Operator
 
     def Different.string(arg1, arg2, return_type)
@@ -57,6 +94,54 @@ module BOAST
 
   end
 
+  class Greater < Operator
+
+    def Greater.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def Greater.basic_usage(arg1, arg2)
+      return "#{arg1} > #{arg2}"
+    end
+
+  end
+
+  class Less < Operator
+
+    def Less.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def Less.basic_usage(arg1, arg2)
+      return "#{arg1} < #{arg2}"
+    end
+
+  end
+
+  class GreaterOrEqual < Operator
+
+    def GreaterOrEqual.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def GreaterOrEqual.basic_usage(arg1, arg2)
+      return "#{arg1} >= #{arg2}"
+    end
+
+  end
+
+  class LessOrEqual < Operator
+
+    def LessOrEqual.string(arg1, arg2, return_type)
+      return basic_usage(arg1, arg2)
+    end
+
+    def LessOrEqual.basic_usage(arg1, arg2)
+      return "#{arg1} <= #{arg2}"
+    end
+
+  end
+
   class And < Operator
 
     def And.string(arg1, arg2, return_type)
@@ -64,8 +149,8 @@ module BOAST
     end
 
     def And.basic_usage(arg1, arg2)
-      return "(#{arg1}) .and. (#{arg2})" if lang == FORTRAN
-      return "(#{arg1}) && (#{arg2})"
+      return "#{arg1} .and. #{arg2}" if lang == FORTRAN
+      return "#{arg1} && #{arg2}"
     end
 
   end
@@ -77,8 +162,8 @@ module BOAST
     end
 
     def Or.basic_usage(arg1, arg2)
-      return "(#{arg1}) .or. (#{arg2})" if lang == FORTRAN
-      return "(#{arg1}) || (#{arg2})"
+      return "#{arg1} .or. #{arg2}" if lang == FORTRAN
+      return "#{arg1} || #{arg2}"
     end
 
   end
@@ -176,31 +261,6 @@ module BOAST
         return "(#{arg1}) / (#{arg2})" 
       end
   
-    end
-
-  end
-
-  class Minus < Operator
-
-    def Minus.string(arg1, arg2, return_type)
-      return " -(#{arg2})"
-    end
-
-  end
-
-  class Plus < Operator
-
-    def Plus.string(arg1, arg2, return_type)
-      return " +#{arg2}"
-    end
-
-  end
-
-  class Not < Operator
-
-    def Not.string(arg1, arg2, return_type)
-      return " .not. (#{arg2})" if lang == FORTRAN
-      return " !(#{arg2})"
     end
 
   end
