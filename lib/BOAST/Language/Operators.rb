@@ -64,7 +64,7 @@ module BOAST
 
     def Not.string(arg1, arg2, return_type)
       return " (.not. #{arg2})" if lang == FORTRAN
-      return " !#{arg2}"
+      return " !(#{arg2})"
     end
 
   end
