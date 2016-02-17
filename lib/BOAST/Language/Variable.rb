@@ -13,7 +13,11 @@ module BOAST
       if v1 then
         if v2 then
           #@size = Expression::new(Substraction, v2, v1) + 1
-          @size = v2-v1+1
+          begin
+            @size = v2-v1+1
+          rescue
+            @size = Expression::new(Substraction, v2, v1) + 1
+          end
         else
           @size = v1
         end
@@ -54,7 +58,11 @@ module BOAST
           if 1.equal?(get_array_start) then
             return @size
           else
-            return @size + get_array_start - 1
+            begin
+              return @size + get_array_start - 1
+            rescue
+              return Expression::new(Addition, @size, get_array_start) - 1
+            end
           end
         end
       else
