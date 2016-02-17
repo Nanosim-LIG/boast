@@ -11,7 +11,6 @@ class TestExpression < Minitest::Test
     }
     vals = 8.times.collect { rand(100) + 1 }
     vals_var = vals.collect(&:to_var)
-    puts exp.call(*vals_var)
     assert_equal( exp.call(*vals), eval(exp.call(*vals_var).to_s) )
   end
 
