@@ -275,7 +275,6 @@ module BOAST
 
     def dereference
       return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [C, CL, CUDA].include?( lang )
-      puts @dimension.collect { |d| d.start }
       return Index::new(self, *(@dimension.collect { |d| d.start } ) ) if lang == FORTRAN
     end
    
