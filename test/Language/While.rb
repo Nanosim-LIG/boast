@@ -67,7 +67,7 @@ EOF
     i = Int("i")
     n = Int("n")
     a = Int("a", :dim => Dim(n))
-    w = For(i, 1, n)
+    w = While(i < n)
     block1 = lambda { opn w }
     block2 = lambda { pr a[i] === i }
     block3 = lambda { close w }
