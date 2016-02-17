@@ -1,6 +1,10 @@
 module BOAST
   module Arithmetic
 
+    def **(x)
+      return Expression::new(Exponentiation,self,x)
+    end
+
     def ===(x)
       return Expression::new(Affectation,self,x)
     end

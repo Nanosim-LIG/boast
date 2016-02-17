@@ -185,6 +185,27 @@ module BOAST
 
   end
 
+  class Exponentiation < BasicBinaryOperator
+
+    class << self
+
+      def symbol
+        return "**"
+      end
+
+      def intr_symbol
+        return :POW
+      end
+
+      def basic_usage(arg1, arg2)
+        return "(#{arg1})**(#{arg2})" if lang == FORTRAN
+        return "pow(#{arg1}, #{arg2})"
+      end
+
+    end
+
+  end
+
   class Multiplication < BasicBinaryOperator
 
     class << self

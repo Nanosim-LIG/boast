@@ -240,7 +240,7 @@ module BOAST
       sizes = []
       sizes.push( 32, 64 ) if vector_size > 64
       sizes.each { |size|
-        [[:ADD, "add"],       [:SUB, "sub"],           [:MUL, "mul"],       [:DIV, "div"],
+        [[:ADD, "add"],       [:SUB, "sub"],           [:MUL, "mul"],       [:DIV, "div"], [:POW, "pow"],
          [:FMADD, "fmadd"],   [:FMSUB, "fmsub"],       [:FNMADD, "fnmadd"], [:FNMSUB, "fnmsub"],
          [:ADDSUB, "addsub"], [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
          [:LOAD, "loadu"],    [:LOADA, "load"],        [:MASKLOAD, "maskload"],
