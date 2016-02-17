@@ -49,13 +49,13 @@ module BOAST
         return @val2
       elsif @size
         if 0.equal?(get_array_start) then
-          if 1.equal?(get_array_start) then
-            return Expression::new(Addition, @size, get_array_start) - 1
-          else
-            return @size
-          end
+          return @size - 1
         else
-          return Expression::new(Substraction, @size, 1)
+          if 1.equal?(get_array_start) then
+            return @size
+          else
+            return @size + get_array_start - 1
+          end
         end
       else
         return nil
