@@ -61,12 +61,15 @@ module BOAST
       return Expression::new(Plus,nil,self)
     end
 
-    def address
-      return Expression::new("&",nil,self)
+    def reference
+      return Expression::new(Reference,nil,self)
     end
+
+    alias address reference
    
     def dereference
-      return Expression::new("*",nil,self)
+      return Index::new(self, *(self.dimension.collect(&:start))) if lang == FORTRAN
+      return Expression::new(Dereference,nil,self)
     end
 
     def and(x)

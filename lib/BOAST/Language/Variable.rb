@@ -275,8 +275,8 @@ module BOAST
 
     def dereference
       return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [C, CL, CUDA].include?( lang )
-      return self if lang == FORTRAN
-      #return Expression::new("*",nil,self)
+      puts @dimension.collect { |d| d.start }
+      return Index::new(self, *(@dimension.collect { |d| d.start } ) ) if lang == FORTRAN
     end
    
     def struct_reference(x)
@@ -289,7 +289,7 @@ module BOAST
     end
 
     def [](*args)
-      return Index::new(self,args)
+      return Index::new(self,*args)
     end
  
     def finalize

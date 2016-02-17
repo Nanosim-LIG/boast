@@ -69,6 +69,23 @@ module BOAST
 
   end
 
+  class Reference < Operator
+
+    def Reference.string(arg1, arg2, return_type)
+      return " #{arg2}" if lang == FORTRAN
+      return " &#{arg2}"
+    end
+
+  end
+
+  class Dereference < Operator
+
+    def Dereference.string(arg1, arg2, return_type)
+      return " *(#{arg2})"
+    end
+
+  end
+
   class Equal < Operator
 
     def Equal.string(arg1, arg2, return_type)

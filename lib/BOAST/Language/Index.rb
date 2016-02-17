@@ -5,7 +5,7 @@ module BOAST
     attr_reader :indexes
     attr_accessor :alignment
 
-    def initialize(source, indexes)
+    def initialize(source, *indexes)
       @source = source
       @indexes = indexes
     end
