@@ -9,6 +9,7 @@ require_relative 'Language/For'
 require_relative 'Language/If'
 require_relative 'Language/Case'
 require_relative 'Language/While'
+require_relative 'Language/Procedure'
 require_relative 'helper'
 
 class TestLanguage < Minitest::Test
