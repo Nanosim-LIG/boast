@@ -42,4 +42,33 @@ class TestLanguage < Minitest::Test
     end
   end
 
+  def test_puts_float_64
+    block = lambda { puts 4.7.to_var }
+    set_lang(FORTRAN)
+    assert_subprocess_output( "4.7_wp\n", "", &block )
+    set_lang(C)
+    assert_subprocess_output( "4.7\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "4.7\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "4.7\n", "", &block )
+  end
+
+  def test_puts_float_32
+    begin
+      push_env(:default_real_size => 4)
+      block = lambda { puts 4.7.to_var }
+      set_lang(FORTRAN)
+      assert_subprocess_output( "4.7\n", "", &block )
+      set_lang(C)
+      assert_subprocess_output( "4.7f\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "4.7f\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "4.7f\n", "", &block )
+    ensure
+      pop_env(:default_real_size)
+    end
+  end
+
 end
