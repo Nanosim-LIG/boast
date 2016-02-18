@@ -41,7 +41,7 @@ class TestDimension < Minitest::Test
     begin
       d = Dim(15)
       assert_equal("15", "#{d.size}")
-      assert_equal("n - (1)" , "#{d.start}")
+      assert_equal("n - (1)", "#{d.start}")
       assert_equal("15 + n - (1) - (1)", "#{d.finish}")
     ensure
       pop_env(:array_start)
@@ -62,7 +62,7 @@ class TestDimension < Minitest::Test
       expr = Int(:n) - 1
       d = Dim(expr)
       assert_equal("n - (1)", "#{d.size}")
-      assert_equal("0" , "#{d.start}")
+      assert_equal("0", "#{d.start}")
       assert_equal("n - (1) - (1)", "#{d.finish}")
     ensure
       pop_env(:array_start)
@@ -75,7 +75,7 @@ class TestDimension < Minitest::Test
       expr = Int(:n) - 1
       d = Dim(expr)
       assert_equal("n - (1)", "#{d.size}")
-      assert_equal("2" , "#{d.start}")
+      assert_equal("2", "#{d.start}")
       assert_equal("n - (1) + 2 - (1)", "#{d.finish}")
     ensure
       pop_env(:array_start)
@@ -87,7 +87,7 @@ class TestDimension < Minitest::Test
     begin
       d = Dim( Int(:n) - 1 )
       assert_equal("n - (1)", "#{d.size}")
-      assert_equal("m + 2" , "#{d.start}")
+      assert_equal("m + 2", "#{d.start}")
       assert_equal("n - (1) + m + 2 - (1)", "#{d.finish}")
     ensure
       pop_env(:array_start)
@@ -105,16 +105,16 @@ class TestDimension < Minitest::Test
     expr = Int(:n) - 1
     d = Dim(5,expr)
     assert_equal("n - (1) - (5) + 1", "#{d.size}")
-    assert_equal("5" , "#{d.start}")
+    assert_equal("5", "#{d.start}")
     assert_equal("n - (1)", "#{d.finish}")
     d = Dim(expr,15)
     assert_equal("15 - (n - (1)) + 1", "#{d.size}")
-    assert_equal("n - (1)" , "#{d.start}")
+    assert_equal("n - (1)", "#{d.start}")
     assert_equal("15", "#{d.finish}")
     expr2 = Int(:m) + 2
     d = Dim(expr2,expr)
     assert_equal("n - (1) - (m + 2) + 1", "#{d.size}")
-    assert_equal("m + 2" , "#{d.start}")
+    assert_equal("m + 2", "#{d.start}")
     assert_equal("n - (1)", "#{d.finish}")
   end
 
