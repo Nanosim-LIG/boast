@@ -4,6 +4,14 @@ module BOAST
     return Expression::new("return",nil, value)
   end
 
+  def And(a, b)
+    return Expression::new(And, a, b)
+  end
+
+  def Or(a, b)
+    return Expression::new(Or, a, b)
+  end
+
   module Arithmetic
 
     def **(x)
