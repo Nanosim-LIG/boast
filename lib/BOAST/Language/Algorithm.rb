@@ -244,16 +244,20 @@ ConvolutionGenerator = BOAST
 class Integer
   def to_var
     if self < 0 then
-       return BOAST::Variable::new("#{self}", BOAST::Int, :signed => true, :constant => self )
+       v = BOAST::Variable::new("#{self}", BOAST::Int, :signed => true, :constant => self )
      else
-       return BOAST::Variable::new("#{self}", BOAST::Int, :signed => false, :constant => self )
+       v = BOAST::Variable::new("#{self}", BOAST::Int, :signed => false, :constant => self )
     end
+    v.force_replace_constant = true
+    return v
   end
 end
 
 class Float
   def to_var
-    return BOAST::Variable::new("#{self}", BOAST::Real, :constant => self )
+    v = BOAST::Variable::new("#{self}", BOAST::Real, :constant => self )
+    v.force_replace_constant = true
+    return v
   end
 end
 
