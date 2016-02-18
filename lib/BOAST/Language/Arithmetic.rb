@@ -1,4 +1,9 @@
 module BOAST
+
+  def Return(value)
+    return Expression::new("return",nil, value)
+  end
+
   module Arithmetic
 
     def **(x)

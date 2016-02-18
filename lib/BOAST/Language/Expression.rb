@@ -2,10 +2,6 @@ module BOAST
 
   module_function
 
-  def Return(value)
-    return Expression("return",nil, value)
-  end
-
   class Expression
     include PrivateStateAccessor
     include Arithmetic
