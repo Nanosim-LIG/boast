@@ -229,6 +229,9 @@ module BOAST
           BOAST::pr align if align
         }
       end
+      if @properties[:return] then
+        BOAST::decl @properties[:return]
+      end
       return self
     end
 
@@ -246,6 +249,9 @@ module BOAST
         align = p.align
         BOAST::pr align if align
       }
+      if @properties[:return] then
+        BOAST::decl @properties[:return]
+      end
       return self
     end
 
