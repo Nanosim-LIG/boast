@@ -682,13 +682,16 @@ module BOAST
     end
 
     def to_s
-      raise LanguageError,  "Ternary operator unsupported in FORTRAN!" if lang == FORTRAN
+      return to_s_fortran if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
+    def to_s_fortran
+      "merge(#{@operand2}, #{@operand3}, #{@operand1})"
+    end
+
     def to_s_c
-      s = ""
-      s += "(#{@operand1} ? #{@operand2} : #{@operand3})"
+      "(#{@operand1} ? #{@operand2} : #{@operand3})"
     end
 
     def pr
