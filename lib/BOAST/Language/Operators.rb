@@ -14,6 +14,7 @@ module BOAST
     end
 
     def Operator.convert(arg, type)
+      return "#{arg}" if get_vector_name(arg.type) == get_vector_name(type) or lang == CUDA
       return "convert_#{type.decl}( #{arg} )" if lang == CL
 
       path = get_conversion_path(type, arg.type)
