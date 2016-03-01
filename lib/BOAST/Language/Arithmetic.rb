@@ -1,5 +1,7 @@
 module BOAST
 
+  module_function
+
   def Return(value)
     return Expression::new("return",nil, value)
   end
