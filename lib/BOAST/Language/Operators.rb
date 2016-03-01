@@ -682,17 +682,31 @@ module BOAST
       @operand3 = z
     end
 
+    def op_to_var
+      op1 = @operand1.respond_to?(:to_var) ? @operand1.to_var : @operand1
+      op1 = @operand1 unless op1
+      op2 = @operand2.respond_to?(:to_var) ? @operand2.to_var : @operand2
+      op2 = @operand2 unless op2
+      op3 = @operand3.respond_to?(:to_var) ? @operand3.to_var : @operand3
+      op3 = @operand3 unless op3
+      return [op1, op2, op3]
+    end
+
+    private :op_to_var
+
     def to_s
       return to_s_fortran if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
     def to_s_fortran
-      "merge(#{@operand2}, #{@operand3}, #{@operand1})"
+      op1, op2, op3 = op_to_var
+      "merge(#{op2}, #{op3}, #{op1})"
     end
 
     def to_s_c
-      "(#{@operand1} ? #{@operand2} : #{@operand3})"
+      op1, op2, op3 = op_to_var
+      "(#{op1} ? #{op2} : #{op3})"
     end
 
     def pr
