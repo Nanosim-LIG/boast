@@ -8,12 +8,19 @@ module BOAST
   X86 = 1
   ARM = 2
 
-  native_flags = nil
+  native_flags = []
 
   if OS.mac? then
     native_flags = `sysctl -n machdep.cpu.features`.split
   else
-    native_flags = YAML::load(`cat /proc/cpuinfo`)["flags"].upcase.gsub("_",".").split
+    yaml_cpuinfo = YAML::load(`cat /proc/cpuinfo`)
+    cpuinfo_flags = yaml_cpuinfo["flags"]
+    cpuinfo_flags = yaml_cpuinfo["Features"] unless cpuinfo_flags
+    if cpuinfo_flags then
+      native_flags = cpuinfo_flags.upcase.gsub("_",".").split
+    else
+      warn "Unable to determine architecture flags for native!"
+    end
   end
 
   MODELS={ "native" => native_flags }
