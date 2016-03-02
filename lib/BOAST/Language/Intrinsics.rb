@@ -23,7 +23,7 @@ module BOAST
     end
   end
 
-  MODELS={ "native" => native_flags }
+  MODELS = { "native" => native_flags }
   MODELS.update(X86architectures)
   INSTRUCTIONS = {}
   INSTRUCTIONS.update(X86CPUID_by_name)
@@ -45,11 +45,9 @@ module BOAST
       else
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
+      return instruction if get_architecture == ARM
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
-      supported = false
-      INSTRUCTIONS[instruction.to_s].each { |flag|
-        supported = true if MODELS[get_model].include?(flag)
-      }
+      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model]).size > 0
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
       return instruction
     end
