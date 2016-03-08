@@ -75,14 +75,15 @@ module BOAST
     attr_reader :expression
     attr_reader :case_conditions
 
-    def initialize(expression, *control, &block)
+    def initialize(expression, control = {}, &block)
       @expression = expression
       @case_conditions = []
-      control.push(block) if block
-      while control.size >= 2 do
-        @case_conditions.push CaseCondition::new([control.shift].flatten, &(control.shift))
-      end
-      @case_conditions.push CaseCondition::new(&(control.shift)) if control.size > 0
+      default = control.delete(:default)
+      default = block unless default or not block
+      control.each { |key, value|
+        @case_conditions.push CaseCondition::new( [key].flatten, &value )
+      }
+      @case_conditions.push CaseCondition::new( &default ) if default
     end
 
     def get_c_strings
