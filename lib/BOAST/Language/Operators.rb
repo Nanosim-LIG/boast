@@ -633,9 +633,9 @@ module BOAST
       rescue
       end
       return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA].include?(lang) ) )
-      op1 = convert_operand(@operand1)
-      op2 = convert_operand(@operand2)
-      op3 = convert_operand(@operand3)
+      op1 = convert_operand(@operand1.to_var)
+      op2 = convert_operand(@operand2.to_var)
+      op3 = convert_operand(@operand3.to_var)
       if [CL, CUDA].include?(lang)
         ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
@@ -703,11 +703,12 @@ module BOAST
       rescue
       end
       return (@operand3 - @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA].include?(lang) ) )
-      op1 = convert_operand(@operand1)
-      op2 = convert_operand(@operand2)
-      op3 = convert_operand(@operand3)
+      op1 = convert_operand(@operand1.to_var)
+      op2 = convert_operand(@operand2.to_var)
+      op3 = convert_operand(@operand3.to_var)
       if [CL, CUDA].include?(lang)
-        ret_name = "fma( #{op1}, -#{op2}, #{op3} )"
+        op1 = convert_operand((-@operand1).to_var)
+        ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
         case architecture
         when X86
