@@ -637,15 +637,15 @@ module BOAST
       op2 = convert_operand(@operand2)
       op3 = convert_operand(@operand3)
       if [CL, CUDA].include?(lang)
-        ret_name = "fma(#{op1},#{op2},#{op3})"
+        ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
         case architecture
         when X86
-          ret_name = "#{instruction}(#{op1},#{op2},#{op3})"
+          ret_name = "#{instruction}( #{op1}, #{op2}, #{op3} )"
         when ARM
-          ret_name = "#{instruction}(#{op2},#{op3},#{op1})"
+          ret_name = "#{instruction}( #{op3}, #{op1}, #{op2} )"
         else
-          return (@operand1 * @operand2 + @operand3).to_var
+          return (@operand3 + @operand1 * @operand2).to_var
         end
       end
       return @return_type.copy( ret_name, DISCARD_OPTIONS)
