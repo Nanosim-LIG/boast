@@ -48,4 +48,50 @@ class TestExpression < Minitest::Test
     }
   end
 
+  def test_fma
+    a = Int :a
+    b = Int :b
+    c = Int :c
+    block = lambda { pr c === FMA(a,b,c) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+c = c + (a) * (b)
+EOF
+    set_lang(C)
+    assert_subprocess_output( <<EOF, "", &block )
+c = c + (a) * (b);
+EOF
+    set_lang(CL)
+    assert_subprocess_output( <<EOF, "", &block )
+c = fma( a, b, c );
+EOF
+    set_lang(CUDA)
+    assert_subprocess_output( <<EOF, "", &block )
+c = fma( a, b, c );
+EOF
+  end
+
+  def test_fms
+    a = Int :a
+    b = Int :b
+    c = Int :c
+    block = lambda { pr c === FMS(a,b,c) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+c = c - ((a) * (b))
+EOF
+    set_lang(C)
+    assert_subprocess_output( <<EOF, "", &block )
+c = c - ((a) * (b));
+EOF
+    set_lang(CL)
+    assert_subprocess_output( <<EOF, "", &block )
+c = fma(  -(a), b, c );
+EOF
+    set_lang(CUDA)
+    assert_subprocess_output( <<EOF, "", &block )
+c = fma(  -(a), b, c );
+EOF
+  end
+
 end
