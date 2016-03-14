@@ -666,6 +666,76 @@ module BOAST
 
   end
 
+  class FMS < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :operand1
+    attr_reader :operand2
+    attr_reader :operand3
+    attr_reader :return_type
+
+    def initialize(a,b,c)
+      @operand1 = a
+      @operand2 = b
+      @operand3 = c
+      @return_type = nil
+      @return_type = @operand3.to_var unless @return_type
+    end
+
+    def convert_operand(op)
+      return  "#{Operator.convert(op, @return_type.type)}"
+    end
+
+    private :convert_operand
+
+    def type
+      return @return_type.type
+    end
+
+    def to_var
+      instruction = nil
+      begin
+        instruction = intrinsics(:FNMADD,@return_type.type)
+      rescue
+      end
+      return (@operand3 - @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA].include?(lang) ) )
+      op1 = convert_operand(@operand1)
+      op2 = convert_operand(@operand2)
+      op3 = convert_operand(@operand3)
+      if [CL, CUDA].include?(lang)
+        ret_name = "fma( #{op1}, -#{op2}, #{op3} )"
+      else
+        case architecture
+        when X86
+          ret_name = "#{instruction}( #{op1}, #{op2}, #{op3} )"
+        when ARM
+          ret_name = "#{instruction}( #{op3}, #{op1}, #{op2} )"
+        else
+          return (@operand3 - @operand1 * @operand2).to_var
+        end
+      end
+      return @return_type.copy( ret_name, DISCARD_OPTIONS)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
   class Ternary
     extend Functor
     include Arithmetic
