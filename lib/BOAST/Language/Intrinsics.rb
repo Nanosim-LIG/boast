@@ -333,7 +333,7 @@ module BOAST
         vtype = vector_type_name( :float, size, vector_size )
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],
-         [:FMADD, "mla"], [:FNMSUB, "mls"],
+         [:FMADD, "mla"], [:FNMADD, "mls"],
          [:LOAD, "ldl"], [:LOADA, "ldl"],
          [:STORE, "stl"], [:STOREA, "stl"]].each { |cl, ins|
           INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_#{type}".to_sym
