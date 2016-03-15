@@ -20,7 +20,7 @@ class TestIf < Minitest::Test
   end
 
   def test_pr_if
-    f1 = If(@cond1,  @block1)
+    f1 = If(@cond1 =>  @block1)
     f2 = If(@cond1, &@block1)
     begin
       [f1, f2].each { |f|
@@ -46,8 +46,8 @@ EOF
   end
 
   def test_pr_if_else
-    f1 = If(@cond1, @block1,  @block3)
-    f2 = If(@cond1, @block1, &@block3)
+    f1 = If(@cond1 => @block1, :else => @block3)
+    f2 = If(@cond1 => @block1, &@block3)
     begin
       [f1, f2].each { |f|
         block = lambda { pr f }
@@ -76,8 +76,8 @@ EOF
   end
 
   def test_pr_if_elsif_else
-    f1 = If(@cond1, @block1, @cond2, @block2,  @block3)
-    f2 = If(@cond1, @block1, @cond2, @block2, &@block3)
+    f1 = If(@cond1 => @block1, @cond2 => @block2, :else => @block3)
+    f2 = If(@cond1 => @block1, @cond2 => @block2, &@block3)
     begin
       [f1, f2].each { |f|
         block = lambda { pr f }
@@ -110,8 +110,8 @@ EOF
   end
 
   def test_pr_if_elsif_else_args
-    f1 = If(@cond1, @block4, @cond2, @block5,  @block6)
-    f2 = If(@cond1, @block4, @cond2, @block5, &@block6)
+    f1 = If(@cond1 => @block4, @cond2 => @block5, :else => @block6)
+    f2 = If(@cond1 => @block4, @cond2 => @block5, &@block6)
     y = nil
     begin
       [f1, f2].each { |f|

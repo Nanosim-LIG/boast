@@ -8,15 +8,22 @@ module BOAST
   X86 = 1
   ARM = 2
 
-  native_flags = nil
+  native_flags = []
 
   if OS.mac? then
     native_flags = `sysctl -n machdep.cpu.features`.split
   else
-    native_flags = YAML::load(`cat /proc/cpuinfo`)["flags"].upcase.gsub("_",".").split
+    yaml_cpuinfo = YAML::load(`cat /proc/cpuinfo`)
+    cpuinfo_flags = yaml_cpuinfo["flags"]
+    cpuinfo_flags = yaml_cpuinfo["Features"] unless cpuinfo_flags
+    if cpuinfo_flags then
+      native_flags = cpuinfo_flags.upcase.gsub("_",".").split
+    else
+      warn "Unable to determine architecture flags for native!"
+    end
   end
 
-  MODELS={ "native" => native_flags }
+  MODELS = { "native" => native_flags }
   MODELS.update(X86architectures)
   INSTRUCTIONS = {}
   INSTRUCTIONS.update(X86CPUID_by_name)
@@ -38,12 +45,10 @@ module BOAST
       else
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
-      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
-      supported = false
-      INSTRUCTIONS[instruction.to_s].each { |flag|
-        supported = true if MODELS[get_model].include?(flag)
-      }
-      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? "and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
+      return instruction if get_architecture == ARM
+      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
+      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
+      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
       return instruction
     end
 
@@ -291,6 +296,15 @@ module BOAST
           INTRINSICS[X86][:CVT][ivtype][fvtype] = "_mm#{vs}_cvt#{ftype}_#{itype}".to_sym
         }
       }
+      [64,32].each { |bsize|
+        ftype = type_name_X86( :float, bsize, bvsize )
+        itype = type_name_X86( :int,   bsize, bvsize, :signed )
+        fvtype = vector_type_name( :float, bsize, bvsize )
+        ivtype = vector_type_name( :int,   bsize, bvsize, :signed )
+        vs = ( bvsize < 256 ? "" : "#{bvsize}" )
+        INTRINSICS[X86][:CVT][fvtype][ivtype] = "_mm#{vs}_cvt#{itype}_#{ftype}".to_sym
+        INTRINSICS[X86][:CVT][ivtype][fvtype] = "_mm#{vs}_cvt#{ftype}_#{itype}".to_sym
+      }
     }
 
 
@@ -319,7 +333,7 @@ module BOAST
         vtype = vector_type_name( :float, size, vector_size )
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],
-         [:FMADD, "mla"], [:FNMSUB, "mls"],
+         [:FMADD, "mla"], [:FNMADD, "mls"],
          [:LOAD, "ldl"], [:LOADA, "ldl"],
          [:STORE, "stl"], [:STOREA, "stl"]].each { |cl, ins|
           INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_#{type}".to_sym

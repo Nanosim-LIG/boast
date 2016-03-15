@@ -252,6 +252,11 @@ module BOAST
       return Variable::new(name, @type.class, h)
     end
 
+    def set_align(align)
+      @alignment = align
+      return self
+    end
+
     def self.from_type(name, type, options={})
       hash = type.to_hash
       options.each { |k,v|

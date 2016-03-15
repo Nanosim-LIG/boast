@@ -18,28 +18,25 @@ class TestCase < Minitest::Test
   end
 
   def test_pr_case
-    c1 = Case(@expr, @const1,  @block1)
-    c2 = Case(@expr, @const1, &@block1)
+    c = Case(@expr, @const1 =>  @block1)
     begin
-      [c1, c2].each { |c|
-        block = lambda { pr c }
-        set_lang(FORTRAN)
-        assert_subprocess_output( <<EOF, "", &block )
+      block = lambda { pr c }
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
 select case ((n) * (2))
   case (2)
     a(i) = i
 end select
 EOF
-        [C, CL, CUDA].each { |l|
-          set_lang(l)
-          assert_subprocess_output( <<EOF, "", &block )
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
   case 2 :
     a[i - (1)] = i;
     break;
 }
 EOF
-        }
       }
     ensure
       set_indent_level(0)
@@ -47,8 +44,8 @@ EOF
   end
 
   def test_pr_case_default
-    c1 = Case(@expr, @const1, @block1,  @block2)
-    c2 = Case(@expr, @const1, @block1, &@block2)
+    c1 = Case(@expr, @const1 => @block1, :default => @block2)
+    c2 = Case(@expr, @const1 => @block1, &@block2)
     begin
       [c1, c2].each { |c|
         block = lambda { pr c }
@@ -80,8 +77,8 @@ EOF
   end
 
   def test_pr_case_default
-    c1 = Case(@expr, [@const1, @const2], @block1,  @block2)
-    c2 = Case(@expr, [@const1, @const2], @block1, &@block2)
+    c1 = Case(@expr, [@const1, @const2] => @block1, :default => @block2)
+    c2 = Case(@expr, [@const1, @const2] => @block1, &@block2)
     begin
       [c1, c2].each { |c|
         block = lambda { pr c }
@@ -113,8 +110,8 @@ EOF
   end
 
   def test_pr_multiple_case_default
-    c1 = Case(@expr, @const1, @block1, @const2, @block3,  @block2)
-    c2 = Case(@expr, @const1, @block1, @const2, @block3, &@block2)
+    c1 = Case(@expr, @const1 => @block1, @const2 => @block3, :default => @block2)
+    c2 = Case(@expr, @const1 => @block1, @const2 => @block3, &@block2)
     begin
       [c1, c2].each { |c|
         block = lambda { pr c }
@@ -151,8 +148,8 @@ EOF
   end
 
   def test_open_close_multiple_case_default
-    c1 = Case(@expr, @const1, @block1, @const2, @block3,  @block2)
-    c2 = Case(@expr, @const1, @block1, @const2, @block3, &@block2)
+    c1 = Case(@expr, @const1 => @block1, @const2 => @block3, :default => @block2)
+    c2 = Case(@expr, @const1 => @block1, @const2 => @block3, &@block2)
     begin
       [c1, c2].each { |c|
         block = lambda { pr c }

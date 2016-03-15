@@ -56,6 +56,10 @@ module BOAST
       BOAST::get_architecture_name
     end
 
+    def get_lang_name
+      BOAST::get_lang_name
+    end
+
     def annotate_number(*args)
       BOAST::annotate_number(*args)
     end
@@ -133,6 +137,21 @@ module BOAST
       return :MPPA
     else
       return nil
+    end
+  end
+
+  def get_lang_name
+    case lang
+    when C
+      return :C
+    when FORTRAN
+      return :FORTRAN
+    when CL
+      return :CL
+    when CUDA
+      return :CUDA
+    else
+      nil
     end
   end
 

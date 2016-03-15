@@ -4,19 +4,20 @@ module BOAST
 
     attr_reader :conditions
 
-    def initialize(*conditions, &block)
-      raise "Illegal if construct!" if conditions.size == 0
-      conditions.push(block) if block
+    def initialize(conditions, &block)
       @conditions = []
       @blocks = []
-      if conditions.size == 1 then
-        @conditions.push conditions.shift
+      if conditions.is_a?(Hash) then
+        else_block = conditions.delete(:else)
+        else_block = block unless else_block or not block
+        conditions.each { |key, value|
+          @conditions.push key
+          @blocks.push value
+        }
+        @blocks.push else_block if else_block
       else
-        while conditions.size >= 2 do
-          @conditions.push conditions.shift
-          @blocks.push conditions.shift
-        end
-        @blocks.push conditions.shift if conditions.size > 0
+        @conditions.push conditions
+        @blocks.push block if block
       end
     end
 

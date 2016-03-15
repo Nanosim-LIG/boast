@@ -14,6 +14,7 @@ module BOAST
     end
 
     def Operator.convert(arg, type)
+      return "#{arg}" if get_vector_name(arg.type) == get_vector_name(type) or lang == CUDA
       return "convert_#{type.decl}( #{arg} )" if lang == CL
 
       path = get_conversion_path(type, arg.type)
@@ -632,19 +633,90 @@ module BOAST
       rescue
       end
       return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA].include?(lang) ) )
-      op1 = convert_operand(@operand1)
-      op2 = convert_operand(@operand2)
-      op3 = convert_operand(@operand3)
+      op1 = convert_operand(@operand1.to_var)
+      op2 = convert_operand(@operand2.to_var)
+      op3 = convert_operand(@operand3.to_var)
       if [CL, CUDA].include?(lang)
-        ret_name = "fma(#{op1},#{op2},#{op3})"
+        ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
         case architecture
         when X86
-          ret_name = "#{instruction}(#{op1},#{op2},#{op3})"
+          ret_name = "#{instruction}( #{op1}, #{op2}, #{op3} )"
         when ARM
-          ret_name = "#{instruction}(#{op2},#{op3},#{op1})"
+          ret_name = "#{instruction}( #{op3}, #{op1}, #{op2} )"
         else
-          return (@operand1 * @operand2 + @operand3).to_var
+          return (@operand3 + @operand1 * @operand2).to_var
+        end
+      end
+      return @return_type.copy( ret_name, DISCARD_OPTIONS)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
+  class FMS < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :operand1
+    attr_reader :operand2
+    attr_reader :operand3
+    attr_reader :return_type
+
+    def initialize(a,b,c)
+      @operand1 = a
+      @operand2 = b
+      @operand3 = c
+      @return_type = nil
+      @return_type = @operand3.to_var unless @return_type
+    end
+
+    def convert_operand(op)
+      return  "#{Operator.convert(op, @return_type.type)}"
+    end
+
+    private :convert_operand
+
+    def type
+      return @return_type.type
+    end
+
+    def to_var
+      instruction = nil
+      begin
+        instruction = intrinsics(:FNMADD,@return_type.type)
+      rescue
+      end
+      return (@operand3 - @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA].include?(lang) ) )
+      op1 = convert_operand(@operand1.to_var)
+      op2 = convert_operand(@operand2.to_var)
+      op3 = convert_operand(@operand3.to_var)
+      if [CL, CUDA].include?(lang)
+        op1 = convert_operand((-@operand1).to_var)
+        ret_name = "fma( #{op1}, #{op2}, #{op3} )"
+      else
+        case architecture
+        when X86
+          ret_name = "#{instruction}( #{op1}, #{op2}, #{op3} )"
+        when ARM
+          ret_name = "#{instruction}( #{op3}, #{op1}, #{op2} )"
+        else
+          return (@operand3 - @operand1 * @operand2).to_var
         end
       end
       return @return_type.copy( ret_name, DISCARD_OPTIONS)
@@ -681,17 +753,31 @@ module BOAST
       @operand3 = z
     end
 
+    def op_to_var
+      op1 = @operand1.respond_to?(:to_var) ? @operand1.to_var : @operand1
+      op1 = @operand1 unless op1
+      op2 = @operand2.respond_to?(:to_var) ? @operand2.to_var : @operand2
+      op2 = @operand2 unless op2
+      op3 = @operand3.respond_to?(:to_var) ? @operand3.to_var : @operand3
+      op3 = @operand3 unless op3
+      return [op1, op2, op3]
+    end
+
+    private :op_to_var
+
     def to_s
       return to_s_fortran if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
     def to_s_fortran
-      "merge(#{@operand2}, #{@operand3}, #{@operand1})"
+      op1, op2, op3 = op_to_var
+      "merge(#{op2}, #{op3}, #{op1})"
     end
 
     def to_s_c
-      "(#{@operand1} ? #{@operand2} : #{@operand3})"
+      op1, op2, op3 = op_to_var
+      "(#{op1} ? #{op2} : #{op3})"
     end
 
     def pr

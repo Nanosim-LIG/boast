@@ -14,6 +14,11 @@ module BOAST
       return !!@alignment
     end
 
+    def set_align(align)
+      @alignment = align
+      return self
+    end
+
     def to_var
       var = @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil, :align => alignment)
       return var

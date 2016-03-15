@@ -3,12 +3,14 @@ require 'minitest/autorun'
 require 'BOAST'
 include BOAST
 require_relative 'Language/Expression'
+require_relative 'Language/Intrinsics'
 require_relative 'Language/Dimension'
 require_relative 'Language/Array'
 require_relative 'Language/For'
 require_relative 'Language/If'
 require_relative 'Language/Case'
 require_relative 'Language/While'
+require_relative 'Language/Procedure'
 require_relative 'helper'
 
 class TestLanguage < Minitest::Test
