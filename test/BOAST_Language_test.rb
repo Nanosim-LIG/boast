@@ -28,8 +28,7 @@ class TestLanguage < Minitest::Test
   end
 
   def test_decl_int_64
-    begin
-      push_env(:default_int_size => 8)
+    push_env(:default_int_size => 8) {
       block = lambda { decl Int(:a) }
       set_lang(FORTRAN)
       assert_subprocess_output( "integer(kind=8) :: a\n", "", &block )
@@ -39,9 +38,7 @@ class TestLanguage < Minitest::Test
       assert_subprocess_output( "long long a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "long a;\n", "", &block )
-    ensure
-      pop_env(:default_int_size)
-    end
+    }
   end
 
   def test_puts_float_64
@@ -57,8 +54,7 @@ class TestLanguage < Minitest::Test
   end
 
   def test_puts_float_32
-    begin
-      push_env(:default_real_size => 4)
+    push_env(:default_real_size => 4) {
       block = lambda { puts 4.7.to_var }
       set_lang(FORTRAN)
       assert_subprocess_output( "4.7\n", "", &block )
@@ -68,9 +64,7 @@ class TestLanguage < Minitest::Test
       assert_subprocess_output( "4.7f\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "4.7f\n", "", &block )
-    ensure
-      pop_env(:default_real_size)
-    end
+    }
   end
 
 end

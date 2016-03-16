@@ -65,8 +65,7 @@ class TestProcedure < Minitest::Test
 
   def test_procedure_opencl_array
     silence_warnings { require 'opencl_ruby_ffi' }
-    begin
-      push_env(:array_start => 0)
+    push_env(:array_start => 0) {
       a = Int( :a, :dir => :inout, :dim => [Dim()] )
       b = Int( :b, :dir => :in )
       i = Int( :i )
@@ -83,9 +82,7 @@ class TestProcedure < Minitest::Test
       k = p.ckernel
       r = k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1])
       assert_equal(a_out_ref, ah)
-    ensure
-      pop_env(:array_start)
-    end
+    }
   end
 
 end
