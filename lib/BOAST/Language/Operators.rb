@@ -565,7 +565,7 @@ module BOAST
 
     def get_mask
       raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{@store_type.type.vector_length}!" if @mask.length != @store_type.type.vector_length
-      return Load.to_s(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @store_type.type.size, :vector_length => @store_type.type.vector_length ) )
+      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @store_type.type.size, :vector_length => @store_type.type.vector_length ) )
     end
 
     private :get_mask
