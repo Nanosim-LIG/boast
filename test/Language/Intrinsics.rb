@@ -158,7 +158,7 @@ EOF
       b = Real :b, :vector_length => 4
       block = lambda { pr b === MaskLoad(a[0], [1, 0, 1, 0], b) }
       assert_subprocess_output( <<EOF, "", &block )
-b = _mm_maskload_ps((float * )&a[0], _mm_setr_epi32( -1, 0, -1, 0 ));
+b = _mm_maskload_ps( (float * ) &a[0], _mm_setr_epi32( -1, 0, -1, 0 ) );
 EOF
     }
   end
@@ -208,8 +208,38 @@ EOF
       b = Real :b, :vector_length => 4
       block = lambda { pr MaskStore(a[0], b, [1, 0, 1, 0]) }
       assert_subprocess_output( <<EOF, "", &block )
-_mm_maskstore_ps((float * )&a[0], _mm_setr_epi32( -1, 0, -1, 0 ), b);
+_mm_maskstore_ps( (float * ) &a[0], _mm_setr_epi32( -1, 0, -1, 0 ), b );
 EOF
+    }
+  end
+
+  def test_set1
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      b = Real :b, :vector_length => 4
+      block = lambda { pr b === Set(1.0, b) }
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm_set1_ps( 1.0 );
+EOF
+      push_env( :architecture => ARM ) {
+      assert_subprocess_output( <<EOF, "", &block )
+b = vdupq_n_f32( 1.0 );
+EOF
+      }
+    }
+  end
+
+  def test_set
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      b = Real :b, :vector_length => 4
+      block = lambda { pr b === Set([1.0, 2.0, 3.0, 4.0], b) }
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm_setr_ps( 1.0, 2.0, 3.0, 4.0 );
+EOF
+      push_env( :architecture => ARM ) {
+      assert_subprocess_output( <<EOF, "", &block )
+b = vsetq_lane_f32( 4.0, vsetq_lane_f32( 3.0, vsetq_lane_f32( 2.0, vsetq_lane_f32( 1.0, vdupq_n_f32( 0 ), 0 ), 1 ), 2 ), 3 );
+EOF
+      }
     }
   end
 
