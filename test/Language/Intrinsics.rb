@@ -152,6 +152,17 @@ EOF
     }
   end
 
+  def test_mask_load
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
+      a = Real :a, :dim => [Dim()]
+      b = Real :b, :vector_length => 4
+      block = lambda { pr b === MaskLoad(a[0], [1, 0, 1, 0], b) }
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm_maskload_ps((float * )&a[0], _mm_setr_epi32( -1, 0, -1, 0 ));
+EOF
+    }
+  end
+
   def test_store
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
@@ -188,6 +199,17 @@ vstlq_f32( (float * ) &a[0], b );
 EOF
         }
       }
+    }
+  end
+
+  def test_mask_store
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
+      a = Real :a, :dim => [Dim()]
+      b = Real :b, :vector_length => 4
+      block = lambda { pr MaskStore(a[0], b, [1, 0, 1, 0]) }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_maskstore_ps((float * )&a[0], _mm_setr_epi32( -1, 0, -1, 0 ), b);
+EOF
     }
   end
 
