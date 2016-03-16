@@ -501,7 +501,7 @@ module BOAST
     attr_reader :source
     attr_reader :store_type
 
-    def initialize(dest, source, mask, store_type = nil)
+    def initialize(dest, source, store_type = nil)
       @dest = dest
       @source = source
       @store_type = store_type
