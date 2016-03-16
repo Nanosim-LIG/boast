@@ -6,7 +6,7 @@ require_relative '../helper'
 class TestIntrinsics < Minitest::Test
 
   def test_add
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Real :b, :vector_length => 4
       block = lambda { pr a + b }
@@ -22,7 +22,7 @@ EOF
   end
 
   def test_add_int_real
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Int  :b, :vector_length => 4
       block = lambda { pr a + b }
@@ -38,7 +38,7 @@ EOF
   end
 
   def test_mul
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Real :b, :vector_length => 4
       block = lambda { pr a * b }
@@ -54,7 +54,7 @@ EOF
   end
 
   def test_mul_int_real
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Int  :a, :vector_length => 4
       b = Real :b, :vector_length => 4
       block = lambda { pr a * b }
@@ -70,7 +70,7 @@ EOF
   end
 
   def test_fma
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Real :b, :vector_length => 4
       c = Real :c, :vector_length => 4
@@ -92,7 +92,7 @@ EOF
   end
 
   def test_fms
-    push_env( :default_real_size => 4, :lang => C, :model => :nehalem ) {
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Real :b, :vector_length => 4
       c = Real :c, :vector_length => 4
