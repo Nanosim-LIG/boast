@@ -113,4 +113,43 @@ EOF
     }
   end
 
+  def test_load
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :dim => [Dim()]
+      b = Real :b, :vector_length => 4
+      block1 = lambda { pr b === a[0] }
+      block2 = lambda { pr b === Load(a[0],b) }
+      [block1, block2].each { |block|
+        assert_subprocess_output( <<EOF, "", &block )
+b = _mm_loadu_ps( &a[0] );
+EOF
+        push_env( :architecture => ARM ) {
+        assert_subprocess_output( <<EOF, "", &block )
+b = vldlq_f32( &a[0] );
+EOF
+        }
+      }
+    }
+  end
+
+  def test_load_aligned
+    push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :dim => [Dim()]
+      b = Real :b, :vector_length => 4
+      a_index = a[0].set_align(16)
+      block1 = lambda { pr b === a_index }
+      block2 = lambda { pr b === Load(a_index,b) }
+      [block1, block2].each { |block|
+        assert_subprocess_output( <<EOF, "", &block )
+b = _mm_load_ps( &a[0] );
+EOF
+        push_env( :architecture => ARM ) {
+        assert_subprocess_output( <<EOF, "", &block )
+b = vldlq_f32( &a[0] );
+EOF
+        }
+      }
+    }
+  end
+
 end
