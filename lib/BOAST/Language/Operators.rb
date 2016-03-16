@@ -331,12 +331,14 @@ module BOAST
 
           begin
             instruction = intrinsics(:SET, @return_type.type)
+            raise IntrinsicsError unless instruction
             return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS)
           rescue IntrinsicsError
             instruction = intrinsics(:SET_LANE, @return_type.type)
+            raise IntrinsicsError, "Missing instruction for SET_LANE on #{get_architecture_name}!" unless instruction
             s = Set(0, @return_type).to_s
             @source.each_with_index { |v,i|
-              s = "#{instruction}(#{v}, #{s}, #{i})"
+              s = "#{instruction}( #{v}, #{s}, #{i} )"
             }
             return @return_type.copy(s, DISCARD_OPTIONS)
           end
