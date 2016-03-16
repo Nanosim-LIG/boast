@@ -356,8 +356,8 @@ module BOAST
         ivtype = vector_type_name( :int, int_size, vector_size, sign )
         ftype = type_name_ARM( :float, float_size )
         itype = type_name_ARM( :int, int_size, sign )
-        INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
-        INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
+        INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
+        INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
       }
     }
     svsize = 64
@@ -369,8 +369,8 @@ module BOAST
         btype = type_name_ARM( :int, bsize, sign )
         svtype = vector_type_name( :int, ssize, svsize, sign )
         bvtype = vector_type_name( :int, bsize, bvsize, sign )
-        INTRINSICS[ARM][:CVT][svtype][bvtype] = "vmovl_#{stype}".to_sym
-        INTRINSICS[ARM][:CVT][bvtype][svtype] = "vmovn_#{btype}".to_sym
+        INTRINSICS[ARM][:CVT][bvtype][svtype] = "vmovl_#{stype}".to_sym
+        INTRINSICS[ARM][:CVT][svtype][bvtype] = "vmovn_#{btype}".to_sym
       }
     }
 

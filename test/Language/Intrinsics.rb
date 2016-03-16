@@ -24,14 +24,14 @@ EOF
   def test_add_int_real
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
-      b = Int  :b, :vector_length => 4
+      b = Int  :b, :vector_length => 4, :size => 2
       block = lambda { pr a + b }
       assert_subprocess_output( <<EOF, "", &block )
-_mm_add_ps( a, _mm_cvtepi32_ps( b ) );
+_mm_add_ps( a, _mm_cvtepi32_ps( _mm_cvtepi16_epi32( b ) ) );
 EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
-vaddq_f32( a, vcvtq_s32_f32( b ) );
+vaddq_f32( a, vcvtq_f32_s32( vmovl_s16( b ) ) );
 EOF
       }
     }
@@ -63,7 +63,7 @@ _mm_mul_ps( _mm_cvtepi32_ps( a ), b );
 EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
-vmulq_f32( vcvtq_s32_f32( a ), b );
+vmulq_f32( vcvtq_f32_s32( a ), b );
 EOF
       }
     }
