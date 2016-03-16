@@ -473,7 +473,7 @@ module BOAST
         src = src[1..-1]
       end
       p_type = @return_type.type.copy(:vector_length => 1)
-      s += "#{instruction}((#{p_type.decl} * )#{src}, #{get_mask})"
+      s += "#{instruction}( (#{p_type.decl} * ) #{src}, #{get_mask} )"
       return @return_type.copy( s, DISCARD_OPTIONS)
     end
 
@@ -519,7 +519,7 @@ module BOAST
           dst = dst[1..-1]
         end
 
-        return "vstore#{@source.type.vector_length}(#{@source}, 0, #{dst})" if lang == CL
+        return "vstore#{@source.type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
         return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and @source.type.total_size*8 == 64
 
         if @dest.alignment == @source.type.total_size then
@@ -584,7 +584,7 @@ module BOAST
         dst = dst[1..-1]
       end
       p_type = @store_type.type.copy(:vector_length => 1)
-      return s += "#{instruction}((#{p_type.decl} * )#{dst}, #{get_mask}, #{Operator.convert(@source, @store_type.type)})"
+      return s += "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, @store_type.type)} )"
     end
 
     def pr
