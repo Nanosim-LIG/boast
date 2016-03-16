@@ -17,17 +17,14 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "int * a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int * a;\n", "", &block )
-    begin
-      push_env(:use_vla => true)
+    push_env(:use_vla => true) {
       set_lang(C)
       assert_subprocess_output( "int32_t a[n1][11];\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "int * a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "int * a;\n", "", &block )
-    ensure
-      pop_env(:use_vla)
-    end
+    }
   end
 
   def test_decl_int_array_unkwown_dim
@@ -41,17 +38,14 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "int * a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int * a;\n", "", &block )
-    begin
-      push_env(:use_vla => true)
+    push_env(:use_vla => true) {
       set_lang(C)
       assert_subprocess_output( "int32_t a[][11];\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "int * a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "int * a;\n", "", &block )
-    ensure
-      pop_env(:use_vla)
-    end
+    }
   end
 
   def test_decl_int_array_deffered_shape
@@ -77,17 +71,14 @@ class TestArray < Minitest::Test
       set_lang(l)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
     }
-    begin
-      push_env(:use_vla => true)
+    push_env(:use_vla => true) {
       set_lang(C)
       assert_subprocess_output( "a[7 - (1)][6 - (5)];\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
-    ensure
-      pop_env(:use_vla)
-    end
+    }
   end
 
   def test_pr_int_array_index_unkwown_dim
@@ -100,17 +91,14 @@ class TestArray < Minitest::Test
       set_lang(l)
       assert_subprocess_output( "a[6 - (1) + (n1) * (7 - (1))];\n", "", &block )
     }
-    begin
-      push_env(:use_vla => true, :array_start => 0)
+    push_env(:use_vla => true, :array_start => 0) {
       set_lang(C)
       assert_subprocess_output( "a[7][6];\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
-    ensure
-      pop_env(:use_vla, :array_start)
-    end
+    }
   end
 
   def test_decl_int_array_local
