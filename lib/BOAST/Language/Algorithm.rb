@@ -163,17 +163,27 @@ module BOAST
 
   @@env = Hash::new{|h, k| h[k] = []}
 
-  def push_env(vars = {})
-    vars.each { |key,value|
+  def push_env(vars = {}, &block)
+    keys = []
+    vars.each { |key, value|
       var = nil
       begin
         var = BOAST::class_variable_get("@@"+key.to_s)
       rescue
+        BOAST::pop_env(*keys)
         raise "Unknown module variable #{key}!"
       end
       @@env[key].push(var)
       BOAST::class_variable_set("@@"+key.to_s, value)
+      keys.push(key)
     }
+    if block then
+      begin
+        block.call
+      ensure
+        BOAST::pop_env(*vars.keys)
+      end
+    end
   end
 
   def pop_env(*vars)
