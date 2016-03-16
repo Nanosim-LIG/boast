@@ -316,7 +316,7 @@ module BOAST
 
     def initialize(source, return_type)
       @source = source
-      @return_type = return_type
+      @return_type = return_type.to_var
     end
 
     def type
@@ -381,7 +381,7 @@ module BOAST
 
     def initialize(source, return_type)
       @source = source
-      @return_type = return_type
+      @return_type = return_type.to_var
     end
 
     def type
@@ -447,7 +447,7 @@ module BOAST
     def initialize(source, mask, return_type)
       @source = source
       @mask = mask
-      @return_type = return_type
+      @return_type = return_type.to_var
     end
 
     def get_mask
@@ -507,7 +507,7 @@ module BOAST
       @dest = dest
       @source = source
       @store_type = store_type
-      @store_type = source unless @store_type
+      @store_type = source.to_var unless @store_type
     end
 
     def to_s
@@ -518,17 +518,17 @@ module BOAST
         else
           dst = dst[1..-1]
         end
+        type = @store_type.type
+        return "vstore#{type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
+        return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and type.total_size*8 == 64
 
-        return "vstore#{@source.type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
-        return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and @source.type.total_size*8 == 64
-
-        if @dest.alignment == @source.type.total_size then
-          instruction = intrinsics(:STOREA, @source.type)
+        if @dest.alignment == type.total_size then
+          instruction = intrinsics(:STOREA, type)
         else
-          instruction = intrinsics(:STORE, @source.type)
+          instruction = intrinsics(:STORE, type)
         end
-        p_type = @source.type.copy(:vector_length => 1)
-        p_type = @source.type if get_architecture == X86 and @source.type.kind_of?(Int)
+        p_type = type.copy(:vector_length => 1)
+        p_type = type if get_architecture == X86 and type.kind_of?(Int)
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
       end
       return Affectation.basic_usage(@dest, @source)
@@ -562,12 +562,13 @@ module BOAST
       @source = source
       @mask = mask
       @store_type = store_type
-      @store_type = source unless @store_type
+      @store_type = source.to_var unless @store_type
     end
 
     def get_mask
-      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{@store_type.type.vector_length}!" if @mask.length != @store_type.type.vector_length
-      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @store_type.type.size, :vector_length => @store_type.type.vector_length ) )
+      type = @store_type.type
+      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{type.vector_length}!" if @mask.length != type.vector_length
+      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => type.size, :vector_length => type.vector_length ) )
     end
 
     private :get_mask
@@ -575,7 +576,8 @@ module BOAST
     def to_s
       raise OperatorError,  "Cannot store unknown type!" unless @store_type
       raise LanguageError,  "Unsupported language!" unless lang == C
-      instruction = intrinsics(:MASKSTORE, @store_type.type)
+      type = @store_type.type
+      instruction = intrinsics(:MASKSTORE, type)
       s = ""
       dst = "#{@dest}"
       if dst[0] != "*" then
@@ -583,8 +585,8 @@ module BOAST
       else
         dst = dst[1..-1]
       end
-      p_type = @store_type.type.copy(:vector_length => 1)
-      return s += "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, @store_type.type)} )"
+      p_type = type.copy(:vector_length => 1)
+      return s += "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, type)} )"
     end
 
     def pr
