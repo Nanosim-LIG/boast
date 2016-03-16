@@ -341,6 +341,9 @@ module BOAST
         [[:SET1, "dup"]].each { |cl, ins|
           INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_n_#{type}".to_sym
         }
+        [[:SET_LANE, "set"]].each { |cl, ins|
+          INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_lane_#{type}".to_sym
+        }
       }
     }
     INTRINSICS[ARM][:CVT] = Hash::new { |h,k| h[k] = {} }
