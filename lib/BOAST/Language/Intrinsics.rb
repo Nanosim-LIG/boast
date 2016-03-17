@@ -233,7 +233,7 @@ module BOAST
 
     module_function :type_name_X86
 
-    [64, 128, 256].each { |vector_size|
+    [64, 128, 256, 512].each { |vector_size|
       vs = ( vector_size < 256 ? "" : "#{vector_size}" )
       sizes = [8, 16, 32]
       sizes.push( 64 ) if vector_size > 64
@@ -242,12 +242,17 @@ module BOAST
           vtype = vector_type_name( :int, size, vector_size, sign )
           type = type_name_X86( :int, size, vector_size )
           instructions = [[:ADD, "add"], [:SUB, "sub"]]
-          instructions.push( [:SET, "setr"], [:SET1, "set1"] )
-          instructions.push( [:MUL, "mullo"] ) if vector_size > 64 and size >= 16 and  size <= 32
+          instructions.push( [:SET, "setr"] ) unless size < 32 and vector_size == 512
+          instructions.push( [:SET1, "set1"] )
+          instructions.push( [:MUL, "mullo"] ) if vector_size > 64 and size >= 16
+          instructions.push( [:MASKLOAD, "maskload"], [:MASKSTORE, "maskstore"] ) if vector_size <= 256 and vector_size >= 128 and size >= 32
+          instructions.push( [:MASK_LOAD,  "mask_load"],   [:MASK_STORE,  "mask_store"],
+                             [:MASK_LOADU, "mask_loadu"],  [:MASK_STOREU, "mask_storeu"],
+                             [:MASKZ_LOAD, "maskz_load"],  [:MASKZ_LOADU, "maskz_loadu"], ) if vector_size >= 128 and size >= 32
           instructions.each { |cl, ins|
             INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_#{type}".to_sym
           }
-          if size == 64 and vector_size < 512 then
+          if size == 64 and vector_size == 256 then
             INTRINSICS[X86][:SET1][vtype] = "_mm#{vs}_set1_#{type}x".to_sym
             INTRINSICS[X86][:SET][vtype] = "_mm#{vs}_setr_#{type}x".to_sym
           end
@@ -256,8 +261,9 @@ module BOAST
       [8, 16, 32, 64].each { |size|
         [:signed, :unsigned].each { |sign|
           vtype = vector_type_name( :int, size, vector_size, sign )
-          [[:LOAD, "loadu"], [:LOADA, "load"],
-           [:STORE, "storeu"], [:STOREA, "store"]].each { |cl, ins|
+          instructions = [[:LOAD, "loadu"],   [:LOADA, "load"],
+                          [:STORE, "storeu"], [:STOREA, "store"]]
+          instructions.each { |cl, ins|
             INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_si#{vector_size}".to_sym
           }
         }
@@ -265,12 +271,19 @@ module BOAST
       sizes = []
       sizes.push( 32, 64 ) if vector_size > 64
       sizes.each { |size|
-        [[:ADD, "add"],       [:SUB, "sub"],           [:MUL, "mul"],       [:DIV, "div"], [:POW, "pow"],
-         [:FMADD, "fmadd"],   [:FMSUB, "fmsub"],       [:FNMADD, "fnmadd"], [:FNMSUB, "fnmsub"],
-         [:ADDSUB, "addsub"], [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
-         [:LOAD, "loadu"],    [:LOADA, "load"],        [:MASKLOAD, "maskload"],
-         [:STORE, "storeu"],  [:STOREA, "store"],      [:MASKSTORE, "maskstore"],
-         [:SET, "setr"],      [:SET1, "set1"] ].each { |cl, ins|
+        instructions = [[:ADD, "add"],           [:SUB, "sub"], [:MUL, "mul"], [:DIV, "div"], [:POW, "pow"],
+                        [:FMADD, "fmadd"],       [:FMSUB, "fmsub"],
+                        [:FNMADD, "fnmadd"],     [:FNMSUB, "fnmsub"],
+                        [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
+                        [:LOAD, "loadu"],        [:LOADA, "load"],
+                        [:STORE, "storeu"],  [:STOREA, "store"],
+                        [:SET, "setr"],      [:SET1, "set1"],
+                        [:MASK_LOAD,  "mask_load"],  [:MASK_STORE,  "mask_store"],
+                        [:MASK_LOADU, "mask_loadu"], [:MASK_STOREU, "mask_storeu"],
+                        [:MASKZ_LOAD, "maskz_load"], [:MASKZ_LOADU, "maskz_loadu"] ]
+        instructions.push( [:MASKLOAD, "maskload"], [:MASKSTORE, "maskstore"] ) if vector_size < 512
+        instructions.push( [:ADDSUB, "addsub"] ) if vector_size < 512
+        instructions.each { |cl, ins|
           vtype = vector_type_name( :float, size, vector_size)
           type = type_name_X86( :float, size, vector_size )
           INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_#{type}".to_sym
