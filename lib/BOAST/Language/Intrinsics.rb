@@ -39,6 +39,26 @@ module BOAST
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
     CONVERSIONS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
 
+    def check_coverage
+      ins = []
+      INTRINSICS[X86].each { |i,v|
+        if i == :CVT then
+          v.each { |type1, h|
+            h.each { |type2, instr|
+              ins.push instr.to_s
+            }
+          }
+        else
+          v.each { |type, instr|
+            ins.push instr.to_s
+          }
+        end
+      }
+      return ins - INSTRUCTIONS.keys
+    end
+
+    module_function :check_coverage
+
     def intrinsics_by_vector_name(intr_symbol, type, type2=nil)
       if type2 then
         instruction = INTRINSICS[get_architecture][intr_symbol][type][type2]

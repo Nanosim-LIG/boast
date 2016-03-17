@@ -5,6 +5,12 @@ require_relative '../helper'
 
 class TestIntrinsics < Minitest::Test
 
+  def test_coverage
+    cov = Intrinsics.check_coverage
+    puts cov if cov.size > 0
+    assert_equal(0, cov.size)
+  end
+
   def test_add
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
