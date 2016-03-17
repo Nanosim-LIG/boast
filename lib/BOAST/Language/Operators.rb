@@ -328,7 +328,7 @@ module BOAST
         if @source.kind_of?( Array ) then
           raise OperatorError,  "Invalid array length!" unless @source.length == @return_type.type.vector_length
           return @return_type.copy("(#{@return_type.type.decl})( #{@source.join(", ")} )", DISCARD_OPTIONS) if lang == CL
-
+	  return Set(@source.first, @return_type).to_var if @source.uniq.size == 1
           begin
             instruction = intrinsics(:SET, @return_type.type)
             raise IntrinsicsError unless instruction
@@ -344,7 +344,10 @@ module BOAST
           end
         elsif @source.class != Variable or @source.type.vector_length == 1 then
           return @return_type.copy("(#{@return_type.type.decl})( #{@source} )", DISCARD_OPTIONS) if lang == CL
-
+          if (@source.is_a?(Numeric) and @source == 0) or (@source.class == Variable and @source.constant == 0) then
+            instruction = intrinsics(:SETZERO, @return_type.type)
+            return @return_type.copy("#{instruction}( )", DISCARD_OPTIONS) if instruction
+          end
           instruction = intrinsics(:SET1, @return_type.type)
           return @return_type.copy("#{instruction}( #{@source} )", DISCARD_OPTIONS)
         elsif @return_type.type != @source.type
@@ -451,8 +454,8 @@ module BOAST
     end
 
     def get_mask
-      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{@return_type.type.vector_length}!" if @mask.length != @return_type.type.vector_length
-      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => @return_type.type.size, :vector_length => @return_type.type.vector_length ) )
+      type = @return_type.type
+      return Set(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => type.size, :vector_length => type.vector_length ) )
     end
 
     private :get_mask
@@ -463,8 +466,12 @@ module BOAST
 
     def to_var
       raise OperatorError,  "Cannot load unknown type!" unless @return_type
+      type = @return_type.type
       raise LanguageError,  "Unsupported language!" unless lang == C
-      instruction = intrinsics(:MASKLOAD, @return_type.type)
+      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{type.vector_length}!" if @mask.length != type.vector_length
+      return Load( @source, @return_type ).to_var unless @mask.include?(0)
+      return Set( 0, @return_type ).to_var if @mask.uniq.size == 1 and @mask.uniq.first == 0
+      instruction = intrinsics(:MASKLOAD, type)
       s = ""
       src = "#{@source}"
       if src[0] != "*" then
@@ -472,7 +479,7 @@ module BOAST
       else
         src = src[1..-1]
       end
-      p_type = @return_type.type.copy(:vector_length => 1)
+      p_type = type.copy(:vector_length => 1)
       s += "#{instruction}( (#{p_type.decl} * ) #{src}, #{get_mask} )"
       return @return_type.copy( s, DISCARD_OPTIONS)
     end
@@ -567,16 +574,18 @@ module BOAST
 
     def get_mask
       type = @store_type.type
-      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{type.vector_length}!" if @mask.length != type.vector_length
-      return Load(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => type.size, :vector_length => type.vector_length ) )
+      return Set(@mask.collect { |m| ( m and m != 0 )  ? -1 : 0 }, Int("mask", :size => type.size, :vector_length => type.vector_length ) )
     end
 
     private :get_mask
 
     def to_s
       raise OperatorError,  "Cannot store unknown type!" unless @store_type
-      raise LanguageError,  "Unsupported language!" unless lang == C
       type = @store_type.type
+      raise LanguageError,  "Unsupported language!" unless lang == C
+      raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{type.vector_length}!" if @mask.length != type.vector_length
+      return Store( @dest, @source, @store_type ).to_s unless @mask.include?(0)
+      return nil if @mask.uniq.size == 1 and @mask.uniq.first == 0
       instruction = intrinsics(:MASKSTORE, type)
       s = ""
       dst = "#{@dest}"
@@ -590,11 +599,14 @@ module BOAST
     end
 
     def pr
-      s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
-      output.puts s
+      ss = to_s
+      if ss then
+        s=""
+        s += indent
+        s += ss
+        s += ";" if [C, CL, CUDA].include?( lang )
+        output.puts s
+      end
       return self
     end
 

@@ -262,7 +262,8 @@ module BOAST
         [:signed, :unsigned].each { |sign|
           vtype = vector_type_name( :int, size, vector_size, sign )
           instructions = [[:LOAD, "loadu"],   [:LOADA, "load"],
-                          [:STORE, "storeu"], [:STOREA, "store"]]
+                          [:STORE, "storeu"], [:STOREA, "store"],
+                          [:SETZERO, "setzero"] ]
           instructions.each { |cl, ins|
             INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_si#{vector_size}".to_sym
           }
@@ -277,7 +278,7 @@ module BOAST
                         [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
                         [:LOAD, "loadu"],        [:LOADA, "load"],
                         [:STORE, "storeu"],  [:STOREA, "store"],
-                        [:SET, "setr"],      [:SET1, "set1"],
+                        [:SET, "setr"],      [:SET1, "set1"], [:SETZERO, "setzero"],
                         [:MASK_LOAD,  "mask_load"],  [:MASK_STORE,  "mask_store"],
                         [:MASK_LOADU, "mask_loadu"], [:MASK_STOREU, "mask_storeu"],
                         [:MASKZ_LOAD, "maskz_load"], [:MASKZ_LOADU, "maskz_loadu"] ]
