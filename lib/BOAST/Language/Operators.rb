@@ -345,8 +345,11 @@ module BOAST
         elsif @source.class != Variable or @source.type.vector_length == 1 then
           return @return_type.copy("(#{@return_type.type.decl})( #{@source} )", DISCARD_OPTIONS) if lang == CL
           if (@source.is_a?(Numeric) and @source == 0) or (@source.class == Variable and @source.constant == 0) then
-            instruction = intrinsics(:SETZERO, @return_type.type)
-            return @return_type.copy("#{instruction}( )", DISCARD_OPTIONS) if instruction
+            begin
+              instruction = intrinsics(:SETZERO, @return_type.type)
+              return @return_type.copy("#{instruction}( )", DISCARD_OPTIONS) if instruction
+            rescue IntrinsicsError
+            end
           end
           instruction = intrinsics(:SET1, @return_type.type)
           return @return_type.copy("#{instruction}( #{@source} )", DISCARD_OPTIONS)

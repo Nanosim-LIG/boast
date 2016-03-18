@@ -292,7 +292,7 @@ module BOAST
       }
     }
     INTRINSICS[X86][:CVT] = Hash::new { |h,k| h[k] = {} }
-    [128, 256].each { |bvsize|
+    [128, 256, 512].each { |bvsize|
       [16, 32, 64].each { |bsize|
         ssize = bsize/2
         while ssize >= 8
