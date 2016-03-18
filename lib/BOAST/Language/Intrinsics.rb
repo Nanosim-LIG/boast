@@ -65,8 +65,8 @@ module BOAST
       else
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
-      return instruction if get_architecture == ARM
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
+      return instruction if get_architecture == ARM
       supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
       return instruction
