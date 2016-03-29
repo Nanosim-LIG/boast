@@ -154,6 +154,7 @@ EOF
         }
         return pts3
       end
+      
     end
 
     def each(&block)
@@ -164,6 +165,22 @@ EOF
       return self.points.shuffle.each(&block)
     end
 
+    # Take a set of options and check that the constraints are ensured 
+    # by checking them against the rules. The rules are described by a
+    # boolean expression.
+    # Options : Hash contains the set of and options and can define rules
+    # by using the key :rules. 
+    # Return : true if rules are respected else false
+    def check_rules( options= {} )
+      regxp = /(?<!options\[):\w+(?!\])/
+      matches = options[:rules].scan(regxp)
+      matches = matches.uniq
+      matches.each{ |m|
+        options[:rules].gsub!(/(?<!options\[)#{m}(?!\])/, "options[#{m}]")
+      }
+      return eval options[:rules]
+    end
+
     def optimize(&block)
       @experiments = 0
       @log = {}
@@ -171,6 +188,9 @@ EOF
       pts = points
       pts.shuffle! if @randomize
       pts.each { |config|
+        # if config.has_key? ':rules' then
+          next if not check_rules config
+        # end
         @experiments += 1
         metric = block.call(config)
         @log[config] = metric if optimizer_log
