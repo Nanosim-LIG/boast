@@ -20,16 +20,45 @@ module BOAST
 
   class OptimizationSpace
     attr_reader :parameters
+    attr_reader :rules
+    HASH_NAME = "options"
 
     def initialize( *parameters )
       if parameters.length == 1 and parameters[0].is_a?(Hash) then
         @parameters = []
         parameters[0].each { |key, value|
-          @parameters.push( OptimizationParameter::new(key, value) )
+          if key == :rules then
+            @rules = value
+            format_rules
+          else
+            @parameters.push( OptimizationParameter::new(key, value) )
+          end
         }
       else
         @parameters = parameters
       end
+    end
+
+    # Add to the parameters of the rules the name of the hash variable
+    def format_rules
+      regxp = /(?<!#{HASH_NAME}\[):\w+(?!\])/
+      @rules.each{|r|
+        matches = r.scan(regxp)
+        matches = matches.uniq
+        matches.each{ |m|
+          r.gsub!(/(?<!#{HASH_NAME}\[)#{m}(?!\])/, "#{HASH_NAME}[#{m}]")
+        }
+      }
+    end
+
+    # Remove all points that do not meet ALL the rules.
+    def remove_unfeasible (points = [])
+      s = <<EOF
+      points.reject!{ |#{HASH_NAME}|
+        not @rules.all?{ |r| eval r }
+      }
+EOF
+      eval s
     end
 
     def to_h
@@ -39,7 +68,6 @@ module BOAST
       }
       return h
     end
-
   end
 
   class Optimizer
@@ -143,7 +171,7 @@ EOF
       param = params2.shift
       pts = param.values.collect { |val| {param.name => val} }
       if params2.size == 0 then
-        return pts
+        pts4 = pts 
       else
         optim2 = BruteForceOptimizer::new(OptimizationSpace::new(*params2))
         pts3=[]
@@ -152,9 +180,10 @@ EOF
             pts3.push(p1.dup.update(p2))
           }
         }
-        return pts3
+        pts4 = pts3
       end
-      
+      @search_space.remove_unfeasible pts4 if @search_space.rules
+      return pts4
     end
 
     def each(&block)
@@ -165,22 +194,6 @@ EOF
       return self.points.shuffle.each(&block)
     end
 
-    # Take a set of options and check that the constraints are ensured 
-    # by checking them against the rules. The rules are described by a
-    # boolean expression.
-    # Options : Hash contains the set of and options and can define rules
-    # by using the key :rules. 
-    # Return : true if rules are respected else false
-    def check_rules( options= {} )
-      regxp = /(?<!options\[):\w+(?!\])/
-      matches = options[:rules].scan(regxp)
-      matches = matches.uniq
-      matches.each{ |m|
-        options[:rules].gsub!(/(?<!options\[)#{m}(?!\])/, "options[#{m}]")
-      }
-      return eval options[:rules]
-    end
-
     def optimize(&block)
       @experiments = 0
       @log = {}
@@ -188,9 +201,6 @@ EOF
       pts = points
       pts.shuffle! if @randomize
       pts.each { |config|
-        # if config.has_key? ':rules' then
-          next if not check_rules config
-        # end
         @experiments += 1
         metric = block.call(config)
         @log[config] = metric if optimizer_log
