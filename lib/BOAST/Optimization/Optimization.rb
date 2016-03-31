@@ -53,7 +53,7 @@ module BOAST
 
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
-      s = <<EOF
+      s = <<EOF       
       points.reject!{ |#{HASH_NAME}|
         not @rules.all?{ |r| eval r }
       }
@@ -164,6 +164,9 @@ EOF
     def initialize(search_space, options = {} )
       super
       @randomize = options[:randomize]
+      @checkpoint = options[:checkpoint]
+      @checkpoint_size = options[:checkpoint_size]
+      @seed = options[:seed]
     end
 
     def points
@@ -199,7 +202,12 @@ EOF
       @log = {}
       best = [nil, Float::INFINITY]
       pts = points
-      pts.shuffle! if @randomize
+      pts.shuffle!(random: Random.new(@seed)) if @randomize
+
+      if @checkpoint_size then
+        pts = pts.slice(@checkpoint,@checkpoint_size)
+      end
+
       pts.each { |config|
         @experiments += 1
         metric = block.call(config)
