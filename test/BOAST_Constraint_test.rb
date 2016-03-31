@@ -46,20 +46,32 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
   end
 
   def test_bruteforce_point
-    opt_space = OptimizationSpace::new( :elements_number => [1],
-                                        :y_component_number => [1],
-                                        :threads_number => [32,64,96,128],
-                                        :lws_y => [1,2,4,8,16,32,64,96,128],
-                                        :rules => [":lws_y <= :threads_number", ":threads_number % :lws_y == 0", ":y_component_number <= :elements_number", ":elements_number % :y_component_number == 0"] 
-                                        )
-    opt_space.format_rules
+    opt_space = OptimizationSpace::new( :elements_number => 1..6,
+                              :y_component_number => 1..6,
+                              :vector_length      => [1,2,4,8,16],
+                              :temporary_size     => [2,4],
+                              :vector_recompute   => [true,false],
+                              :load_overlap       => [true,false],
+                              :threads_number => [32,64,128,256],
+                              :lws_y => [1,2,4,8,16,32,64,128,256],
+                              :rules => [":lws_y <= :threads_number", 
+                                         ":threads_number % :lws_y == 0",
+                                         ":elements_number >= :y_component_number",
+                                         ":elements_number % :y_component_number == 0", 
+                                         ":elements_number / :y_component_number <= 4"]
+                              )
+
     optimizer = BruteForceOptimizer::new(opt_space, :randomize => false)
+
     optimizer.points.each{ |o|
       assert(o[:lws_y] <= o[:threads_number], " o[:lws_y] <= o[:threads_number] | #{o}")
       assert(o[:threads_number] % o[:lws_y] == 0, "o[:threads_number] % o[:lws_y] | #{o}") 
       assert(o[:y_component_number] <= o[:elements_number], "o[:y_component_number] <= o[:elements_number] | #{o}")
       assert(o[:elements_number] % o[:y_component_number] == 0, "o[:threads_number] % o[:lws_y] == 0 | #{o}")
+      assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
     }
+    assert(optimizer.points.length > 0)
+    puts "Number of points generated : #{optimizer.points.length}"
   end
 
 end
