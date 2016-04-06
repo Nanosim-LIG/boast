@@ -66,6 +66,7 @@ EOF
       @parameters.each { |p|
         h[p.name] = p.values
       }
+      h[:rules] = @rules if @rules.length > 0
       return h
     end
   end
@@ -202,11 +203,10 @@ EOF
       @log = {}
       best = [nil, Float::INFINITY]
       pts = points
-      pts.shuffle!(random: Random.new(@seed)) if @randomize
+      
+      (@seed ? pts.shuffle!(random: Random.new(@seed)) : pts.shuffle!) if @randomize
 
-      if @checkpoint_size then
-        pts = pts.slice(@checkpoint,@checkpoint_size)
-      end
+      pts = pts.slice(@checkpoint,@checkpoint_size) if @checkpoint_size
 
       pts.each { |config|
         @experiments += 1
