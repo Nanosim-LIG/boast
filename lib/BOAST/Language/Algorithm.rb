@@ -30,6 +30,7 @@ module BOAST
     private_boolean_state_accessor :decl_module
     private_boolean_state_accessor :annotate
     private_boolean_state_accessor :optimizer_log
+    private_boolean_state_accessor :disable_openmp
 
     private
     def push_env(*args)
@@ -84,6 +85,7 @@ module BOAST
   boolean_state_accessor :decl_module
   boolean_state_accessor :annotate
   boolean_state_accessor :optimizer_log
+  boolean_state_accessor :disable_openmp
 
   default_state_getter :address_size,          OS.bits/8
   default_state_getter :lang,                  FORTRAN, '"const_get(#{envs})"', :BOAST_LANG
@@ -104,6 +106,7 @@ module BOAST
   default_state_getter :annotate_level,        0
   default_state_getter :optimizer_log,         false
   default_state_getter :optimizer_log_file,    nil
+  default_state_getter :disable_openmp,        false
 
   alias use_vla_old? use_vla?
   class << self
