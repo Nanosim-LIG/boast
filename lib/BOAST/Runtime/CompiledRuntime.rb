@@ -396,7 +396,7 @@ EOF
 
       load_module
 
-      cleanup(kernel_files)
+      cleanup(kernel_files) unless keep_temp
 
       eval "self.extend(#{module_name})"
 

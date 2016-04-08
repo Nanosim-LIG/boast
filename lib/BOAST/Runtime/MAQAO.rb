@@ -26,8 +26,8 @@ module BOAST
         puts "#{compiler_options[:MAQAO]} cqa #{maqao_model ? "--uarch=#{maqao_model} " : ""}#{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}"
       end
       result = `#{compiler_options[:MAQAO]} cqa #{maqao_model ? "--uarch=#{maqao_model} " : ""}#{f1.path} --fct=#{@procedure.name} #{compiler_options[:MAQAO_FLAGS]}`
-      File::unlink(library_object)
-      File::unlink(library_source)
+      File::unlink(library_object) unless keep_temp
+      File::unlink(library_source) unless keep_temp
       return result
     end
   end
