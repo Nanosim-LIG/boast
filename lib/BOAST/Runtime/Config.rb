@@ -35,6 +35,7 @@ module BOAST
     private_boolean_state_accessor :verbose
     private_boolean_state_accessor :debug_source
     private_boolean_state_accessor :ffi
+    private_boolean_state_accessor :keep_temp
     private_state_accessor :fortran_line_length
   end
 
