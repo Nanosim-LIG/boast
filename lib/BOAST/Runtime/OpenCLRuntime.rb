@@ -38,23 +38,23 @@ module BOAST
 
     def init_opencl_types
       @@opencl_real_types = {
-        2 => OpenCL::Half,
-        4 => OpenCL::Float,
-        8 => OpenCL::Double
+        2 => OpenCL::Half1,
+        4 => OpenCL::Float1,
+        8 => OpenCL::Double1
       }
 
       @@opencl_int_types = {
         true => {
-          1 => OpenCL::Char,
-          2 => OpenCL::Short,
-          4 => OpenCL::Int,
-          8 => OpenCL::Long
+          1 => OpenCL::Char1,
+          2 => OpenCL::Short1,
+          4 => OpenCL::Int1,
+          8 => OpenCL::Long1
         },
         false => {
-          1 => OpenCL::UChar,
-          2 => OpenCL::UShort,
-          4 => OpenCL::UInt,
-          8 => OpenCL::ULong
+          1 => OpenCL::UChar1,
+          2 => OpenCL::UShort1,
+          4 => OpenCL::UInt1,
+          8 => OpenCL::ULong1
         }
       }
     end
