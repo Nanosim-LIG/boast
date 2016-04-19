@@ -137,7 +137,7 @@ module BOAST
       init_opencl(compiler_options)
 
       run_method = <<EOF
-def self.run(*args)
+def self.__run(*args)
   raise "Wrong number of arguments \#{args.length} for #{@procedure.parameters.length}" if args.length > #{@procedure.parameters.length+1} or args.length < #{@procedure.parameters.length}
   params = []
   opts = {}

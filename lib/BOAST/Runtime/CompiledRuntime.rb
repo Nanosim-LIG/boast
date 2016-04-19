@@ -169,7 +169,7 @@ void Init_#{module_name}();
 VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
-  rb_define_method(#{module_name}, "run", method_run, -1);
+  rb_define_method(#{module_name}, "__run", method_run, -1);
 }
 EOF
     end

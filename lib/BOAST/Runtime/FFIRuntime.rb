@@ -30,7 +30,7 @@ module BOAST
         extend FFI::Library
         ffi_lib "#{library_path}"
         attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi(false,@lang).to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi(false,@lang) : "void" }
-        def run(*args)
+        def __run(*args)
           if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1 then
             raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})"
           else

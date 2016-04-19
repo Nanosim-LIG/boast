@@ -85,10 +85,23 @@ module BOAST
       end
     end
 
+    def run(*args, &block)
+      opts = get_run_config
+      if opts.size > 0 then
+        if @procedure.parameters.length + 1 == args.length then
+          opts.update(args.last)
+          args[-1] = opts
+        elsif args.length == @procedure.parameters.length then
+          args.push(opts)
+        end
+      end
+      __run(*args, &block)
+    end
+
     def method_missing(meth, *args, &block)
-     if meth.to_s == "run" then
+     if meth.to_s == "__run" then
        build
-       run(*args,&block)
+       __run(*args, &block)
      else
        super
      end

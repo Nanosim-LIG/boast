@@ -31,6 +31,13 @@ module BOAST
     "icpc" => "-openmp"
   }
 
+  @@run_options = [
+    :PAPI
+  ]
+
+  @@run_config = {
+  }
+
   module PrivateStateAccessor
     private_boolean_state_accessor :verbose
     private_boolean_state_accessor :debug_source
@@ -52,13 +59,9 @@ module BOAST
 
   module_function
 
-  def read_boast_config
-    home_config_dir = ENV["XDG_CONFIG_HOME"]
-    home_config_dir = "#{Dir.home}/.config" if not home_config_dir
-    Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
-    return if not File::directory?(home_config_dir)
-    boast_config_dir = "#{home_config_dir}/BOAST"
-    Dir.mkdir( boast_config_dir ) if not File::exist?( boast_config_dir )
+  def read_boast_compiler_config
+    boast_config_dir = assert_boast_config_dir
+    return unless boast_config_dir
     compiler_options_file = "#{boast_config_dir}/compiler_options"
     if File::exist?( compiler_options_file ) then
       File::open( compiler_options_file, "r" ) { |f|
@@ -85,7 +88,7 @@ module BOAST
     @@compiler_default_options[:LD] = ENV["LD"] if ENV["LD"]
   end
 
-  read_boast_config
+  read_boast_compiler_config
 
   def get_openmp_flags
     return @@openmp_default_flags.clone
@@ -93,6 +96,29 @@ module BOAST
 
   def get_compiler_options
     return @@compiler_default_options.clone
+  end
+
+  def read_boast_run_config
+    boast_config_dir = assert_boast_config_dir
+    run_config_file = "#{boast_config_dir}/run_config"
+    if File::exist?( run_config_file ) then
+      File::open( run_config_file, "r" ) { |f|
+        @@run_config.update( YAML::load( f.read ) )
+      }
+    else
+      File::open( run_config_file, "w" ) { |f|
+        f.write YAML::dump( @@run_config )
+      }
+    end
+    @@run_options.each { |o|
+      @@run_config[o] = YAML::load(ENV[o.to_s]) if ENV[o.to_s]
+    }
+  end
+
+  read_boast_run_config
+
+  def get_run_config
+    return @@run_config.clone
   end
 
 end

@@ -10,6 +10,42 @@ module BOAST
   ARM = 2
   MPPA = 3
 
+  @@boast_config = {
+    :fortran_line_length => 72
+  }
+
+  def assert_boast_config_dir
+    home_config_dir = ENV["XDG_CONFIG_HOME"]
+    home_config_dir = "#{Dir.home}/.config" if not home_config_dir
+    Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
+    return nil if not File::directory?(home_config_dir)
+    boast_config_dir = "#{home_config_dir}/BOAST"
+    Dir.mkdir( boast_config_dir ) if not File::exist?( boast_config_dir )
+    return nil if not File::directory?(boast_config_dir)
+    return boast_config_dir
+  end
+
+  module_function :assert_boast_config_dir
+
+  def read_boast_config
+    boast_config_dir = assert_boast_config_dir
+    return unless boast_config_dir
+    boast_config_file = "#{boast_config_dir}/config"
+    if File::exist?( boast_config_file ) then
+      File::open( boast_config_file, "r" ) { |f|
+        @@boast_config.update( YAML::load( f.read ) )
+      }
+    else
+      File::open( boast_config_file, "w" ) { |f|
+        f.write YAML::dump( @@boast_config )
+      }
+    end
+  end
+
+  module_function :read_boast_config
+
+  read_boast_config
+
   module PrivateStateAccessor
 
     private_state_accessor :output, :lang, :architecture, :model, :address_size
