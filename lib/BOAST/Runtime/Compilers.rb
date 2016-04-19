@@ -112,7 +112,7 @@ module BOAST
     def setup_cuda_compiler(options, runner)
       cuda_compiler = options[:NVCC]
       cudaflags = options[:NVCCFLAGS]
-      cudaflags += " --compiler-options '-fPIC'"
+      cudaflags += " --compiler-options '-fPIC','-D_FORCE_INLINES'"
 
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cu' do |t|
         cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
