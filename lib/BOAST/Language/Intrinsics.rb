@@ -5,9 +5,6 @@ require 'rgl/dijkstra'
 
 module BOAST
 
-  X86 = 1
-  ARM = 2
-
   native_flags = []
 
   if OS.mac? then
