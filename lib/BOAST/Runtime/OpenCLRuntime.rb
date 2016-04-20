@@ -137,11 +137,11 @@ module BOAST
       init_opencl(compiler_options)
 
       run_method = <<EOF
-def self.__run(*args)
+def self.run(*args)
   raise "Wrong number of arguments \#{args.length} for #{@procedure.parameters.length}" if args.length > #{@procedure.parameters.length+1} or args.length < #{@procedure.parameters.length}
   params = []
-  opts = {}
-  opts = args.pop if args.length == #{@procedure.parameters.length+1}
+  opts = BOAST::get_run_config
+  opts = opts.update(args.pop) if args.length == #{@procedure.parameters.length+1}
   @procedure.parameters.each_index { |i|
     params[i] = create_opencl_param( args[i], @procedure.parameters[i] )
   }
@@ -150,8 +150,10 @@ def self.__run(*args)
   }
   gws = opts[:global_work_size]
   if not gws then
+    raise ":global_work_size or :block_number are required to run OpenCL kernels!" unless opts[:block_number]
     gws = []
     opts[:block_number].each_index { |i|
+      raise "if using :block_number, :block_size is required  to run OpenCL kernels!" unless opts[:block_size]
       gws.push(opts[:block_number][i]*opts[:block_size][i])
     }
   end

@@ -169,7 +169,7 @@ void Init_#{module_name}();
 VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
-  rb_define_method(#{module_name}, "__run", method_run, -1);
+  rb_define_method(#{module_name}, "run", method_run, -1);
 }
 EOF
     end
@@ -186,6 +186,19 @@ EOF
       if (TYPE(_boast_rb_opts) != T_HASH)
         rb_raise(rb_eArgError, "Options should be passed as a hash");
     }
+  }
+EOF
+    end
+
+    def add_run_options
+      get_output.print <<EOF
+  VALUE _boast_run_opts;
+  _boast_run_opts = rb_const_get(rb_cObject, rb_intern("BOAST"));
+  _boast_run_opts = rb_funcall(_boast_run_opts, rb_intern("get_run_config"), 0);
+  if ( NUM2UINT(rb_funcall(_boast_run_opts, rb_intern("size"), 0)) > 0 ) {
+    if ( _boast_rb_opts != Qnil )
+      rb_funcall(_boast_run_opts, rb_intern("update"), 1, _boast_rb_opts);
+    _boast_rb_opts = _boast_run_opts;
   }
 EOF
     end
@@ -313,6 +326,8 @@ EOF
       increment_indent_level
 
       fill_check_args
+
+      add_run_options
 
       fill_decl_module_params
 
