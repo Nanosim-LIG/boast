@@ -136,7 +136,7 @@ EOF
         end
 
         def to_s
-          return [opts, fitness].to_s
+          return to_a.to_s
         end
 
       end
