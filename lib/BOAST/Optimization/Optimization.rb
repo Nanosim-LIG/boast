@@ -79,6 +79,7 @@ EOF
     attr_reader :experiments
     attr_reader :search_space
     attr_reader :log
+    attr_reader :history
 
     def initialize(search_space, options = {} )
       @search_space = search_space
@@ -150,13 +151,15 @@ EOF
     def optimize(options={}, &block)
       opts = { :population_size => 20,
                :fitness_goal => 0,
-               :generations_limit => 100 }
+               :generations_limit => 100,
+               :search_space => @search_space }
       opts.update(options)
       opts[:organism] = @organism
       @organism.block = block
       @organism.experiments = 0
       population = Darwinning::Population.new(opts)
       population.evolve!
+      @history = population.history
       @experiments = @organism.experiments
       return population.best_member.to_a
     end
