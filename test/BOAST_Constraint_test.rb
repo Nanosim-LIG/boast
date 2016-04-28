@@ -18,7 +18,6 @@ def compute_kernel_size(elements_number=1, y_component_number=1, vector_length=1
   return (tempload + temp + res + tempc + out_vec + resc) * threads_number
 end
 
-
 class TestOptimizationSpace < Minitest::Unit::TestCase
   def test_format_rules
     opt_space = OptimizationSpace::new(:rules => [":lws_y <= :threads_number", ":threads_number % :lws_y == 0"])
@@ -62,6 +61,21 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
 
   def test_bruteforce_point
 
+    checker = Proc.new do |elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number|
+      vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
+      l_o = load_overlap ? 1 : 0
+      
+      tempload = (1 - l_o) * (vector_number * vector_length) / vector_length * vector_length
+      temp =  l_o * 3 * vector_number * (y_component_number+2) * vector_length
+      res = vector_number * y_component_number * vector_length
+      tempc = 3 * vector_number * (y_component_number + 2) * temporary_size * vector_length
+      out_vec = (1 - l_o) * tempc
+      resc = vector_number * y_component_number * temporary_size * vector_length
+      
+      (tempload + temp + res + tempc + out_vec + resc) * threads_number
+    end
+
+
     opt_space = OptimizationSpace::new( :elements_number => 1..24,
                                         :y_component_number => 1..6,
                                         :vector_length      => [1,2,4,8,16],
@@ -75,11 +89,11 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
                                                    ":elements_number >= :y_component_number",
                                                    ":elements_number % :y_component_number == 0", 
                                                    ":elements_number / :y_component_number <= 4",
-                                                   "compute_kernel_size(:elements_number, :y_component_number, :vector_length, :temporary_size, :load_overlap, :threads_number) < compute_kernel_size(6,6,8,2,false,1024)" 
-                                                  ]
+                                                   "@checkers[0].call(:elements_number, :y_component_number, :vector_length, :temporary_size, :load_overlap, :threads_number) < @checkers[0].call(6,6,8,2,false,1024)"
+                                                  ],
+                                        :checkers => [checker] 
                                         )
-
-
+    
     optimizer = BruteForceOptimizer::new(opt_space, :randomize => false)
 
     optimizer.points.each{ |o|
@@ -88,6 +102,7 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
       assert(o[:y_component_number] <= o[:elements_number], "o[:y_component_number] <= o[:elements_number] | #{o}")
       assert(o[:elements_number] % o[:y_component_number] == 0, "o[:threads_number] % o[:lws_y] == 0 | #{o}")
       assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
+      assert(checker.call(o[:elements_number], o[:y_component_number], o[:vector_length], o[:temporary_size], o[:load_overlap], o[:threads_number]) < checker.call(6,6,8,2,false,1024), "Checkers failed")
     }
     assert(optimizer.points.length > 0)
     puts "Number of points generated : #{optimizer.points.length}"

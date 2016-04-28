@@ -21,6 +21,7 @@ module BOAST
   class OptimizationSpace
     attr_reader :parameters
     attr_reader :rules
+    attr_reader :checkers
     HASH_NAME = "options"
 
     def initialize( *parameters )
@@ -30,6 +31,8 @@ module BOAST
           if key == :rules then
             @rules = value
             format_rules
+          elsif key == :checkers then
+            @checkers = value
           else
             @parameters.push( OptimizationParameter::new(key, value) )
           end
