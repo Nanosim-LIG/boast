@@ -21,10 +21,11 @@ module BOAST
   class OptimizationSpace
     attr_reader :parameters
     attr_reader :rules
-    attr_reader :checkers
+    attr_accessor :checkers
     HASH_NAME = "options"
 
     def initialize( *parameters )
+      @checkers = []
       if parameters.length == 1 and parameters[0].is_a?(Hash) then
         @parameters = []
         parameters[0].each { |key, value|
