@@ -1,7 +1,7 @@
 module BOAST
   module OpenCLRuntime
 
-   def select_cl_platform(options)
+   def select_cl_platforms(options)
       platforms = OpenCL::get_platforms
       if options[:platform_vendor] then
         platforms.select!{ |p|
@@ -17,13 +17,16 @@ module BOAST
           p.name.match(options[:CLPLATFORM])
         }
       end
-      return platforms.first
+      return platforms
     end
 
     def select_cl_device(options)
-      platform = select_cl_platform(options)
+      return options[:CLDEVICE] if options[:CLDEVICE] and options[:CLDEVICE].is_a?(OpenCL::Device)
+
+      platforms = select_cl_platforms(options)
       type = options[:device_type] ? OpenCL::Device::Type.const_get(options[:device_type]) : options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
-      devices = platform.devices(type)
+      devices = platforms.collect { |plt| plt.devices(type) }
+      devices.flatten!
       if options[:device_name] then
         devices.select!{ |d|
           d.name.match(options[:device_name])
