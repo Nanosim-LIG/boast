@@ -190,6 +190,19 @@ EOF
 EOF
     end
 
+    def add_run_options
+      get_output.print <<EOF
+  VALUE _boast_run_opts;
+  _boast_run_opts = rb_const_get(rb_cObject, rb_intern("BOAST"));
+  _boast_run_opts = rb_funcall(_boast_run_opts, rb_intern("get_run_config"), 0);
+  if ( NUM2UINT(rb_funcall(_boast_run_opts, rb_intern("size"), 0)) > 0 ) {
+    if ( _boast_rb_opts != Qnil )
+      rb_funcall(_boast_run_opts, rb_intern("update"), 1, _boast_rb_opts);
+    _boast_rb_opts = _boast_run_opts;
+  }
+EOF
+    end
+
     def fill_decl_module_params
       push_env(:decl_module => true)
       @procedure.parameters.each { |param|
@@ -314,6 +327,8 @@ EOF
 
       fill_check_args
 
+      add_run_options
+
       fill_decl_module_params
 
       @probes.reverse.map(&:decl)
@@ -396,7 +411,7 @@ EOF
 
       load_module
 
-      cleanup(kernel_files)
+      cleanup(kernel_files) unless keep_temp
 
       eval "self.extend(#{module_name})"
 

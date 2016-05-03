@@ -27,7 +27,7 @@ module BOAST
             }
 
             f = For(w, 0, unroll-1, &block)
-            f.unroll
+            print f.unroll
           }
           print c[i,j] === sum
         }

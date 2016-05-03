@@ -51,7 +51,7 @@ module BOAST
       cflags += " -DHAVE_NARRAY_H" if narray_path
       cflags += " -I/usr/local/k1tools/include" if @architecture == MPPA
       objext = RbConfig::CONFIG["OBJEXT"]
-      if options[:openmp] and @lang == C then
+      if options[:openmp] and @lang == C and not disable_openmp then
           openmp_cflags = get_openmp_flags(c_compiler)
           raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
           cflags += " #{openmp_cflags}"
@@ -79,7 +79,7 @@ module BOAST
       cxx_compiler = options[:CXX]
       cxxflags = options[:CXXFLAGS]
       cxxflags += " -fPIC #{includes}"
-      if options[:openmp] and @lang == C then
+      if options[:openmp] and @lang == C and not disable_openmp then
           openmp_cxxflags = get_openmp_flags(cxx_compiler)
           raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxxflags
           cxxflags += " #{openmp_cxxflags}"
@@ -97,7 +97,7 @@ module BOAST
       fcflags += " -march=#{get_model}"
       fcflags += " -fPIC"
       fcflags += " -fno-second-underscore" if f_compiler == 'g95'
-      if options[:openmp] and @lang == FORTRAN then
+      if options[:openmp] and @lang == FORTRAN and not disable_openmp then
           openmp_fcflags = get_openmp_flags(f_compiler)
           raise "unkwown openmp flags for: #{f_compiler}" if not openmp_fcflags
           fcflags += " #{openmp_fcflags}"
@@ -112,7 +112,7 @@ module BOAST
     def setup_cuda_compiler(options, runner)
       cuda_compiler = options[:NVCC]
       cudaflags = options[:NVCCFLAGS]
-      cudaflags += " --compiler-options '-fPIC'"
+      cudaflags += " --compiler-options '-fPIC','-D_FORCE_INLINES'"
 
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cu' do |t|
         cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
@@ -152,7 +152,7 @@ module BOAST
       c_compiler = "cc" if not c_compiler
       linker = options[:LD]
       linker = c_compiler if not linker
-      if options[:openmp] then
+      if options[:openmp] and not disable_openmp then
         openmp_ldflags = get_openmp_flags(linker)
         raise "unknown openmp flags for: #{linker}" if not openmp_ldflags
         ldflags += " #{openmp_ldflags}"

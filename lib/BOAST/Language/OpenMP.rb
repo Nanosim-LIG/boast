@@ -152,7 +152,7 @@ EOF
       end
 
       def open
-        output.puts to_s
+        output.puts to_s unless disable_openmp
         return self
       end
 
@@ -166,7 +166,7 @@ EOF
       end
 
       def close
-        output.puts end_string(openmp_end_clauses_to_s) 
+        output.puts end_string(openmp_end_clauses_to_s) unless disable_openmp
         return self
       end
      

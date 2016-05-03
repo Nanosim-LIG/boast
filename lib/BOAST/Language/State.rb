@@ -41,7 +41,8 @@ EOF
     envs = "ENV['#{env}']"
     s = <<EOF
   def get_default_#{arg}
-    #{arg} = #{default.inspect}
+    #{arg} = @@boast_config[#{arg.inspect}]
+    #{arg} = #{default.inspect} unless #{arg}
     #{arg} = #{get_env_string ? eval( "#{get_env_string}" ) : "YAML::load(#{envs})" } if #{envs}
     return #{arg}
   end

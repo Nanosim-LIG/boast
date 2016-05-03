@@ -27,6 +27,20 @@ EOF
     }
   end
 
+  def test_add_knl
+    push_env( :default_real_size => 8, :lang => C, :model => :knl, :architecture => X86 ) {
+      a = Real :a, :vector_length => 8
+      b = Real :b, :vector_length => 8
+      block = lambda { pr a + b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm512_add_pd( a, b );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_raises( IntrinsicsError, &block )
+      }
+    }
+  end
+
   def test_add_int_real
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
@@ -39,6 +53,20 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f32( a, vcvtq_f32_s32( vmovl_s16( b ) ) );
 EOF
+      }
+    }
+  end
+
+  def test_add_int_real_knl
+    push_env( :default_real_size => 8, :lang => C, :model => :knl, :architecture => X86 ) {
+      a = Real :a, :vector_length => 8
+      b = Int  :b, :vector_length => 8, :size => 2
+      block = lambda { pr a + b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm512_add_pd( a, _mm512_cvtepi32_pd( _mm256_cvtepi16_epi32( b ) ) );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_raises( IntrinsicsError, &block )
       }
     }
   end

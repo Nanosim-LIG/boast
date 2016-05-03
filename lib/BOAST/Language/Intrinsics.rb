@@ -5,9 +5,6 @@ require 'rgl/dijkstra'
 
 module BOAST
 
-  X86 = 1
-  ARM = 2
-
   native_flags = []
 
   if OS.mac? then
@@ -65,8 +62,8 @@ module BOAST
       else
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
-      return instruction if get_architecture == ARM
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
+      return instruction if get_architecture == ARM
       supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
       return instruction
@@ -292,7 +289,7 @@ module BOAST
       }
     }
     INTRINSICS[X86][:CVT] = Hash::new { |h,k| h[k] = {} }
-    [128, 256].each { |bvsize|
+    [128, 256, 512].each { |bvsize|
       [16, 32, 64].each { |bsize|
         ssize = bsize/2
         while ssize >= 8

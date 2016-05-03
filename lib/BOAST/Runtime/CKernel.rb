@@ -88,7 +88,7 @@ module BOAST
     def method_missing(meth, *args, &block)
      if meth.to_s == "run" then
        build
-       run(*args,&block)
+       run(*args, &block)
      else
        super
      end
