@@ -1,7 +1,10 @@
 module BOAST
   module OpenCLRuntime
 
-   def select_cl_platforms(options)
+    attr_reader :context
+    attr_reader :queue
+
+    def select_cl_platforms(options)
       platforms = OpenCL::get_platforms
       if options[:platform_vendor] then
         platforms.select!{ |p|
@@ -91,6 +94,7 @@ module BOAST
     end
 
     def create_opencl_array(arg, parameter)
+      return arg if arg.kind_of? OpenCL::Mem
       if parameter.direction == :in then
         flags = OpenCL::Mem::Flags::READ_ONLY
       elsif parameter.direction == :out then
@@ -127,6 +131,7 @@ module BOAST
     end
 
     def read_opencl_param(param, arg, parameter)
+      return arg if arg.kind_of? OpenCL::Mem
       if parameter.texture then
         @queue.enqueue_read_image( param, arg, :blocking => true )
       else
@@ -170,6 +175,7 @@ def self.run(*args)
       read_opencl_param( params[i], args[i], @procedure.parameters[i] )
     end
   }
+  @queue.finish
   result = {}
   result[:start] = event.profiling_command_start
   result[:end] = event.profiling_command_end
