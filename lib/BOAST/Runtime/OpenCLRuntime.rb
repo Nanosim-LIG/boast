@@ -42,32 +42,8 @@ module BOAST
       return devices.first
     end
 
-    def init_opencl_types
-      @@opencl_real_types = {
-        2 => OpenCL::Half1,
-        4 => OpenCL::Float1,
-        8 => OpenCL::Double1
-      }
-
-      @@opencl_int_types = {
-        true => {
-          1 => OpenCL::Char1,
-          2 => OpenCL::Short1,
-          4 => OpenCL::Int1,
-          8 => OpenCL::Long1
-        },
-        false => {
-          1 => OpenCL::UChar1,
-          2 => OpenCL::UShort1,
-          4 => OpenCL::UInt1,
-          8 => OpenCL::ULong1
-        }
-      }
-    end
-
     def init_opencl(options)
       require 'opencl_ruby_ffi'
-      init_opencl_types
       device = select_cl_device(options)
       @context = OpenCL::create_context([device])
       program = @context.create_program_with_source([@code.string])
@@ -114,9 +90,9 @@ module BOAST
 
     def create_opencl_scalar(arg, parameter)
       if parameter.type.is_a?(Real) then
-        return @@opencl_real_types[parameter.type.size]::new(arg)
+        return OPENCL_REAL_TYPES[parameter.type.size]::new(arg)
       elsif parameter.type.is_a?(Int) then
-        return @@opencl_int_types[parameter.type.signed][parameter.type.size]::new(arg)
+        return OPENCL_INT_TYPES[parameter.type.signed][parameter.type.size]::new(arg)
       else
         return arg
       end
