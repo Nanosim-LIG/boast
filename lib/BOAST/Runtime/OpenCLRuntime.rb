@@ -23,20 +23,22 @@ module BOAST
       return platforms
     end
 
-    def select_cl_device(options)
+    def select_cl_device(options, context = nil)
       return options[:CLDEVICE] if options[:CLDEVICE] and options[:CLDEVICE].is_a?(OpenCL::Device)
-
-      platforms = select_cl_platforms(options)
-      type = options[:device_type] ? OpenCL::Device::Type.const_get(options[:device_type]) : options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
-      devices = platforms.collect { |plt| plt.devices(type) }
-      devices.flatten!
-      if options[:device_name] then
+      devices = nil
+      if context then
+        devices = context.devices
+      else
+        platforms = select_cl_platforms(options)
+        type = options[:device_type] ? OpenCL::Device::Type.const_get(options[:device_type]) : options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
+        devices = platforms.collect { |plt| plt.devices(type) }
+        devices.flatten!
+      end
+      name_pattern = options[:device_name]
+      name_pattern = options[:CLDEVICE] unless name_pattern
+      if name_pattern then
         devices.select!{ |d|
-          d.name.match(options[:device_name])
-        }
-      elsif options[:CLDEVICE] then
-        devices.select!{ |d|
-          d.name.match(options[:CLDEVICE])
+          d.name.match(name_pattern)
         }
       end
       return devices.first
@@ -44,8 +46,15 @@ module BOAST
 
     def init_opencl(options)
       require 'opencl_ruby_ffi'
-      device = select_cl_device(options)
-      @context = OpenCL::create_context([device])
+      require 'BOAST/Runtime/OpenCLTypes.rb'
+      device = nil
+      if options[:CLCONTEXT] then
+        @context = options[:CLCONTEXT]
+        device = select_cl_device(options, @context)
+      else
+        device = select_cl_device(options)
+        @context = OpenCL::create_context([device])
+      end
       program = @context.create_program_with_source([@code.string])
       opts = options[:CLFLAGS]
       begin
