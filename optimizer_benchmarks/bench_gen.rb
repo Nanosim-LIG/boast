@@ -68,7 +68,7 @@ logs = {}
 
 res = []
 # logs[gen_opt] = []
-(1..100).each{
+(1..1000).each{
   best = optimizer.optimize(:generations_limit => options.fetch(:generations_limit,10), 
                             :evolution_types => [Darwinning::EvolutionTypes::MutativeReproduction.new(mutation_rate: options.fetch(:mutation_rate,0.10))],
                             :population_size => options.fetch(:population_size, 10),
