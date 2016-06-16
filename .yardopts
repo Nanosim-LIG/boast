@@ -1,1 +1,1 @@
---no-private lib/**/*.rb lib/**/**/*.rb
+--no-private lib/BOAST/Language/State.rb lib/**/*.rb lib/**/**/*.rb

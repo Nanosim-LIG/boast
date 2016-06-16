@@ -25,10 +25,12 @@ module BOAST
       BOAST::indent
     end
 
+    # Returns the symbol corresponding to the active architecture
     def get_architecture_name
       BOAST::get_architecture_name
     end
 
+    # Returns the symbol corresponding to the active language
     def get_lang_name
       BOAST::get_lang_name
     end
@@ -41,6 +43,7 @@ module BOAST
 
   module_function
 
+  # Returns the symbol corresponding to the active architecture
   def get_architecture_name
     case architecture
     when X86
@@ -54,6 +57,7 @@ module BOAST
     end
   end
 
+  # Returns the symbol corresponding to the active language
   def get_lang_name
     case lang
     when C
@@ -76,6 +80,9 @@ module BOAST
 
   @@env = Hash::new{|h, k| h[k] = []}
 
+  # Updates states and stores their value in a stack for later retrieval
+  # @param [Hash] vars contains state symbols and values pairs
+  # @yield states will be popped after the given block if any
   def push_env(vars = {}, &block)
     keys = []
     vars.each { |key, value|
@@ -99,6 +106,8 @@ module BOAST
     end
   end
 
+  # Pops the specified states values
+  # @param vars a list of state symbols
   def pop_env(*vars)
     vars.each { |key|
       raise "Unknown module variable #{key}!" unless @@env.has_key?(key)
@@ -108,24 +117,35 @@ module BOAST
     }
   end
 
+  # Increments the indent level
+  # @param [Integer] increment number of space to add
   def increment_indent_level(increment = get_indent_increment)
     set_indent_level( get_indent_level + increment )
   end
-  
+
+  # Decrements the indent level
+  # @param [Integer] increment number of space to remove 
   def decrement_indent_level(increment = get_indent_increment)
     set_indent_level( get_indent_level - increment )
   end
 
+  # Returns a string with as many space as the indent level.
+  def indent
+     return " "*get_indent_level
+  end
+
+  # Returns an annotation number for the given name. The number
+  # is incremented for a given name is incremented each time this name is called
   def annotate_number(name)
     num = @@annotate_numbers[name]
     @@annotate_numbers[name] = num + 1
     return num
   end
 
-  def indent
-     return " "*get_indent_level
-  end
-
+  # Annotates an Object by inlining a YAML structure in a comment.
+  # If object's class is part of the annotate list an indepth version of the annotation
+  # will be generated.
+  # @param [Object] a object to annotate
   def pr_annotate(a)
     name = a.class.name.gsub("BOAST::","")
     if annotate_list.include?(name) then

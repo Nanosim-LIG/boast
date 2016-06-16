@@ -14,6 +14,8 @@ module BOAST
     :fortran_line_length => 72
   }
 
+  module_function
+
   def assert_boast_config_dir
     home_config_dir = ENV["XDG_CONFIG_HOME"]
     home_config_dir = "#{Dir.home}/.config" if not home_config_dir
@@ -24,8 +26,6 @@ module BOAST
     return nil if not File::directory?(boast_config_dir)
     return boast_config_dir
   end
-
-  module_function :assert_boast_config_dir
 
   def read_boast_config
     boast_config_dir = assert_boast_config_dir
@@ -42,17 +42,21 @@ module BOAST
     end
   end
 
-  module_function :read_boast_config
-
   read_boast_config
 
   module PrivateStateAccessor
 
-    private_state_accessor :output, :lang, :architecture, :model, :address_size
-    private_state_accessor :default_int_size, :default_real_size
+    private_state_accessor :output
+    private_state_accessor :lang
+    private_state_accessor :architecture
+    private_state_accessor :model
+    private_state_accessor :address_size
+    private_state_accessor :default_int_size
+    private_state_accessor :default_real_size
     private_state_accessor :default_align
     private_state_accessor :array_start
-    private_state_accessor :indent_level, :indent_increment
+    private_state_accessor :indent_level
+    private_state_accessor :indent_increment
     private_state_accessor :annotate_list
     private_state_accessor :annotate_indepth_list
     private_state_accessor :annotate_level
@@ -70,11 +74,17 @@ module BOAST
 
   end
 
-  state_accessor :output, :lang, :architecture, :model, :address_size
-  state_accessor :default_int_size, :default_real_size
+  state_accessor :output
+  state_accessor :lang
+  state_accessor :architecture
+  state_accessor :model
+  state_accessor :address_size
+  state_accessor :default_int_size
+  state_accessor :default_real_size
   state_accessor :default_align
   state_accessor :array_start
-  state_accessor :indent_level, :indent_increment
+  state_accessor :indent_level
+  state_accessor :indent_increment
   state_accessor :annotate_list
   state_accessor :annotate_indepth_list
   state_accessor :annotate_level
@@ -114,7 +124,6 @@ module BOAST
   default_state_getter :disable_openmp,        false
   default_state_getter :boast_inspect, false, nil, :INSPECT
 
-  alias use_vla_old? use_vla?
   class << self
     alias use_vla_old? use_vla?
   end
@@ -124,8 +133,6 @@ module BOAST
     return use_vla_old?
   end
 
-  module_function :use_vla?
-
   def get_default_architecture
     architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]
     architecture = const_get(ENV["ARCH"]) if not architecture and ENV["ARCH"]
@@ -133,8 +140,6 @@ module BOAST
     return ARM if YAML::load( OS.report )["host_cpu"].match("arm")
     return X86
   end
-
-  module_function :get_default_architecture
 
   @@architecture = get_default_architecture
 

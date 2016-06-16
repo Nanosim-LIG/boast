@@ -234,4 +234,5 @@ X86architectures ={"pentium2"=>["MMX"],
    "SSE2",
    "SSE",
    "MMX"]}
+  private_constant :X86architectures
 end
