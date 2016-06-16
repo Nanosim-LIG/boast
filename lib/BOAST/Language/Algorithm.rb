@@ -158,23 +158,38 @@ module BOAST
     end
   end
 
+
+  # One of BOAST keywords: prints BOAST objects.
+  # Annotates the given object.
+  # Calls the given object pr method with the optional arguments.
+  # @param a a BOAST Expression, ControlStructure or Procedure
+  # @param args an optional list of parameters
   def pr(a, *args)
     pr_annotate(a) if annotate?
     a.pr(*args)
   end
 
-  def decl(*a)
-    a.each { |d|
+  # One of BOAST keywords: declares BOAST Variables and Procedures.
+  # Calls the decl method of each given objects.
+  # @param list a list of parameters do declare
+  def decl(*list)
+    list.each { |d|
       d.decl
     }
   end
 
-  def close(a)
-    a.close
-  end
-
+  # One of BOAST keywords: opens a BOAST ControlStructure or Procedure.
+  # Calls the open method of the given object.
+  # @param a the BOAST object to open
   def opn(a)
     a.open
+  end
+
+  # One of BOAST keywords: closes a BOAST ControlStructure or Procedure.
+  # Calls the close method of the given object.
+  # @param a the BOAST object to close
+  def close(a)
+    a.close
   end
 
   alias :Var :Variable
