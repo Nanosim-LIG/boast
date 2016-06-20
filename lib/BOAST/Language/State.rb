@@ -42,7 +42,6 @@ EOF
     eval s
   end
 
-
   # Generates setters and getters for the specified boolean state
   # @param [Symbol] state
   # @!macro [attach] boolean_state_accessor
@@ -69,8 +68,6 @@ EOF
   # @param [String] get_env_string if specified, an escaped string that can be evaluated. the envs variable can be used in the string to obtain what the corresponding environment variable was. Example: '"const_get(#{ envs })"'
   # @param [Symbol] env name of the corresponding environment variable
   # @!macro [attach] default_state_getter
-  #   @!method get_default_$1
-  #     @private
   #   @!method get_default_$1
   #     @scope class
   #     @private
@@ -130,7 +127,7 @@ EOF
   
     # Generates private setters and getters for the specified boolean state
     # @param [Symbol] state
-    # @!macro [attach] boolean_state_accessor
+    # @!macro [attach] private_boolean_state_accessor
     #   @!method $1?
     #     @return the boolean evaluation of the *$1* state
     #   @!parse private_state_accessor $1

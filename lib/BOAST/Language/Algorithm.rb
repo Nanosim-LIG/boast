@@ -5,38 +5,52 @@ module BOAST
   module PrivateStateAccessor
 
     private
-    def push_env(*args)
-      BOAST::push_env(*args)
+    # (see BOAST#push_env)
+    # @!visibility public
+    def push_env(vars, &block)
+      BOAST::push_env(vars, &block)
     end
 
-    def pop_env(*args)
-      BOAST::pop_env(*args)
+    # (see BOAST#pop_env)
+    # @!visibility public
+    def pop_env(*vars)
+      BOAST::pop_env(*vars)
     end
 
-    def increment_indent_level(*args)
-      BOAST::increment_indent_level(*args)
+    # (see BOAST#increment_indent_level)
+    # @!visibility public
+    def increment_indent_level(increment = get_indent_increment)
+      BOAST::increment_indent_level(increment)
     end
 
-    def decrement_indent_level(*args)
-      BOAST::decrement_indent_level(*args)
+    # (see BOAST#decrement_indent_level)
+    # @!visibility public
+    def decrement_indent_level(increment = get_indent_increment)
+      BOAST::decrement_indent_level(increment)
     end
 
+    # (see BOAST#indent)
+    # @!visibility public
     def indent
       BOAST::indent
     end
 
-    # Returns the symbol corresponding to the active architecture
+    # (see BOAST#get_architecture_name)
+    # @!visibility public
     def get_architecture_name
       BOAST::get_architecture_name
     end
 
-    # Returns the symbol corresponding to the active language
+    # (see BOAST#get_lang_name)
+    # @!visibility public
     def get_lang_name
       BOAST::get_lang_name
     end
 
-    def annotate_number(*args)
-      BOAST::annotate_number(*args)
+    # (see BOAST#annotate_number)
+    # @!visibility public
+    def annotate_number(name)
+      BOAST::annotate_number(name)
     end
 
   end
@@ -81,9 +95,11 @@ module BOAST
   @@env = Hash::new{|h, k| h[k] = []}
 
   # Updates states and stores their value in a stack for later retrieval
+  # @overload push_env( vars )
+  # @overload push_env( vars, &block )
   # @param [Hash] vars contains state symbols and values pairs
-  # @yield states will be popped after the given block if any
-  def push_env(vars = {}, &block)
+  # @yield states will be popped after the given block is called
+  def push_env(vars, &block)
     keys = []
     vars.each { |key, value|
       var = nil
@@ -219,6 +235,8 @@ end
 ConvolutionGenerator = BOAST
 
 class Integer
+  # Creates a constant BOAST Int Variable with a name corresponding to its value.
+  # The variable is signed only when negative.
   def to_var
     if self < 0 then
        v = BOAST::Variable::new("#{self}", BOAST::Int, :signed => true, :constant => self )
@@ -231,6 +249,7 @@ class Integer
 end
 
 class Float
+  # Creates a constant BOAST Real Variable with a name corresponding to its value.
   def to_var
     v = BOAST::Variable::new("#{self}", BOAST::Real, :constant => self )
     v.force_replace_constant = true

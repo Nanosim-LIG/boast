@@ -126,13 +126,16 @@ module BOAST
 
   class << self
     alias use_vla_old? use_vla?
+    private :use_vla_old?
   end
 
+  # @return the boolean evaluation of the *use_vla* state. false if lang is CL or CUDA.
   def use_vla?
     return false if [CL,CUDA].include?(lang)
     return use_vla_old?
   end
 
+  # @private
   def get_default_architecture
     architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]
     architecture = const_get(ENV["ARCH"]) if not architecture and ENV["ARCH"]
