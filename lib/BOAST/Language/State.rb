@@ -1,5 +1,14 @@
 module BOAST
 
+  EXTENDED = []
+  private_constant :EXTENDED
+
+  def self.included(base)
+    EXTENDED.each { |m|
+      base.send(:include, m)
+    }
+  end
+
   # Generates setters and getters for the specified state
   # @param [Symbol] state
   # @!macro [attach] state_accessor

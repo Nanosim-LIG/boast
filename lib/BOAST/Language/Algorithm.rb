@@ -1,6 +1,8 @@
 module BOAST
 
   extend TypeTransition
+
+  EXTENDED.push TypeTransition
   
   module PrivateStateAccessor
 

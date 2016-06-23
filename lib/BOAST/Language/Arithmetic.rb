@@ -1,18 +1,24 @@
 module BOAST
 
-  module_function
+  module TopLevelExpressions
 
-  def Return(value)
-    return Expression::new("return",nil, value)
+    def Return(value)
+      return Expression::new("return",nil, value)
+    end
+
+    def And(a, b)
+      return Expression::new(And, a, b)
+    end
+
+    def Or(a, b)
+      return Expression::new(Or, a, b)
+    end
+
   end
 
-  def And(a, b)
-    return Expression::new(And, a, b)
-  end
+  extend TopLevelExpressions
 
-  def Or(a, b)
-    return Expression::new(Or, a, b)
-  end
+  EXTENDED.push TopLevelExpressions
 
   module Arithmetic
 
