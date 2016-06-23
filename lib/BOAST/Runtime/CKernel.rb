@@ -50,6 +50,7 @@ module BOAST
         @architecture = get_architecture
       end
       @probes = [TimerProbe, PAPIProbe]
+      @probes.push AffinityProbe unless OS.mac?
 
       case @lang
       when CL
