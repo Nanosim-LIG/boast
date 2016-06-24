@@ -72,6 +72,10 @@ module BOAST
 
   end
 
+  module Functors
+    alias Dim Dimension
+  end
+
   class ConstArray < Array
     include PrivateStateAccessor
     include Inspectable
@@ -555,6 +559,10 @@ module BOAST
       return self
     end
 
+  end
+
+  module Functors
+    alias Var Variable
   end
 
 end

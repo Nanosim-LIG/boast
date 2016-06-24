@@ -62,4 +62,8 @@ module BOAST
     end
   end
 
+  module Functors
+    alias Call FuncCall
+  end
+
 end

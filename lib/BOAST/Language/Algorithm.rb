@@ -210,16 +210,6 @@ module BOAST
     a.close
   end
 
-  alias :Var :Variable
-  alias :Dim :Dimension
-  alias :Call :FuncCall
-
-  class << self
-    alias :Var :Variable
-    alias :Dim :Dimension
-    alias :Call :FuncCall
-  end
-
   Var = Variable
   Dim = Dimension
   Call = FuncCall

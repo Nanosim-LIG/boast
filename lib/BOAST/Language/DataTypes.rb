@@ -1,5 +1,6 @@
 module BOAST
 
+  # Base class for BOAST data types. Inherited class will define a functor.
   class DataType
     include Intrinsics
     include PrivateStateAccessor
@@ -10,6 +11,7 @@ module BOAST
 
   end
 
+  # @!parse var_functorize Sizet
   class Sizet < DataType
 
     attr_reader :signed
@@ -60,6 +62,7 @@ module BOAST
 
   end
  
+  # @!parse var_functorize Real
   class Real < DataType
 
     attr_reader :size
@@ -135,6 +138,7 @@ module BOAST
 
   end
 
+  # @!parse var_functorize Int
   class Int < DataType
 
     attr_reader :size
@@ -246,6 +250,7 @@ module BOAST
 
   end
 
+  # @!parse var_functorize CStruct
   class CStruct < DataType
 
     attr_reader :name, :members, :members_array
@@ -320,6 +325,7 @@ module BOAST
 
   end
 
+  # @!parse var_functorize CustomType
   class CustomType < DataType
 
     attr_reader :size, :name, :vector_length
