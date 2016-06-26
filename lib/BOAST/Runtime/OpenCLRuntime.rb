@@ -132,6 +132,7 @@ module BOAST
       run_method = <<EOF
 def self.run(*args)
   raise "Wrong number of arguments \#{args.length} for #{@procedure.parameters.length}" if args.length > #{@procedure.parameters.length+1} or args.length < #{@procedure.parameters.length}
+  energy_data = NArray::float(1024)
   params = []
   opts = BOAST::get_run_config
   opts = opts.update(args.pop) if args.length == #{@procedure.parameters.length+1}
@@ -154,7 +155,12 @@ def self.run(*args)
   if not lws then
     lws = opts[:block_size]
   end
+  ENERGY_PROBE_INIT.run
+  @queue.finish
+  ENERGY_PROBE_START.run
   event = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+  @queue.finish
+  status = ENERGY_PROBE_STOP.run(energy_data)
   @procedure.parameters.each_index { |i|
     if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
       read_opencl_param( params[i], args[i], @procedure.parameters[i] )
@@ -165,6 +171,13 @@ def self.run(*args)
   result[:start] = event.profiling_command_start
   result[:end] = event.profiling_command_end
   result[:duration] = (result[:end] - result[:start])/1000000000.0
+  result[:pkg0] = energy_data[0]
+  result[:pp00] = energy_data[1]
+  result[:dram0] = energy_data[2]
+  result[:pkg1] = energy_data[3+0]
+  result[:pp01] = energy_data[3+1]
+  result[:dram1] = energy_data[3+2]
+  result[:time] = energy_data[3+3]
   return result
 end
 EOF
