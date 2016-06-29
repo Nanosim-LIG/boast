@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Comment; end
   class Comment
     extend Functor
     include PrivateStateAccessor

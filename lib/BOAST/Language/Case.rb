@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize CaseCondition; end
   class CaseCondition < ControlStructure
     attr_reader :block
     attr_reader :constants
@@ -70,6 +71,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Case; end
   class Case < ControlStructure
 
     attr_reader :expression

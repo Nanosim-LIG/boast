@@ -304,6 +304,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Set; end
   class Set < Operator
     extend Functor
     include Intrinsics
@@ -375,6 +376,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Load; end
   class Load < Operator
     extend Functor
     include Intrinsics
@@ -439,6 +441,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize MaskLoad; end
   class MaskLoad < Operator
     extend Functor
     include Intrinsics
@@ -502,6 +505,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Store; end
   class Store < Operator
     extend Functor
     include Intrinsics
@@ -555,6 +559,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize MaskStore; end
   class MaskStore < Operator
     extend Functor
     include Intrinsics
@@ -615,6 +620,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize FMA; end
   class FMA < Operator
     extend Functor
     include Intrinsics
@@ -685,6 +691,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize FMS; end
   class FMS < Operator
     extend Functor
     include Intrinsics
@@ -756,6 +763,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Ternary; end
   class Ternary
     extend Functor
     include Arithmetic

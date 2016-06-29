@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize FuncCall; end
   class FuncCall
     include PrivateStateAccessor
     include Arithmetic

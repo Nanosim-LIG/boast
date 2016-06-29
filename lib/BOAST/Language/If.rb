@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize If; end
   class If < ControlStructure
 
     attr_reader :conditions

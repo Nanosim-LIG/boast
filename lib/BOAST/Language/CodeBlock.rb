@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize CodeBlock; end
   class CodeBlock < Proc
     include PrivateStateAccessor
     include Inspectable

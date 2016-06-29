@@ -2,6 +2,7 @@ module BOAST
 
   module_function
 
+  # @!parse module Functors; functorize Expression; end
   class Expression
     include PrivateStateAccessor
     include Arithmetic

@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Dimension; end
   class Dimension
     include PrivateStateAccessor
     include Inspectable
@@ -124,6 +125,7 @@ module BOAST
     end
   end
 
+  # @!parse module Functors; functorize Variable; end
   class Variable
     include PrivateStateAccessor
     include Arithmetic

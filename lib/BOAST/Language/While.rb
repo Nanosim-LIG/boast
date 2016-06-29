@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize While; end
   class While < ControlStructure
     include Annotation
     ANNOTATIONS = [ :condition ]

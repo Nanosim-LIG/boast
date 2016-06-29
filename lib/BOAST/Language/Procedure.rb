@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Procedure; end
   class Procedure
     include PrivateStateAccessor
     include Inspectable

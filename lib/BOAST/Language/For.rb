@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize For; end
   class For < ControlStructure
     include Annotation
     ANNOTATIONS = [ :iterator, :begin, :end, :step, :operator ]
