@@ -21,11 +21,10 @@ module BOAST
   class OptimizationSpace
     attr_reader :parameters
     attr_reader :rules
-    attr_accessor :checkers
+    attr_reader :checkers
     HASH_NAME = "options"
 
     def initialize( *parameters )
-      @checkers = []
       if parameters.length == 1 and parameters[0].is_a?(Hash) then
         @parameters = []
         parameters[0].each { |key, value|
@@ -57,6 +56,7 @@ module BOAST
 
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
+      eval @checkers
       s = <<EOF       
       points.reject!{ |#{HASH_NAME}|
         not @rules.all?{ |r| eval r }
@@ -180,6 +180,7 @@ EOF
     def points
       params2 = @search_space.parameters.dup
       param = params2.shift
+      
       pts = param.values.collect { |val| {param.name => val} }
       if params2.size == 0 then
         pts4 = pts 
