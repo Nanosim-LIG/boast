@@ -132,26 +132,9 @@ EOF
 
     class OpenMPControlStructure < ControlStructure
       include OpenMP::Pragma
-      include PrivateStateAccessor
-      include Inspectable
-
-      attr_accessor :args
 
       def self.inherited(child)
         OpenMP.send(:functorize,child)
-      end
-
-      def self.token_string_generator(name, *args)
-        s = <<EOF
-    def #{name}_string(#{args.join(",")})
-      return eval get_strings[get_lang][:#{name}]
-    end
-EOF
-      end
-
-      def [](*args)
-        @args = args
-        return self
       end
 
       def get_strings
