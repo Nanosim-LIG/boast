@@ -20,7 +20,7 @@ module BOAST
     def self.token_string_generator(name, *args)
        s = <<EOF
     def #{name}_string(#{args.join(",")})
-      return eval get_strings[get_lang][:#{name}] 
+      return eval get_strings[get_lang][:#{name}]
     end
 EOF
     end
