@@ -8,49 +8,41 @@ module BOAST
 
     private
     # (see BOAST#push_env)
-    # @!visibility public
     def push_env(vars, &block)
       BOAST::push_env(vars, &block)
     end
 
     # (see BOAST#pop_env)
-    # @!visibility public
     def pop_env(*vars)
       BOAST::pop_env(*vars)
     end
 
     # (see BOAST#increment_indent_level)
-    # @!visibility public
     def increment_indent_level(increment = get_indent_increment)
       BOAST::increment_indent_level(increment)
     end
 
     # (see BOAST#decrement_indent_level)
-    # @!visibility public
     def decrement_indent_level(increment = get_indent_increment)
       BOAST::decrement_indent_level(increment)
     end
 
     # (see BOAST#indent)
-    # @!visibility public
     def indent
       BOAST::indent
     end
 
     # (see BOAST#get_architecture_name)
-    # @!visibility public
     def get_architecture_name
       BOAST::get_architecture_name
     end
 
     # (see BOAST#get_lang_name)
-    # @!visibility public
     def get_lang_name
       BOAST::get_lang_name
     end
 
     # (see BOAST#annotate_number)
-    # @!visibility public
     def annotate_number(name)
       BOAST::annotate_number(name)
     end

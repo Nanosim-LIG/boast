@@ -23,7 +23,7 @@ module BOAST
     # @param [Class] klass class to turn into a functor.
     # @!macro [attach] functorize
     #   @!method $1
-    #   Creates a new $1 object, arguments are passed to the *new* method of $1
+    #   Creates a new $1 object, arguments are passed to the *new* method of $1. (see {$1#initialize}).
     def functorize(klass)
       name = klass.name.split('::').last
       s = <<EOF

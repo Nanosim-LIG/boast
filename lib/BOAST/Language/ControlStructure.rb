@@ -17,12 +17,20 @@ module BOAST
                FORTRAN => get_fortran_strings }
     end
 
-    def self.token_string_generator(name, *args)
+    private :get_strings
+
+    class << self
+
+      def token_string_generator(name, *args)
        s = <<EOF
     def #{name}_string(#{args.join(",")})
       return eval get_strings[get_lang][:#{name}]
     end
 EOF
+      end
+
+      private :token_string_generator
+
     end
 
     def [](*args)

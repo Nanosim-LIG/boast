@@ -58,6 +58,17 @@ module BOAST
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+    private
+
     def to_s_fortran
       s = ""
       s += "#{@source}(#{@indexes.join(", ")})"
@@ -153,15 +164,6 @@ module BOAST
       end
       s = "#{@source}[" + sub + "]"
       return s
-    end
-
-    def pr
-      s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
-      output.puts s
-      return self
     end
 
   end

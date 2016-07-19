@@ -3,11 +3,11 @@ module BOAST
   # @!parse module Functors; functorize For; end
   class For < ControlStructure
     include Annotation
-    ANNOTATIONS = [ :iterator, :begin, :end, :step, :operator ]
+    ANNOTATIONS = [ :iterator, :start, :stop, :step, :operator ]
 
     attr_reader :iterator
-    attr_reader :begin
-    attr_reader :end
+    attr_reader :start
+    attr_reader :stop
     attr_reader :step
     attr_accessor :block
 
@@ -19,13 +19,13 @@ module BOAST
       @unroll = val
     end
 
-    def initialize(i, b, e, options={}, &block)
+    def initialize(iterator, start, stop, options={}, &block)
       default_options = {:step => 1}
       default_options.update( options )
       @options = options
-      @iterator = i
-      @begin = b
-      @end = e
+      @iterator = iterator
+      @start = start
+      @stop = stop
       @step = default_options[:step]
       @operator = "<="
       @block = block
@@ -66,6 +66,8 @@ module BOAST
                :end => '"end do"' }
     end
 
+    private :get_c_strings, :get_fortran_strings
+
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
 
@@ -73,19 +75,14 @@ module BOAST
     eval token_string_generator( * %w{end})
 
     def to_s
-      s = for_string(@iterator, @begin, @end, @step, @operator)
+      s = for_string(@iterator, @start, @stop, @step, @operator)
       return s
     end
 
-#    def u(s = 2)
-#      return [For::new(@iterator, @begin, @end - (@step*s - 1), @options.dup.update( { :step => (@step*s) } ), &@block),
-#              For::new(@iterator, @begin.to_var + ((@end - @begin + 1)/(@step*s))*(@step*s), @end, @options, &@block) ]
-#    end
-#
     def unroll
       opts = @options.clone
       opts[:unroll] = true
-      return For::new(@iterator, @begin, @end, opts, &block)
+      return For::new(@iterator, @start, @stop, opts, &block)
     end
 
     def pr_unroll(*args)
@@ -93,19 +90,19 @@ module BOAST
       begin
         begin
           push_env( :replace_constants => true )
-          if @begin.kind_of?(Variable) then
-            start = @begin.constant
-          elsif @begin.kind_of?(Expression) then
-            start = eval "#{@begin}"
+          if @start.kind_of?(Variable) then
+            start = @start.constant
+          elsif @start.kind_of?(Expression) then
+            start = eval "#{@start}"
           else
-            start = @begin.to_i
+            start = @start.to_i
           end
-          if @end.kind_of?(Variable) then
-            e = @end.constant
-          elsif @end.kind_of?(Expression) then
-            e = eval "#{@end}"
+          if @stop.kind_of?(Variable) then
+            stop = @stop.constant
+          elsif @stop.kind_of?(Expression) then
+            stop = eval "#{@stop}"
           else
-            e = @end.to_i
+            stop = @stop.to_i
           end
           if @step.kind_of?(Variable) then
             step = @step.constant
@@ -114,7 +111,7 @@ module BOAST
           else
             step = @step.to_i
           end
-          raise "Invalid bounds (not constants)!" if not ( start and e and step )
+          raise "Invalid bounds (not constants)!" if not ( start and stop and step )
         ensure
           pop_env( :replace_constants )
         end
@@ -126,7 +123,7 @@ module BOAST
         end
         return self
       end
-      range = start..e
+      range = start..stop
       @iterator.force_replace_constant = true
       range.step(step) { |i|
         @iterator.constant = i
@@ -135,6 +132,8 @@ module BOAST
       @iterator.force_replace_constant = false
       @iterator.constant = nil
     end
+
+    private :pr_unroll
 
     def open
       @openmp.open if @openmp
@@ -166,6 +165,11 @@ module BOAST
       @openmp.close if @openmp
       return self
     end
+
+#    def u(s = 2)
+#      return [For::new(@iterator, @start, @stop - (@step*s - 1), @options.dup.update( { :step => (@step*s) } ), &@block),
+#              For::new(@iterator, @start.to_var + ((@stop - @start + 1)/(@step*s))*(@step*s), @stop, @options, &@block) ]
+#    end
 
   end
 

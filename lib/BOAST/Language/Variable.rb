@@ -93,8 +93,10 @@ module BOAST
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
 
+    private
+
     def to_s_fortran
-      arr = self.flatten
+      arr = flatten
       s = ""
       return s if arr.first.nil?
       s += "reshape(" if @shape
@@ -111,7 +113,7 @@ module BOAST
     end
 
     def to_s_c
-      arr = self.flatten
+      arr = flatten
       s = ""
       return s if arr.first.nil?
       s += "{\n"
@@ -123,6 +125,7 @@ module BOAST
       }
       s += "}"
     end
+
   end
 
   # @!parse module Functors; functorize Variable; end
@@ -143,7 +146,7 @@ module BOAST
         required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(@type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
-          return self.copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length)
+          return copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length)
         else
           return orig_method_missing(m, *a, &b)
         end
@@ -310,13 +313,6 @@ module BOAST
       return Index::new(self,*args)
     end
  
-    def finalize
-       s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
-       return s
-    end
-
     def boast_header(lang=C)
       return decl_texture_s if texture?
       s = ""
@@ -350,6 +346,33 @@ module BOAST
       return decl_fortran if lang == FORTRAN
       return decl_c if [C, CL, CUDA].include?( lang )
     end
+
+    def align
+      if dimension? then
+        if align? or default_align > 1 then
+          a = ( align? ? alignment : 1 )
+          a = ( a >= default_align ? a : default_align )
+          return align_c(a) if lang == C
+          return align_fortran(a) if lang == FORTRAN
+        end
+      end
+      return nil
+    end
+
+    def alloc( dims = nil, align = get_address_size )
+      @dimension = [dims].flatten if dims
+      dims = @dimension
+      raise "Cannot allocate array with unknown dimension!" unless dims
+      return alloc_fortran(dims) if lang == FORTRAN
+      return alloc_c(dims, align) if lang == C
+    end
+
+    def dealloc
+      return dealloc_fortran if lang == FORTRAN
+      return dealloc_c if lang == C
+    end
+
+    private
 
     def __const?
       return !!( constant? or @direction == :in )
@@ -474,18 +497,6 @@ module BOAST
       return Pragma::new("DIR", "ASSUME_ALIGNED", "#{@name}: #{a}")
     end
 
-    def align
-      if dimension? then
-        if align? or default_align > 1 then
-          a = ( align? ? alignment : 1 )
-          a = ( a >= default_align ? a : default_align )
-          return align_c(a) if lang == C
-          return align_fortran(a) if lang == FORTRAN
-        end
-      end
-      return nil
-    end
-
     def alloc_fortran( dims = nil )
       return FuncCall::new(:allocate, FuncCall(name, * dims ) )
     end
@@ -495,18 +506,10 @@ module BOAST
       if align > (OS.bits/8) then
         # check alignment is a power of 2
         raise "Invalid alignment #{align}!" if align & (align - 1) != 0
-        return FuncCall::new(:posix_memalign, self.address, align, FuncCall::new(:sizeof, @type.decl) * d)
+        return FuncCall::new(:posix_memalign, address, align, FuncCall::new(:sizeof, @type.decl) * d)
       else
         return self === FuncCall::new(:malloc, FuncCall::new(:sizeof, @type.decl) * d).cast(self)
       end
-    end
-
-    def alloc( dims = nil, align = get_address_size )
-      @dimension = [dims].flatten if dims
-      dims = @dimension
-      raise "Cannot allocate array with unknown dimension!" unless dims
-      return alloc_fortran(dims) if lang == FORTRAN
-      return alloc_c(dims, align) if lang == C
     end
 
     def dealloc_fortran
@@ -515,11 +518,6 @@ module BOAST
 
     def dealloc_c
       return FuncCall::new(:free, self)
-    end
-
-    def dealloc
-      return dealloc_fortran if lang == FORTRAN
-      return dealloc_c if lang == C
     end
 
     def decl_fortran
@@ -559,6 +557,13 @@ module BOAST
         output.print s
       end
       return self
+    end
+
+    def finalize
+       s = ""
+       s += ";" if [C, CL, CUDA].include?( lang )
+       s+="\n"
+       return s
     end
 
   end

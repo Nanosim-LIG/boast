@@ -53,6 +53,8 @@ module BOAST
       s += "#{func_name}(#{@args.join(", ")})"
     end
 
+    private :to_s_fortran, :to_s_c
+
     def pr
       s=""
       s += indent

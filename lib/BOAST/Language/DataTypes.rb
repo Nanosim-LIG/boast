@@ -266,14 +266,6 @@ module BOAST
       }
     end
 
-    def decl_c
-      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
-    end
-
-    def decl_fortran
-      return "TYPE(#{@name})" if lang == FORTRAN
-    end
-
     def decl
       return decl_c if [C, CL, CUDA].include?( lang )
       return decl_fortran if lang == FORTRAN
@@ -289,6 +281,16 @@ module BOAST
     def define
       return define_c if [C, CL, CUDA].include?( lang )
       return define_fortran if lang == FORTRAN
+    end
+
+    private
+
+    def decl_c
+      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
+    end
+
+    def decl_fortran
+      return "TYPE(#{@name})" if lang == FORTRAN
     end
 
     def define_c

@@ -100,21 +100,27 @@ EOF
   # Implements private setters and getters interface for BOAST states.
   module PrivateStateAccessor
 
+    private
+
     # Generates private setters and getters for the specified state
     # @param [Symbol] state
     # @!macro [attach] private_state_accessor
     #   @!method $1
     #     @return the BOAST *$1* state
+    #     @private
     #   @!method $1=( val )
     #     Sets *$1* state to a new value
     #     @param val the new value of *$1* state
     #     @return the new +$1+ state
+    #     @private
     #   @!method get_$1
     #     @return the *$1* state
+    #     @private
     #   @!method set_$1( val )
     #     Sets *$1* state to a new value
     #     @param val the new value of *$1* state
     #     @return the new *$1* state
+    #     @private
     def self.private_state_accessor(state)
       s = <<EOF
     private
@@ -139,6 +145,7 @@ EOF
     # @!macro [attach] private_boolean_state_accessor
     #   @!method $1?
     #     @return the boolean evaluation of the *$1* state
+    #     @private
     #   @!parse private_state_accessor $1
     def self.private_boolean_state_accessor(state)
       self.private_state_accessor(state)

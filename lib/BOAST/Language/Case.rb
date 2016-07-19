@@ -22,6 +22,8 @@ module BOAST
                :break => 'nil' }
     end
 
+    private :get_c_strings, :get_fortran_strings
+
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
 
@@ -97,6 +99,8 @@ module BOAST
       return { :switch => '"select case (#{expr})"',
                :end => '"end select"' }
     end
+
+    private :get_c_strings, :get_fortran_strings
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
