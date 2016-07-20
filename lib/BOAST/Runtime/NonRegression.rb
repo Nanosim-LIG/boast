@@ -2,11 +2,11 @@ module BOAST
 
   class CKernel
 
-    def load_ref_inputs(path = "", suffix = ".in" )
+    def load_ref_inputs(path = ".", suffix = ".in" )
       return load_ref_files( path, suffix, :in )
     end
 
-    def load_ref_outputs(path = "", suffix = ".out" )
+    def load_ref_outputs(path = ".", suffix = ".out" )
       return load_ref_files( path, suffix, :out )
     end
 
