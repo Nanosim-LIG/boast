@@ -32,6 +32,8 @@ module BOAST
       return res
     end
 
+    private
+
     def get_array_type(param)
       if param.type.class == Real then
         case param.type.size
@@ -130,7 +132,7 @@ module BOAST
       return res
     end
 
-    def load_ref_files(  path = "", suffix = "", intent )
+    def load_ref_files(  path, suffix, intent )
       proc_path = path + "/#{@procedure.name}/"
       res_h = {}
       begin
