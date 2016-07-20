@@ -99,5 +99,26 @@ module BOAST
     def cost(*args)
       @cost_function.call(*args)
     end
+
+    # @!method build( options = {} )
+    # Builds the computing kernel.
+    # @param [Hash] options contain build time options. Usual compiling flags are supported. Default values can be overriden in $XDG_CONFIG_HOME/.config/BOAST/compiler_options or $HOME/.config/BOAST/compiler_options. The same flags can be set as environment variables. Flags given here override environment variable ones.
+    # @option options [String] :CC C compiler
+    # @option options [String] :CFLAGS C compiler flags
+    # @option options [String] :FC Fortran compiler
+    # @option options [String] :FCFLAGS Fortran compiler flags
+    # @option options [String] :CXX C++ compiler
+    # @option options [String] :CXXFLAGS C++ compiler flags
+    # @option options [String] :LD linker
+    # @option options [String] :LDFLAGS linker flags
+    # @option options [Boolean] :OPENMP activate OpenMP support. Correct flag should be set for your compiler in $XDG_CONFIG_HOME/.config/BOAST/openmp_flags or $HOME/.config/BOAST/openmp_flags.
+    # @option options [String] :NVCC cuda compiler
+    # @option options [String] :NVCCFLAGS cuda compiler flags
+    # @option options [String] :CLFLAGS opencl compiation flags
+    # @option options [String] :CLVENDOR restrict selected OpenCL platforms to the ones which vendor match the option
+    # @option options [String] :CLPLATFORM restrict selected OpenCL platforms to the ones which name match the option
+    # @option options [String] :CLDEVICE restrict selected OpenCL devices to the ones which mame match the option or use the provided OpenCL::Device
+    # @option options [String] :CLCONTEXT use the devices in the given OpenCL::Context
+    # @option options [String] :CLDEVICETYPE restrict selected OpenCL devices to the corresponding types
   end
 end
