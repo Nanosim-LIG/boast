@@ -271,13 +271,6 @@ module BOAST
       return decl_fortran if lang == FORTRAN
     end
 
-    def finalize
-       s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
-       return s
-    end
-
     def define
       return define_c if [C, CL, CUDA].include?( lang )
       return define_fortran if lang == FORTRAN
@@ -323,6 +316,13 @@ module BOAST
       s += finalize
       output.print s
       return self
+    end
+
+    def finalize
+       s = ""
+       s += ";" if [C, CL, CUDA].include?( lang )
+       s+="\n"
+       return s
     end
 
   end

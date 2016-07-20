@@ -86,6 +86,7 @@ module BOAST
       end
     end
 
+    # @private
     def method_missing(meth, *args, &block)
      if meth.to_s == "run" then
        build

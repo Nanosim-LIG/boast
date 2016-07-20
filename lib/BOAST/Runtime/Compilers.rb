@@ -5,6 +5,7 @@ require 'os'
 
 module BOAST
 
+  # @private
   module Compilers
     include Rake::DSL
 

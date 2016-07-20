@@ -34,6 +34,8 @@ module BOAST
     attr_accessor :binary
     attr_accessor :source
 
+    private
+
     @@extensions = {
       C => ".c",
       CUDA => ".cu",
@@ -390,6 +392,8 @@ EOF
         f.unlink
       }
     end
+
+    public
 
     def build(options={})
       compiler_options = BOAST::get_compiler_options

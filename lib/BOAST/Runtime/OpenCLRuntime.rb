@@ -1,4 +1,6 @@
 module BOAST
+
+  # @private
   module OpenCLRuntime
 
     attr_reader :context

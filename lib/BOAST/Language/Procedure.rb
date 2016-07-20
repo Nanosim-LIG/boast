@@ -24,6 +24,7 @@ module BOAST
       @headers = [] if not @headers
     end
 
+    # @private
     def boast_header(lang=C)
       s = boast_header_s(lang)
       s += ";\n"

@@ -1,7 +1,10 @@
 module BOAST
 
+  # @private
   module CUDARuntime
     include CRuntime
+
+    private
 
     alias fill_library_source_old fill_library_source
     alias fill_library_header_old fill_library_header

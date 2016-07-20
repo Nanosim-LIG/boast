@@ -1,7 +1,10 @@
 module BOAST
 
+  # @private
   module CRuntime
     include CompiledRuntime
+
+    private
 
     def fill_library_header
       get_output.puts "#include <stdlib.h>"

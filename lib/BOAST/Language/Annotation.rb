@@ -1,5 +1,6 @@
 module BOAST
 
+  # @private
   module Annotation
     include PrivateStateAccessor
 
