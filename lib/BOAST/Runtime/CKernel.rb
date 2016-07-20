@@ -23,7 +23,13 @@ module BOAST
     attr_accessor :architecture
     attr_accessor :kernels
     attr_accessor :cost_function
-    
+
+    # Creates a new CKernel object. BOAST output is redirected to the CKernel. If the chain_code state is set the current BOAST output, as returned by {BOAST.get_output}, is used.
+    # @param [Hash] options contains named options
+    # @option options [StringIO] :code specify a StringIO to use rather than create a new one.
+    # @option options [Array] :kernels list of kernels this kernel depends on. The kernels will be linked at build time.
+    # @option options [Integer] :lang specify the language to use. Default is current language state as returned by {BOAST.get_lang}.
+    # @option options [Integer] :architecture specify the architecture to use. Default is the current BOAST architecture as returned by {BOAST.get_architecture}.
     def initialize(options={})
       if options[:code] then
         @code = options[:code]
@@ -72,11 +78,13 @@ module BOAST
       end
     end
 
+    # @deprecated
     def print
       @code.rewind
       puts @code.read
     end
 
+    # @return [String] source code of the kernel
     def to_s
       if @lang == FORTRAN then
         return line_limited_source
@@ -96,13 +104,14 @@ module BOAST
      end
     end
 
+    # If a cost function is provided returns the cost of running the function on the provided arguments.
     def cost(*args)
       @cost_function.call(*args)
     end
 
     # @!method build( options = {} )
     # Builds the computing kernel.
-    # @param [Hash] options contain build time options. Usual compiling flags are supported. Default values can be overriden in $XDG_CONFIG_HOME/.config/BOAST/compiler_options or $HOME/.config/BOAST/compiler_options. The same flags can be set as environment variables. Flags given here override environment variable ones.
+    # @param [Hash] options contains build time options. Usual compiling flags are supported. Default values can be overriden in $XDG_CONFIG_HOME/.config/BOAST/compiler_options or $HOME/.config/BOAST/compiler_options. The same flags can be set as environment variables. Flags given here override environment variable ones.
     # @option options [String] :CC C compiler
     # @option options [String] :CFLAGS C compiler flags
     # @option options [String] :FC Fortran compiler
@@ -120,5 +129,16 @@ module BOAST
     # @option options [String] :CLDEVICE restrict selected OpenCL devices to the ones which mame match the option or use the provided OpenCL::Device
     # @option options [String] :CLCONTEXT use the devices in the given OpenCL::Context
     # @option options [String] :CLDEVICETYPE restrict selected OpenCL devices to the corresponding types
+
+    # @!method run( *args, options = {} )
+    # Runs the computing kernel using the given arguments.
+    # @param args the arguments corresponding to the list of parameters of the #procedure attribute
+    # @param [Hash] options contains runtime options.
+    # @option options [Array] :global_work_size only considered for CUDA and OpenCL kernels. See corresponding OpenCL documentation
+    # @option options [Array] :local_work_size only considered for CUDA and OpenCL kernels. See corresponding OpenCL documentation
+    # @option options [Array] :block_number only considered for CUDA and OpenCL kernels. See corresponding CUDA documentation
+    # @option options [Array] :block_size only considered for CUDA and OpenCL kernels. See corresponding CUDA documentation
+    # @option options [Array] :PAPI list of PAPI counters to monitor. ( ex: ['PAPI_L1_DCM', 'PAPI_L2_DCM'], see PAPI documentation.
+    # @return [Hash] contains at least the *:duration* entry which is the runtime of the kernel in seconds. If the kernel is a function then the *:return* field will contain the returned value. For :inout or :out scalars the *:reference_return* field will be a Hash with each parameter name associated to the corresponding value. If *:PAPI* options was given will contain a *:PAPI* entry with the corresponding counters value.
   end
 end

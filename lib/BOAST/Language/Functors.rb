@@ -19,8 +19,9 @@ module BOAST
 
     module_function
 
-    # Creates a wrapper for $1 new method
+    # Creates a wrapper for klass new method
     # @param [Class] klass class to turn into a functor.
+    # @private
     # @!macro [attach] functorize
     #   @!method $1
     #   Creates a new $1 object, arguments are passed to the *new* method of $1. (see {$1#initialize}).
@@ -40,8 +41,9 @@ EOF
 
     module_function
 
-    # Creates a functor to create a Variable of type $1
+    # Creates a functor to create a Variable of type klass
     # @param [DataType] klass DataType to turn into a functor and add it to the VarFunctors module.
+    # @private
     # @!macro [attach] var_functorize
     #   @!method $1(name, *args, &block)
     #   Creates a new Variable of type $1.
