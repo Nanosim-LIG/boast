@@ -8,11 +8,7 @@ module BOAST
 
     def select_cl_platforms(options)
       platforms = OpenCL::get_platforms
-      if options[:platform_vendor] then
-        platforms.select!{ |p|
-          p.vendor.match(options[:platform_vendor])
-        }
-      elsif options[:CLVENDOR] then
+      if options[:CLVENDOR] then
         platforms.select!{ |p|
           p.vendor.match(options[:CLVENDOR])
         }
@@ -32,12 +28,11 @@ module BOAST
         devices = context.devices
       else
         platforms = select_cl_platforms(options)
-        type = options[:device_type] ? OpenCL::Device::Type.const_get(options[:device_type]) : options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
+        type = options[:CLDEVICETYPE] ? OpenCL::Device::Type.const_get(options[:CLDEVICETYPE]) : OpenCL::Device::Type::ALL
         devices = platforms.collect { |plt| plt.devices(type) }
         devices.flatten!
       end
-      name_pattern = options[:device_name]
-      name_pattern = options[:CLDEVICE] unless name_pattern
+      name_pattern = options[:CLDEVICE]
       if name_pattern then
         devices.select!{ |d|
           d.name.match(name_pattern)
@@ -65,12 +60,12 @@ module BOAST
         puts e.to_s
         puts program.build_status
         puts program.build_log
-        if options[:verbose] or get_verbose then
+        if options[:VERBOSE] or get_verbose then
           puts @code.string
         end
         raise "OpenCL Failed to build #{@procedure.name}"
       end
-      if options[:verbose] or get_verbose then
+      if options[:VERBOSE] or get_verbose then
         program.build_log.each {|dev,log|
           puts "#{device.name}: #{log}"
         }
