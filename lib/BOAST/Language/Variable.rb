@@ -38,7 +38,7 @@ module BOAST
       @val2 = v2
     end
 
-    # Returns a {String} representation of the {Dimension}
+    # Returns a String representation of the {Dimension}
     def to_s
       if lang == FORTRAN and @val2 then
         return "#{@val1}:#{@val2}"
@@ -235,6 +235,17 @@ module BOAST
     # @param [#to_s] name
     # @param [DataType] type
     # @param [Hash] properties a set of named properties.
+    # @option properties [Symbol] :direction (or *:dir*) can be one of *:in*, *:out* or *:inout*. Specify the intent of the variable.
+    # @option properties [Array<Dimension>] :dimension (or *:dim*) variable is an array rather than a scalar. Dimensions are given in Fortran order (contiguous first).
+    # @option properties [Object] :constant (or *:const*) states that the variable is a constant and give its value. For Variable with the *:dimension* property set must be a {ConstArray}
+    # @option properties [Boolean] :restrict specifies that the compiler can assume no aliasing to this array.
+    # @option properties [Symbol] :allocate specify that the variable is to be allocated and where. Can only be *:heap* or *:stack* for now.
+    # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
+    # @option properties [Boolean] :texture for OpenCL and CUDA. In OpenCL also specifies that a sampler has to be generated to access the array variable.
+    # @option properties [Integer] :align specifies the alignment the variable will be declared/allocated with if allocated or is supposed to have if it is coming from another context.
+    # @option properties [Boolean] :replace_constant specifies that for scalar constants this variable should be replaced by its constant value. For constant arrays, the value of the array will be replaced if the index can be determined at evaluation.
+    # @option properties [Boolean] :deferred_shape for Fortran interface generation mainly see Fortran documentation
+    # @option properties [Boolean] :optional for Fortran interface generation mainly see Fortran documentation
     def initialize(name, type, properties={})
       @name = name.to_s
       @direction = properties[:direction] ? properties[:direction] : properties[:dir]
