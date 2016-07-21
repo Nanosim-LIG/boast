@@ -231,21 +231,25 @@ module BOAST
       !!@deferred_shape
     end
 
-    def initialize(name,type,hash={})
+    # Creates a new {Variable}
+    # @param [#to_s] name
+    # @param [DataType] type
+    # @param [Hash] properties a set of named properties.
+    def initialize(name, type, properties={})
       @name = name.to_s
-      @direction = hash[:direction] ? hash[:direction] : hash[:dir]
-      @constant = hash[:constant] ? hash[:constant]  : hash[:const]
-      @dimension = hash[:dimension] ? hash[:dimension] : hash[:dim]
-      @local = hash[:local] ? hash[:local] : hash[:shared]
-      @texture = hash[:texture]
-      @allocate = hash[:allocate]
-      @restrict = hash[:restrict]
-      @alignment = hash[:align]
-      @deferred_shape = hash[:deferred_shape]
-      @optional = hash[:optional]
+      @direction = properties[:direction] ? properties[:direction] : properties[:dir]
+      @constant = properties[:constant] ? properties[:constant]  : properties[:const]
+      @dimension = properties[:dimension] ? properties[:dimension] : properties[:dim]
+      @local = properties[:local] ? properties[:local] : properties[:shared]
+      @texture = properties[:texture]
+      @allocate = properties[:allocate]
+      @restrict = properties[:restrict]
+      @alignment = properties[:align]
+      @deferred_shape = properties[:deferred_shape]
+      @optional = properties[:optional]
       @force_replace_constant = false
-      if not hash[:replace_constant].nil? then
-        @replace_constant = hash[:replace_constant]
+      if not properties[:replace_constant].nil? then
+        @replace_constant = properties[:replace_constant]
       else
         @replace_constant = true
       end
@@ -254,8 +258,8 @@ module BOAST
       else
         @sampler = nil
       end
-      @type = type::new(hash)
-      @options = hash
+      @type = type::new(properties)
+      @properties = properties
       if (@direction == :out or @direction == :inout) and not dimension? then
         @scalar_output = true
       else
@@ -264,10 +268,10 @@ module BOAST
       @dimension = [@dimension].flatten if dimension?
     end
 
-    def copy(name=nil,options={})
+    def copy(name=nil,properties={})
       name = @name if not name
-      h = @options.clone
-      options.each { |k,v|
+      h = @properties.clone
+      properties.each { |k,v|
         h[k] = v
       }
       return Variable::new(name, @type.class, h)
@@ -278,9 +282,9 @@ module BOAST
       return self
     end
 
-    def self.from_type(name, type, options={})
+    def self.from_type(name, type, properties={})
       hash = type.to_hash
-      options.each { |k,v|
+      properties.each { |k,v|
         hash[k] = v
       }
       hash[:direction] = nil
@@ -391,7 +395,7 @@ module BOAST
     end
 
     def __global?
-      return !!( lang == CL and @direction and dimension? and not (@options[:register] or @options[:private] or local?) )
+      return !!( lang == CL and @direction and dimension? and not (@properties[:register] or @properties[:private] or local?) )
     end
 
     def __local?
