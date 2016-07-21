@@ -10,10 +10,19 @@ module BOAST
     attr_reader :val2
     attr_reader :size
 
+    # Creates a new {Dimension}.
+    # @overload initialize()
+    #   Creates a {Dimension} of unknown {#size}, used to declare an array of unknown size.
+    # @overload initialize( size )
+    #   Creates a {Dimension} of size *size*, {#start} is computed at evaluation as {BOAST.get_array_start}.
+    #   @param [Object] size can be an integer or a {Variable} or {Expression}
+    # @overload initialize( lower, upper )
+    #   Creates a {Dimension} with a lower and upper bound. {#size} is computed as 'upper - lower + 1' and can be an {Expression}
+    #   @param [Object] lower bound of the {Dimension}
+    #   @param [Object] upper bound of the {Dimension}
     def initialize(v1=nil,v2=nil)
       if v1 then
         if v2 then
-          #@size = Expression::new(Substraction, v2, v1) + 1
           begin
             @size = v2-v1+1
           rescue
@@ -29,6 +38,7 @@ module BOAST
       @val2 = v2
     end
 
+    # Returns a {String} representation of the {Dimension}
     def to_s
       if lang == FORTRAN and @val2 then
         return "#{@val1}:#{@val2}"
@@ -41,6 +51,7 @@ module BOAST
       end 
     end
 
+    # Returns the start of the {Dimension} as given at initialization or as computed {BOAST.get_array_start}.
     def start
       if @val2 then
         return @val1
@@ -49,6 +60,7 @@ module BOAST
       end
     end
 
+    # Returns the end of the {Dimension} if the size is known.
     def finish
       if @val2 then
         return @val2
