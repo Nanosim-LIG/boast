@@ -14,14 +14,15 @@ module BOAST
     attr_reader :properties
     attr_reader :headers
 
-    def initialize(name, parameters=[], constants=[], properties={}, &block)
+    def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters
-      @constants = constants
+      @constants = properties[:constants]
+      @constants = [] unless @constants
       @block = block
       @properties = properties
       @headers = properties[:headers]
-      @headers = [] if not @headers
+      @headers = [] unless @headers
     end
 
     # @private
