@@ -189,6 +189,7 @@ EOF
 
   end
 
+  # @private
   class GenericOptimization
 
     attr_accessor :repeat
