@@ -14,6 +14,12 @@ module BOAST
     attr_reader :properties
     attr_reader :headers
 
+    # Creates a new Procedure
+    # @param [#to_s] name Procedure identifier
+    # @param [Array<Variable>] parameters list of the procedure parameters.
+    # @param [Hash] properties set of named properties for the Procedure.
+    # @option properties [Array<Variables>] :constants list of constant variables that are used in the Procedure. (see parameter in Fortran).
+    # @option properties [Array<#to_s>] :headers list of headers that need to be included in order to compile the Procedure
     def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters
@@ -46,6 +52,7 @@ module BOAST
       return close_c if [C, CL, CUDA].include?( lang )
     end
 
+    # Returns a {CKernel} with the Procedure as entry point.
     def ckernel
       old_output = output
       k = CKernel::new

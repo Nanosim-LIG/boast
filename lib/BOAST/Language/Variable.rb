@@ -234,7 +234,7 @@ module BOAST
     # Creates a new {Variable}
     # @param [#to_s] name
     # @param [DataType] type
-    # @param [Hash] properties a set of named properties.
+    # @param [Hash] properties a set of named properties. Properties are also propagated to the {DataType}.
     # @option properties [Symbol] :direction (or *:dir*) can be one of *:in*, *:out* or *:inout*. Specify the intent of the variable.
     # @option properties [Array<Dimension>] :dimension (or *:dim*) variable is an array rather than a scalar. Dimensions are given in Fortran order (contiguous first).
     # @option properties [Object] :constant (or *:const*) states that the variable is a constant and give its value. For Variable with the *:dimension* property set must be a {ConstArray}
