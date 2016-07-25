@@ -42,10 +42,10 @@ module BOAST
     def to_s
       if lang == FORTRAN and @val2 then
         return "#{@val1}:#{@val2}"
-      elsif lang == FORTRAN and get_array_start != 1 then
-        return "#{get_array_start}:#{@size-(1+get_array_start)}"
       elsif lang == FORTRAN and size.nil?
         return "*"
+      elsif lang == FORTRAN and get_array_start != 1 then
+        return "#{get_array_start}:#{@size-(1+get_array_start)}"
       else
         return @size.to_s
       end 

@@ -27,6 +27,30 @@ class TestArray < Minitest::Test
     }
   end
 
+  def test_decl_int_array_start_zero
+    n1 = Int("n1")
+    push_env(:array_start => 0) {
+      arr = Int(:a, :dim => [Dim(n1), Dim()])
+      block = lambda { decl arr }
+      set_lang(FORTRAN)
+      assert_subprocess_output( "integer(kind=4), dimension(0:n1 - (1), *) :: a\n", "", &block )
+      set_lang(C)
+      assert_subprocess_output( "int32_t * a;\n", "", &block )
+      set_lang(CUDA)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(CL)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      push_env(:use_vla => true) {
+        set_lang(C)
+        assert_subprocess_output( "int32_t a[][n1];\n", "", &block )
+        set_lang(CUDA)
+        assert_subprocess_output( "int * a;\n", "", &block )
+        set_lang(CL)
+        assert_subprocess_output( "int * a;\n", "", &block )
+      }
+    }
+  end
+
   def test_decl_int_array_unkwown_dim
     arr = Int(:a, :dim => [Dim(5,15), Dim()])
     block = lambda { decl arr }
