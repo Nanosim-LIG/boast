@@ -190,6 +190,9 @@ module BOAST
       s = indent + to_s_fortran
       s += "\n"
       increment_indent_level
+      parameters.each { |p|
+        p.type.define if p.type.kind_of? CStruct
+      }
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
       constants.each { |c|
