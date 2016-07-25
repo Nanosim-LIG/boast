@@ -28,7 +28,7 @@ module BOAST
       fill_library_source_old
       get_output.write <<EOF
 extern "C" {
-  #{@procedure.boast_header_s(CUDA)}{
+  #{@procedure.send(:boast_header_s,CUDA)}{
     dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
     dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
     cudaEvent_t __start, __stop;
