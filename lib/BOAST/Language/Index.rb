@@ -70,8 +70,16 @@ module BOAST
     private
 
     def to_s_fortran
+      indexes_dup = []
+      @source.dimension.each_with_index { |d,i|
+        if d.size.nil? and get_array_start != 1 then
+           indexes_dup.push( @indexes[i] - d.start + 1 )
+        else
+           indexes_dup.push( @indexes[i] )
+        end
+      }
       s = ""
-      s += "#{@source}(#{@indexes.join(", ")})"
+      s += "#{@source}(#{indexes_dup.join(", ")})"
       return s
     end
 

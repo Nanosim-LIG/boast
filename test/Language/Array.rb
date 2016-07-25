@@ -125,6 +125,20 @@ class TestArray < Minitest::Test
     }
   end
 
+  def test_pr_int_array_start_zero
+    n1 = Int("n1")
+    push_env(:array_start => 0) {
+      arr = Int(:a, :dim => [Dim(n1), Dim()])
+      block = lambda { pr arr[6,7] }
+      set_lang(FORTRAN)
+      assert_subprocess_output( "a(6, 8)\n", "", &block )
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
+      }
+    }
+  end
+
   def test_decl_int_array_local
     n1 = Int("n1")
     arr = Int(:a, :dim => [Dim(5,15), Dim(n1)], :local => true)
