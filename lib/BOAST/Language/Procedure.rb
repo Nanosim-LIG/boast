@@ -190,9 +190,14 @@ module BOAST
       s = indent + to_s_fortran
       s += "\n"
       increment_indent_level
-      parameters.each { |p|
-        p.type.define if p.type.kind_of? CStruct
+      tmp_buff = StringIO::new
+      push_env( :output => tmp_buff ) {
+        parameters.each { |p|
+          p.type.define if p.type.kind_of? CStruct
+        }
       }
+      tmp_buff.rewind
+      s += tmp_buff.read
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
       constants.each { |c|
