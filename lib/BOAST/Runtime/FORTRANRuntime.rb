@@ -1,7 +1,10 @@
 module BOAST
 
+  # @private
   module FORTRANRuntime
     include CompiledRuntime
+
+    private
 
     def method_name
       return @procedure.name + "_"

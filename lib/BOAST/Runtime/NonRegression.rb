@@ -2,11 +2,11 @@ module BOAST
 
   class CKernel
 
-    def load_ref_inputs(path = "", suffix = ".in" )
+    def load_ref_inputs(path = ".", suffix = ".in" )
       return load_ref_files( path, suffix, :in )
     end
 
-    def load_ref_outputs(path = "", suffix = ".out" )
+    def load_ref_outputs(path = ".", suffix = ".out" )
       return load_ref_files( path, suffix, :out )
     end
 
@@ -31,6 +31,8 @@ module BOAST
       }
       return res
     end
+
+    private
 
     def get_array_type(param)
       if param.type.class == Real then
@@ -130,7 +132,7 @@ module BOAST
       return res
     end
 
-    def load_ref_files(  path = "", suffix = "", intent )
+    def load_ref_files(  path, suffix, intent )
       proc_path = path + "/#{@procedure.name}/"
       res_h = {}
       begin

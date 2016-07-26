@@ -98,6 +98,7 @@ EOF
   end
 
   # Implements private setters and getters interface for BOAST states.
+  # @private
   module PrivateStateAccessor
 
     private

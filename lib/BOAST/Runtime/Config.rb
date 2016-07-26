@@ -19,8 +19,8 @@ module BOAST
     :CLDEVICETYPE => nil,
     :MAQAO => 'maqao',
     :MAQAO_FLAGS => '',
-    :probes => nil,
-    :openmp => false
+    :OPENMP => false,
+    :probes => nil
   }
   
   @@openmp_default_flags = {

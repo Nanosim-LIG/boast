@@ -77,6 +77,10 @@ module BOAST
       return false
     end
 
+    # Creates a new instance of Real.
+    # @param [Hash] hash contains named properties for the type
+    # @option hash [Integer] :size size of the Real type in byte. By default {BOAST.get_default_real_size}.
+    # @option hash [Integer] :vector_length length of the vector of Real. By default 1.
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
@@ -151,6 +155,11 @@ module BOAST
       return false
     end
 
+    # Creates a new instance of Int.
+    # @param [Hash] hash contains named properties for the type
+    # @option hash [Integer] :size size of the Int type in byte. By default {BOAST.get_default_int_size}.
+    # @option hash [Integer] :vector_length length of the vector of Int. By default 1.
+    # @option hash [Integer] :signed specifies if the Int is signed or not. By default {BOAST.get_default_int_signed}.
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
@@ -255,6 +264,10 @@ module BOAST
 
     attr_reader :name, :members, :members_array
 
+    # Creates a new structured type.
+    # @param [Hash] hash named options
+    # @option hash [#to_s] :type_name
+    # @option hash [Array<Variable>] :members list of Variable that create the type
     def initialize(hash={})
       @name = hash[:type_name]
       @members = {}
@@ -269,13 +282,6 @@ module BOAST
     def decl
       return decl_c if [C, CL, CUDA].include?( lang )
       return decl_fortran if lang == FORTRAN
-    end
-
-    def finalize
-       s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
-       return s
     end
 
     def define
@@ -323,6 +329,13 @@ module BOAST
       s += finalize
       output.print s
       return self
+    end
+
+    def finalize
+       s = ""
+       s += ";" if [C, CL, CUDA].include?( lang )
+       s+="\n"
+       return s
     end
 
   end

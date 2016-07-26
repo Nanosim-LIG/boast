@@ -14,16 +14,24 @@ module BOAST
     attr_reader :properties
     attr_reader :headers
 
-    def initialize(name, parameters=[], constants=[], properties={}, &block)
+    # Creates a new Procedure
+    # @param [#to_s] name Procedure identifier
+    # @param [Array<Variable>] parameters list of the procedure parameters.
+    # @param [Hash] properties set of named properties for the Procedure.
+    # @option properties [Array<Variables>] :constants list of constant variables that are used in the Procedure. (see parameter in Fortran).
+    # @option properties [Array<#to_s>] :headers list of headers that need to be included in order to compile the Procedure
+    def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters
-      @constants = constants
+      @constants = properties[:constants]
+      @constants = [] unless @constants
       @block = block
       @properties = properties
       @headers = properties[:headers]
-      @headers = [] if not @headers
+      @headers = [] unless @headers
     end
 
+    # @private
     def boast_header(lang=C)
       s = boast_header_s(lang)
       s += ";\n"
@@ -44,6 +52,7 @@ module BOAST
       return close_c if [C, CL, CUDA].include?( lang )
     end
 
+    # Returns a {CKernel} with the Procedure as entry point.
     def ckernel
       old_output = output
       k = CKernel::new
@@ -181,6 +190,14 @@ module BOAST
       s = indent + to_s_fortran
       s += "\n"
       increment_indent_level
+      tmp_buff = StringIO::new
+      push_env( :output => tmp_buff ) {
+        parameters.each { |p|
+          p.type.define if p.type.kind_of? CStruct
+        }
+      }
+      tmp_buff.rewind
+      s += tmp_buff.read
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
       constants.each { |c|

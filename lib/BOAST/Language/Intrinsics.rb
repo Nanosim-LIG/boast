@@ -28,9 +28,11 @@ module BOAST
   class IntrinsicsError < Error
   end
 
+  # @private
   class InternalIntrinsicsError < Error
   end
 
+  # @private
   module Intrinsics
     extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }

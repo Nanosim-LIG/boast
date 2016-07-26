@@ -1,5 +1,6 @@
 module BOAST
 
+  # @private
   module TimerProbe
     extend PrivateStateAccessor
 
@@ -64,6 +65,7 @@ EOF
 
   end
 
+  # @private
   module PAPIProbe
     extend PrivateStateAccessor
 
