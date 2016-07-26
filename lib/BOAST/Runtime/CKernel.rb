@@ -49,7 +49,11 @@ module BOAST
       else
         @architecture = get_architecture
       end
-      @probes = [TimerProbe, PAPIProbe]
+      if options[:probes] then
+        @probes = options[:probes]
+      else
+        @probes = [TimerProbe, PAPIProbe]
+      end
       @probes.push AffinityProbe unless OS.mac?
 
       case @lang
