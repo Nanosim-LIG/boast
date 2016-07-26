@@ -11,7 +11,7 @@ module BOAST
 
   end
 
-  # @!parse var_functorize Sizet
+  # @!parse module VarFunctors; var_functorize Sizet; end
   class Sizet < DataType
 
     attr_reader :signed
@@ -62,7 +62,7 @@ module BOAST
 
   end
  
-  # @!parse var_functorize Real
+  # @!parse module VarFunctors; var_functorize Real; end
   class Real < DataType
 
     attr_reader :size
@@ -138,7 +138,7 @@ module BOAST
 
   end
 
-  # @!parse var_functorize Int
+  # @!parse module VarFunctors; var_functorize Int; end
   class Int < DataType
 
     attr_reader :size
@@ -250,7 +250,7 @@ module BOAST
 
   end
 
-  # @!parse var_functorize CStruct
+  # @!parse module VarFunctors; var_functorize CStruct; end
   class CStruct < DataType
 
     attr_reader :name, :members, :members_array
@@ -264,14 +264,6 @@ module BOAST
         @members_array.push(mc)
         @members[mc.name] = mc
       }
-    end
-
-    def decl_c
-      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
-    end
-
-    def decl_fortran
-      return "TYPE(#{@name})" if lang == FORTRAN
     end
 
     def decl
@@ -289,6 +281,16 @@ module BOAST
     def define
       return define_c if [C, CL, CUDA].include?( lang )
       return define_fortran if lang == FORTRAN
+    end
+
+    private
+
+    def decl_c
+      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
+    end
+
+    def decl_fortran
+      return "TYPE(#{@name})" if lang == FORTRAN
     end
 
     def define_c
@@ -325,7 +327,7 @@ module BOAST
 
   end
 
-  # @!parse var_functorize CustomType
+  # @!parse module VarFunctors; var_functorize CustomType; end
   class CustomType < DataType
 
     attr_reader :size, :name, :vector_length

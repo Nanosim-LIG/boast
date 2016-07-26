@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Comment; end
   class Comment
     extend Functor
     include PrivateStateAccessor
@@ -8,18 +9,6 @@ module BOAST
 
     def initialize(string)
       @comment = string
-    end
-
-    def to_s_fortran
-      s = ""
-      @comment.each_line { |l| s += "! #{l}" }
-      return s
-    end
-
-    def to_s_c
-      s = ""
-      @comment.each_line { |l| s += "/* #{l.delete("\n")} */\n" }
-      return s
     end
 
     def to_s
@@ -31,6 +20,20 @@ module BOAST
       s = to_s
       output.puts s
       return self
+    end
+
+    private
+
+    def to_s_fortran
+      s = ""
+      @comment.each_line { |l| s += "! #{l}" }
+      return s
+    end
+
+    def to_s_c
+      s = ""
+      @comment.each_line { |l| s += "/* #{l.delete("\n")} */\n" }
+      return s
     end
 
   end

@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize FuncCall; end
   class FuncCall
     include PrivateStateAccessor
     include Arithmetic
@@ -51,6 +52,8 @@ module BOAST
       s += @prefix if @prefix
       s += "#{func_name}(#{@args.join(", ")})"
     end
+
+    private :to_s_fortran, :to_s_c
 
     def pr
       s=""

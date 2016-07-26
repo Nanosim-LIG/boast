@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Procedure; end
   class Procedure
     include PrivateStateAccessor
     include Inspectable
@@ -21,44 +22,6 @@ module BOAST
       @properties = properties
       @headers = properties[:headers]
       @headers = [] if not @headers
-    end
-
-    def boast_header_s( lang=C )
-      s = ""
-      headers.each { |h|
-        s += "#include <#{h}>\n"
-      }
-      if lang == CL then
-        s += "__kernel "
-        wgs = @properties[:reqd_work_group_size]
-        if wgs then
-          s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
-        end
-      end
-      trailer = ""
-      trailer += "_" if lang == FORTRAN
-      trailer += "_wrapper" if lang == CUDA
-      if @properties[:return] then
-        s += "#{@properties[:return].type.decl} "
-      elsif lang == CUDA
-        s += "unsigned long long int "
-      else
-        s += "void "
-      end
-      s += "#{@name}#{trailer}("
-      if parameters.first then
-        s += parameters.first.boast_header(lang)
-        parameters[1..-1].each { |p|
-          s += ", "
-          s += p.boast_header(lang)
-        }
-      end
-      if lang == CUDA then
-        s += ", " if parameters.first
-        s += "size_t *block_number, size_t *block_size"
-      end
-      s += ")"
-      return s
     end
 
     def boast_header(lang=C)
@@ -90,29 +53,6 @@ module BOAST
       return k
     end
 
-    def close_c
-      s = ""
-      s += indent + "return #{@properties[:return]};\n" if @properties[:return]
-      decrement_indent_level
-      s += indent + "}"
-      output.puts s
-      return self
-    end
-
-    def close_fortran
-      s = ""
-      if @properties[:return] then
-        s += indent + "#{@name} = #{@properties[:return]}\n"
-        decrement_indent_level
-        s += indent + "END FUNCTION #{@name}"
-      else
-        decrement_indent_level
-        s += indent + "END SUBROUTINE #{@name}"
-      end
-      output.puts s
-      return self
-    end
-
     def pr
       open
       if @block then
@@ -126,6 +66,18 @@ module BOAST
       return decl_fortran if lang==FORTRAN
       return decl_c if [C, CL, CUDA].include?( lang )
     end
+
+    def open
+      return open_fortran if lang==FORTRAN
+      return open_c if [C, CL, CUDA].include?( lang )
+    end
+
+    def to_s
+      return decl_c_s if [C, CL, CUDA].include?( lang )
+      return to_s_fortran if lang==FORTRAN
+    end
+
+    private
 
     def decl_fortran
       output.puts indent + "INTERFACE"
@@ -179,9 +131,9 @@ module BOAST
       end
       s += "#{@name}("
       if parameters.first then
-        s += parameters.first.decl_c_s(@properties[:local])
+        s += parameters.first.send(:decl_c_s, @properties[:local])
         parameters[1..-1].each { |p|
-          s += ", "+p.decl_c_s(@properties[:local])
+          s += ", "+p.send(:decl_c_s, @properties[:local])
         }
       end
       s += ")"
@@ -192,16 +144,6 @@ module BOAST
       s = indent + decl_c_s + ";"
       output.puts s
       return self
-    end
-
-    def open
-      return open_fortran if lang==FORTRAN
-      return open_c if [C, CL, CUDA].include?( lang )
-    end
-
-    def to_s
-      return decl_c_s if [C, CL, CUDA].include?( lang )
-      return to_s_fortran if lang==FORTRAN
     end
 
     def to_s_fortran
@@ -253,6 +195,67 @@ module BOAST
         BOAST::decl @properties[:return]
       end
       return self
+    end
+
+    def close_c
+      s = ""
+      s += indent + "return #{@properties[:return]};\n" if @properties[:return]
+      decrement_indent_level
+      s += indent + "}"
+      output.puts s
+      return self
+    end
+
+    def close_fortran
+      s = ""
+      if @properties[:return] then
+        s += indent + "#{@name} = #{@properties[:return]}\n"
+        decrement_indent_level
+        s += indent + "END FUNCTION #{@name}"
+      else
+        decrement_indent_level
+        s += indent + "END SUBROUTINE #{@name}"
+      end
+      output.puts s
+      return self
+    end
+
+    def boast_header_s( lang=C )
+      s = ""
+      headers.each { |h|
+        s += "#include <#{h}>\n"
+      }
+      if lang == CL then
+        s += "__kernel "
+        wgs = @properties[:reqd_work_group_size]
+        if wgs then
+          s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+        end
+      end
+      trailer = ""
+      trailer += "_" if lang == FORTRAN
+      trailer += "_wrapper" if lang == CUDA
+      if @properties[:return] then
+        s += "#{@properties[:return].type.decl} "
+      elsif lang == CUDA
+        s += "unsigned long long int "
+      else
+        s += "void "
+      end
+      s += "#{@name}#{trailer}("
+      if parameters.first then
+        s += parameters.first.boast_header(lang)
+        parameters[1..-1].each { |p|
+          s += ", "
+          s += p.boast_header(lang)
+        }
+      end
+      if lang == CUDA then
+        s += ", " if parameters.first
+        s += "size_t *block_number, size_t *block_size"
+      end
+      s += ")"
+      return s
     end
 
   end

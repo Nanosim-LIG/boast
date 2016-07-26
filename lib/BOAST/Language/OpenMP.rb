@@ -118,8 +118,7 @@ EOF
 
     end
 
-    module_function
-    def functorize(klass)
+    def self.functorize(klass)
       name = klass.name.split('::').last
       s = <<EOF
     def #{name}(*args,&block)
@@ -130,9 +129,13 @@ EOF
 EOF
       eval s
     end
- 
+
     class OpenMPControlStructure < ControlStructure
       include OpenMP::Pragma
+
+      def self.inherited(child)
+        OpenMP.send(:functorize,child)
+      end
 
       def get_strings
         return { C => get_c_strings,
@@ -172,6 +175,10 @@ EOF
      
     end
 
+    # @!macro [attach] register_openmp_construct
+    #   @!method $1(options = {}, &block)
+    #   Creates an OpenMP construct that correspond to the "$2" C OpenMP construct.
+    #   @param [Hash] options OpenMP clause and their values. See OpenMP documentation
     def self.register_openmp_construct( name, c_name, open_clauses, end_clauses = [], options = {} )
       fortran_name = c_name
       fortran_name = options[:fortran_name] if options[:fortran_name]
@@ -245,6 +252,10 @@ EOF
       eval s
     end
 
+    # @!macro [attach] register_openmp_compound_construct
+    #   @!method $1$2(options={}, &block)
+    #   Creates an OpenMP construct that correspond to the "$1#c_name $2#c_name" C OpenMP construct.
+    #   @param [Hash] options OpenMP clause and their values. See OpenMP documentation
     def self.register_openmp_compound_construct( c1, c2, options = {} )
       register_openmp_construct( c1.name+c2.name, "#{c1.c_name} #{c2.c_name}",
                                                   (c1.get_open_clauses + c2.get_open_clauses).uniq,
@@ -253,7 +264,13 @@ EOF
                                                   :block => options[:block] )
     end
 
-    register_openmp_construct( :Parallel, "parallel",
+    class << self
+      private :register_openmp_construct
+      private :register_openmp_compound_construct
+      private :functorize
+    end
+
+    register_openmp_construct( "Parallel", "parallel",
                                           [ :if,
                                             :num_threads,
                                             :default,
@@ -266,7 +283,7 @@ EOF
                                           [],
                                           :block => true )
 
-    register_openmp_construct( :For, "for",
+    register_openmp_construct( "For", "for",
                                      [ :private,
                                        :firstprivate,
                                        :lastprivate,
@@ -277,7 +294,7 @@ EOF
                                      [ :nowait ],
                                      :fortran_name => "do" )
 
-    register_openmp_construct( :Sections, "sections",
+    register_openmp_construct( "Sections", "sections",
                                           [ :private,
                                             :firstprivate,
                                             :lastprivate,
@@ -285,18 +302,18 @@ EOF
                                           [ :nowait ],
                                           :block => true )
 
-    register_openmp_construct( :Section, "section", [], [],
-                                         :block => true,
-                                         :fortran_no_end => true )
+    register_openmp_construct( "Section", "section", [], [],
+                                          :block => true,
+                                          :fortran_no_end => true )
 
-    register_openmp_construct( :Single, "single",
+    register_openmp_construct( "Single", "single",
                                         [ :private,
                                           :firstprivate ],
                                         [ :copyprivate,
                                           :nowait ],
                                         :block => true )
 
-    register_openmp_construct( :Simd, "simd",
+    register_openmp_construct( "Simd", "simd",
                                       [ :safelen,
                                         :linear,
                                         :aligned,
@@ -305,7 +322,7 @@ EOF
                                         :reduction,
                                         :collapse ] )
 
-    register_openmp_construct( :DeclareSimd, "declare simd",
+    register_openmp_construct( "DeclareSimd", "declare simd",
                                              [ :simdlen,
                                                :linear,
                                                :aligned,
@@ -315,21 +332,21 @@ EOF
 
     register_openmp_compound_construct( For, Simd )
 
-    register_openmp_construct( :TargetData, "target data",
+    register_openmp_construct( "TargetData", "target data",
                                             [ :device,
                                               :map,
                                               :if ],
                                             [],
                                             :block => true )
 
-    register_openmp_construct( :Target, "target",
+    register_openmp_construct( "Target", "target",
                                         [ :device,
                                           :map,
                                           :if ],
                                         [],
                                         :block => true )
 
-    register_openmp_construct( :TargetUpdate, "target update",
+    register_openmp_construct( "TargetUpdate", "target update",
                                               [ :to,
                                                 :from,
                                                 :device,
@@ -337,14 +354,14 @@ EOF
                                               [],
                                               :fortran_no_end => true )
 
-    register_openmp_construct( :DeclareTarget, "declare target",
+    register_openmp_construct( "DeclareTarget", "declare target",
                                                [],
                                                [],
                                                :c_end => true,
                                                :fortran_no_end => true,
                                                :fortran_block => true )
 
-    register_openmp_construct( :Teams, "teams",
+    register_openmp_construct( "Teams", "teams",
                                        [ :num_teams,
                                          :thread_limit,
                                          :default,
@@ -355,7 +372,7 @@ EOF
                                        [],
                                        :block => true )
 
-    register_openmp_construct( :Distribute, "distribute",
+    register_openmp_construct( "Distribute", "distribute",
                                             [ :private,
                                               :firstprivate,
                                               :collapse,
@@ -391,7 +408,7 @@ EOF
 
     register_openmp_compound_construct( Target, TeamsDistributeParallelForSimd )
 
-    register_openmp_construct( :Task, "task",
+    register_openmp_construct( "Task", "task",
                                       [ :if,
                                         :final,
                                         :untied,
@@ -404,47 +421,47 @@ EOF
                                       [],
                                       :block => true )
 
-    register_openmp_construct( :Taskyield, "taskyield", [], [], :fortran_no_end => true )
+    register_openmp_construct( "Taskyield", "taskyield", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :Master, "master", [], [], :block => true )
+    register_openmp_construct( "Master", "master", [], [], :block => true )
 
-    register_openmp_construct( :Critical, "critical", [:name], [:name], :block => true )
+    register_openmp_construct( "Critical", "critical", [:name], [:name], :block => true )
 
-    register_openmp_construct( :Barrier, "barrier", [], [], :fortran_no_end => true )
+    register_openmp_construct( "Barrier", "barrier", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :Taskwait, "taskwait", [], [], :fortran_no_end => true )
+    register_openmp_construct( "Taskwait", "taskwait", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :Taskgroup, "taskgroup", [], [], :block => true )
+    register_openmp_construct( "Taskgroup", "taskgroup", [], [], :block => true )
 
-    register_openmp_construct( :AtomicRead, "atomic read", [:seq_cst], [] )
+    register_openmp_construct( "AtomicRead", "atomic read", [:seq_cst], [] )
 
-    register_openmp_construct( :AtomicWrite, "atomic write", [:seq_cst], [] )
+    register_openmp_construct( "AtomicWrite", "atomic write", [:seq_cst], [] )
 
-    register_openmp_construct( :AtomicUpdate, "atomic update", [:seq_cst], [] )
+    register_openmp_construct( "AtomicUpdate", "atomic update", [:seq_cst], [] )
 
-    register_openmp_construct( :AtomicCapture, "atomic capture", [:seq_cst], [], :block => true )
+    register_openmp_construct( "AtomicCapture", "atomic capture", [:seq_cst], [], :block => true )
 
-    register_openmp_construct( :Flush, "flush", [:flush_list], [], :fortran_no_end => true )
+    register_openmp_construct( "Flush", "flush", [:flush_list], [], :fortran_no_end => true )
 
-    register_openmp_construct( :Ordered, "ordered", [], [], :block => true )
+    register_openmp_construct( "Ordered", "ordered", [], [], :block => true )
 
-    register_openmp_construct( :CancelParallel, "cancel parallel", [:if], [], :fortran_no_end => true )
+    register_openmp_construct( "CancelParallel", "cancel parallel", [:if], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancelSections, "cancel sections", [:if], [], :fortran_no_end => true )
+    register_openmp_construct( "CancelSections", "cancel sections", [:if], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancelFor, "cancel for", [:if], [], :fortran_no_end => true )
+    register_openmp_construct( "CancelFor", "cancel for", [:if], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancelTaskgroup, "cancel taskgroup", [:if], [], :fortran_no_end => true )
+    register_openmp_construct( "CancelTaskgroup", "cancel taskgroup", [:if], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancellationPointParallel, "cancellation point parallel", [], [], :fortran_no_end => true )
+    register_openmp_construct( "CancellationPointParallel", "cancellation point parallel", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancellationPointSections, "cancellation point sections", [], [], :fortran_no_end => true )
+    register_openmp_construct( "CancellationPointSections", "cancellation point sections", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancellationPointFor, "cancellation point for", [], [], :fortran_no_end => true )
+    register_openmp_construct( "CancellationPointFor", "cancellation point for", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :CancellationPointTaskgroup, "cancellation point taskgroup", [], [], :fortran_no_end => true )
+    register_openmp_construct( "CancellationPointTaskgroup", "cancellation point taskgroup", [], [], :fortran_no_end => true )
 
-    register_openmp_construct( :Threadprivate, "threadprivate", [:threadprivate_list], [], :fortran_no_end => true )
+    register_openmp_construct( "Threadprivate", "threadprivate", [:threadprivate_list], [], :fortran_no_end => true )
 
   end
 
