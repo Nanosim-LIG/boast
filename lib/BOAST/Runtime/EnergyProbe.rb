@@ -16,8 +16,8 @@ module BOAST
     def configure
       get_output.print <<EOF
 {
-  char buf[64];
-  char path[64];
+  char buf[128];
+  char path[128];
   char *s;
   FILE *f;
   int nproc;
