@@ -20,8 +20,8 @@ module BOAST
 
     def set min_temps=nil
       return if nil==min_temps
-      now = self.get
-      now = [now[0][0],now[1][0]]
+      now = []
+      self.get.each{ |x,y| now.push y[0] }
       fin = true
       (0...now.length).each {|i|
         fin = false if now[i] < min_temps[i]
@@ -30,8 +30,8 @@ module BOAST
       p = Array.new
       (0...24).each{|x| p.push fork{self.busy}}
       while true
-        now = self.get
-        now = [now[0][0],now[1][0]]
+        now = []
+        self.get.each{ |x,y| now.push y[0] }
         fin = true
         (0...now.length).each {|i|
           fin = false if now[i] < min_temps[i]
