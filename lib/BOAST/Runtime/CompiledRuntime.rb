@@ -179,6 +179,7 @@ EOF
     def fill_check_args
       get_output.print <<EOF
   VALUE _boast_rb_opts;
+  unsigned int _boast_repeat = 1;
   if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "Wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})!", _boast_argc);
   _boast_rb_opts = Qnil;
@@ -201,6 +202,12 @@ EOF
     if ( _boast_rb_opts != Qnil )
       rb_funcall(_boast_run_opts, rb_intern("update"), 1, _boast_rb_opts);
     _boast_rb_opts = _boast_run_opts;
+  }
+  if ( _boast_rb_opts != Qnil ){
+    VALUE _boast_repeat_value = Qnil;
+    _boast_repeat_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("repeat")));
+    if(_boast_repeat_value != Qnil)
+      _boast_repeat = NUM2UINT(_boast_repeat_value);
   }
 EOF
     end
@@ -270,10 +277,12 @@ EOF
     end
 
     def create_procedure_call
-      get_output.print "  _boast_ret = " if @procedure.properties[:return]
-      get_output.print " #{method_name}( "
+      get_output.puts  "  for(int _boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
+      get_output.print "    _boast_ret = " if @procedure.properties[:return]
+      get_output.print "    #{method_name}( "
       get_output.print create_procedure_call_parameters.join(", ")
-      get_output.puts " );"
+      get_output.print "    );"
+      get_output.puts  "  }"
     end
 
     def copy_scalar_param_to_ruby(param, ruby_param)
