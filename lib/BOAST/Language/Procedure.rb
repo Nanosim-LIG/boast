@@ -20,6 +20,7 @@ module BOAST
     # @param [Hash] properties set of named properties for the Procedure.
     # @option properties [Array<Variables>] :constants list of constant variables that are used in the Procedure. (see parameter in Fortran).
     # @option properties [Array<#to_s>] :headers list of headers that need to be included in order to compile the Procedure
+    # @option propertirs [Variable] :return a Variable that will be returned. Procedure becomes a function, return type is the same as the returned variable. The variable will be declared at the start of the procedure.
     def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters

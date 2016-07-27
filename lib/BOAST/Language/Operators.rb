@@ -412,7 +412,7 @@ module BOAST
             end
             return @return_type.copy("vload#{@return_type.type.vector_length}(0, #{a2})", DISCARD_OPTIONS) if lang == CL
             return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
-            if @source.alignment == @return_type.type.total_size then
+            if @source.alignment and @return_type.type.total_size and ( @source.alignment % @return_type.type.total_size ) == 0 then
               instruction = intrinsics(:LOADA, @return_type.type)
             else
               instruction = intrinsics(:LOAD, @return_type.type)
@@ -536,7 +536,7 @@ module BOAST
         return "vstore#{type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
         return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and type.total_size*8 == 64
 
-        if @dest.alignment == type.total_size then
+        if @dest.alignment and type.total_size and ( @dest.alignment % type.total_size ) == 0 then
           instruction = intrinsics(:STOREA, type)
         else
           instruction = intrinsics(:STORE, type)
