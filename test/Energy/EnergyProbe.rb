@@ -53,7 +53,7 @@ class TestProcedure < Minitest::Test
       energy0 = e0[name.to_sym]
       energy1 = e1[name.to_sym]
       next if energy0 < 0.01 and energy1 < 0.01
-      assert(((energy0 / t0 - energy1 / t1).abs) / (energy1 / t1) < 0.05)
+      assert(((energy0 / t0 - energy1 / t1).abs) / (energy1 / t1) < 0.1)
     }
   end
 
