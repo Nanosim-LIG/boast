@@ -1,5 +1,5 @@
 module BOAST
-
+if false
   module OpenCLRuntime
 
     st = BOAST::get_output
@@ -42,5 +42,5 @@ EOF
     BOAST::set_output(st)
 
   end
-
+end
 end
