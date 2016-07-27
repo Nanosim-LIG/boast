@@ -22,13 +22,14 @@ module BOAST
       return if nil==min_temps
       now = []
       self.get.each{ |x,y| now.push y[0] }
+      nthreads = 2* (self.get[0].length-1) * self.get.length
       fin = true
       (0...now.length).each {|i|
         fin = false if now[i] < min_temps[i]
       }
       return if fin
       p = Array.new
-      (0...24).each{|x| p.push fork{self.busy}}
+      (0...nthreads).each{|x| p.push fork{self.busy}}
       while true
         now = []
         self.get.each{ |x,y| now.push y[0] }
