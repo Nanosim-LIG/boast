@@ -55,12 +55,6 @@ module BOAST
       else
         @architecture = get_architecture
       end
-      if options[:probes] then
-        @probes = options[:probes]
-      else
-        @probes = [TimerProbe, PAPIProbe]
-      end
-      @probes.push AffinityProbe unless OS.mac?
 
       case @lang
       when CL
@@ -74,7 +68,6 @@ module BOAST
       else
         if @architecture == MPPA then
           extend MPPARuntime
-          @probes = [MPPAProbe]
         else
           extend CRuntime
           extend FFIRuntime if ffi?

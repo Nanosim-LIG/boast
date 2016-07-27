@@ -400,6 +400,14 @@ EOF
       compiler_options.update(options)
       linker, ldshared, ldflags = setup_compilers(compiler_options)
       @compiler_options = compiler_options
+      if @compiler_options[:probes] then
+        @probes = @compiler_options[:probes]
+      else
+        @probes = [TimerProbe, PAPIProbe]
+        @probes.push EnergyProbe if EnergyProbe
+        @probes.push AffinityProbe unless OS.mac?
+      end
+      @probes = [MPPAProbe] if @architecture == MPPA
 
       @marker = Tempfile::new([@procedure.name,""])
 
