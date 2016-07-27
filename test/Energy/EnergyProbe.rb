@@ -25,7 +25,7 @@ class TestProcedure < Minitest::Test
     p = Procedure("vector_inc", [n, a, b, c]) {
       decl i
       decl j
-      pr For(j, 1, 1024*1024) {
+      pr For(j, 1, 32*1024) {
         pr For(i, 1, n) {
           pr c[i] === a[i] * b[i]
         }
