@@ -215,6 +215,6 @@ EOF
   elsif EmlProbe.is_available
     EnergyProbe = EmlProbe
   else
-    EnergyProbe = 'no energy probe available'
+    EnergyProbe = nil
   end
 end
