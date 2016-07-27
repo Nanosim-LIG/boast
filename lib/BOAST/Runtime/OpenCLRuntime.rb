@@ -124,6 +124,7 @@ module BOAST
     def build(options={})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
+      @probes = compiler_options[:probes] if compiler_options[:probes]
       init_opencl(compiler_options)
 
       run_method = <<EOF
