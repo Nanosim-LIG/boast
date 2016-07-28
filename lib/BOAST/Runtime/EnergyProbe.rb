@@ -40,6 +40,7 @@ module BOAST
       break;
     i = 0;
     do{
+      int _boast_fread_ret;
       fclose(f);
       ++_boast_energy_nsensors;
       _boast_energy_files = realloc(_boast_energy_files, _boast_energy_nsensors * sizeof(*_boast_energy_files));
@@ -47,11 +48,15 @@ module BOAST
       _boast_energy_files[_boast_energy_nsensors-1] = malloc(128);
       _boast_energy_names[_boast_energy_nsensors-1] = malloc( 16);
       s = _boast_energy_names[_boast_energy_nsensors-1];
-      sprintf(_boast_energy_files[_boast_energy_nsensors-1],buf);
-      sprintf(buf,"%s/name",path);
+      sprintf(_boast_energy_files[_boast_energy_nsensors-1],"%s",buf);
+      sprintf(buf, "%s/name", path);
       f = fopen(buf, "r");
-      buf[fread(buf, 1, sizeof(buf), f)-1] = 0;
+      _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
       fclose(f);
+      if(_boast_fread_ret == 0)
+        rb_raise(rb_eArgError, "Energy probe read error!");
+      /* last character read is a line break */
+      buf[_boast_fread_ret-1] = 0;
       sprintf(s, "%d.%s", nproc, buf);
 
       sprintf(path,"/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d/intel-rapl:%d:%d",nproc,nproc,i++);
@@ -76,9 +81,12 @@ EOF
   FILE *f;
   int i;
   for(i = 0; i < _boast_energy_nsensors; ++i){
+    int _boast_fread_ret;
     f = fopen(_boast_energy_files[i], "r");
-    fread(buf, 1, sizeof(buf), f);
+    _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
     fclose(f);
+    if(_boast_fread_ret == 0)
+      rb_raise(rb_eArgError, "Energy probe read error!");
     _boast_energy_0[i] = atoll(buf);
   }
 }
@@ -91,9 +99,12 @@ EOF
   FILE *f;
   int i;
   for(i = 0; i < _boast_energy_nsensors; ++i){
+    int _boast_fread_ret;
     f = fopen(_boast_energy_files[i], "r");
-    fread(buf, 1, sizeof(buf), f);
+    _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
     fclose(f);
+    if(_boast_fread_ret == 0)
+      rb_raise(rb_eArgError, "Energy probe read error!");
     _boast_energy_1[i] = atoll(buf);
   }
 }
