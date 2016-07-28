@@ -15,6 +15,18 @@ end
 
 class TestProcedure < Minitest::Test
 
+  def test_repeat
+    a = Int(:a, :dim => Dim(1), :dir => :inout)
+    p = Procedure("inc", [a]) { pr a[1] === a[1] + 1 }
+    [FORTRAN, C].each { |l|
+      ah = NArray::int(1).fill!(0)
+      set_lang(l)
+      k = p.ckernel
+      k.run(ah, :repeat => 15)
+      assert_equal(15, ah[0])
+    }
+  end
+
   def test_procedure
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
