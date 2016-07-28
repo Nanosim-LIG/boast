@@ -29,6 +29,7 @@ module BOAST
       get_output.write <<EOF
 extern "C" {
   #{@procedure.send(:boast_header_s,CUDA)}{
+    int _boast_i;
     dim3 dimBlock(_boast_block_size[0], _boast_block_size[1], _boast_block_size[2]);
     dim3 dimGrid(_boast_block_number[0], _boast_block_number[1], _boast_block_number[2]);
     cudaEvent_t __start, __stop;
@@ -36,7 +37,7 @@ extern "C" {
     cudaEventCreate(&__start);
     cudaEventCreate(&__stop);
     cudaEventRecord(__start, 0);
-    for( int _boast_i = 0; _boast_i < _boast_repeat; _boast_i ++) {
+    for( _boast_i = 0; _boast_i < _boast_repeat; _boast_i ++) {
       #{@procedure.name}<<<dimGrid,dimBlock>>>(#{@procedure.parameters.join(", ")});
     }
     cudaEventRecord(__stop, 0);

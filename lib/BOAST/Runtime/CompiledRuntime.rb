@@ -180,6 +180,7 @@ EOF
       get_output.print <<EOF
   VALUE _boast_rb_opts;
   int _boast_repeat = 1;
+  int _boast_i;
   if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "Wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})!", _boast_argc);
   _boast_rb_opts = Qnil;
@@ -279,7 +280,7 @@ EOF
     end
 
     def create_procedure_call
-      get_output.puts  "  for(int _boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
+      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
       get_output.print "    _boast_ret = " if @procedure.properties[:return]
       get_output.print "    #{method_name}( "
       get_output.print create_procedure_call_parameters.join(", ")
