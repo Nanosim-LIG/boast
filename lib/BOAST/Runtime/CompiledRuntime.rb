@@ -179,7 +179,7 @@ EOF
     def fill_check_args
       get_output.print <<EOF
   VALUE _boast_rb_opts;
-  unsigned int _boast_repeat = 1;
+  int _boast_repeat = 1;
   if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
     rb_raise(rb_eArgError, "Wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})!", _boast_argc);
   _boast_rb_opts = Qnil;
@@ -208,6 +208,8 @@ EOF
     _boast_repeat_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("repeat")));
     if(_boast_repeat_value != Qnil)
       _boast_repeat = NUM2UINT(_boast_repeat_value);
+    if(_boast_repeat < 0)
+      _boast_repeat = 1;
   }
 EOF
     end
@@ -409,9 +411,10 @@ EOF
       compiler_options.update(options)
       linker, ldshared, ldflags = setup_compilers(compiler_options)
       @compiler_options = compiler_options
+      @probes = []
       if @compiler_options[:probes] then
         @probes = @compiler_options[:probes]
-      else
+      elsif get_lang != CUDA
         @probes = [TimerProbe, PAPIProbe]
         @probes.push EnergyProbe if EnergyProbe
         @probes.push AffinityProbe unless OS.mac?

@@ -270,7 +270,7 @@ module BOAST
       end
       if lang == CUDA then
         s += ", " if parameters.first
-        s += "size_t *block_number, size_t *block_size"
+        s += "size_t *_boast_block_number, size_t *_boast_block_size, int _boast_repeat"
       end
       s += ")"
       return s
