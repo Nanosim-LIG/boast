@@ -76,7 +76,11 @@ class TestProcedure < Minitest::Test
   end
 
   def test_procedure_opencl_array
-    silence_warnings { require 'opencl_ruby_ffi' }
+    begin
+      silence_warnings { require 'opencl_ruby_ffi' }
+    rescue
+      skip "Missing OpenCL on the platform!"
+    end
     push_env(:array_start => 0) {
       a = Int( :a, :dir => :inout, :dim => [Dim()] )
       b = Int( :b, :dir => :in )
