@@ -167,7 +167,7 @@ EOF
 EOF
 		end
     def is_available
-      [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
+      ENV.has_key? 'LIBRARY_PATH' and [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
     end
   end
 
@@ -205,7 +205,7 @@ EOF
 EOF
     end
     def is_available
-      [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
+      ENV.has_key? 'LIBRARY_PATH' and [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
     end
   end
   if PowercapProbe.is_available
