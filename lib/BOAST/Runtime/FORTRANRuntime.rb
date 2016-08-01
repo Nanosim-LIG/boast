@@ -27,7 +27,7 @@ module BOAST
           end
         elsif line.match(/^\s*!/) then
           s += line
-        else
+        elsif not line.match(/^\s*(include|INCLUDE)/) then
           chunks = line.scan(/.{1,#{fortran_line_length-2}}/)
           s += chunks.join("&\n&") + "\n"
         end
