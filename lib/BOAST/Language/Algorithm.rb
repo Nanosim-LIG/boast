@@ -98,13 +98,13 @@ module BOAST
     vars.each { |key, value|
       var = nil
       begin
-        var = BOAST::class_variable_get("@@"+key.to_s)
+        var = BOAST::send("get_#{key}")
       rescue
         BOAST::pop_env(*keys)
         raise "Unknown module variable #{key}!"
       end
       @@env[key].push(var)
-      BOAST::class_variable_set("@@"+key.to_s, value)
+      BOAST::send("set_#{key}", value)
       keys.push(key)
     }
     if block then
@@ -123,7 +123,7 @@ module BOAST
       raise "Unknown module variable #{key}!" unless @@env.has_key?(key)
       ret = @@env[key].pop
       raise "No stored value for #{key}!" if ret.nil?
-      BOAST::class_variable_set("@@"+key.to_s, ret)
+      BOAST::send("set_#{key}", ret)
     }
   end
 
