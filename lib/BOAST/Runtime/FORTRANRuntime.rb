@@ -36,7 +36,12 @@ module BOAST
     end
 
     def fill_library_source
-      get_output.print line_limited_source
+      if fortran_line_length == 0 then
+        @code.rewind
+        get_output.write @code.read
+      else
+        get_output.print line_limited_source
+      end
     end
 
     def create_procedure_call_parameters
