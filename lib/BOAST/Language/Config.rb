@@ -135,6 +135,16 @@ module BOAST
     return use_vla_old?
   end
 
+  def set_model(val)
+    @@model=val
+    Intrinsics::generate_conversions
+  end
+
+  def model=(val)
+    @@model=val
+    Intrinsics::generate_conversions
+  end
+
   # @private
   def get_default_architecture
     architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]

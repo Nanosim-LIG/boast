@@ -81,7 +81,7 @@ module BOAST
 
     def get_conversion_path(type_dest, type_orig)
       conversion_path = CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
-      raise IntrinsicsError, "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}!" unless conversion_path
+      raise IntrinsicsError, "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}#{get_architecture==X86 ? "(#{get_model})" : "" }!" unless conversion_path
       return conversion_path
     end
 
@@ -413,30 +413,35 @@ module BOAST
       }
     }
 
-    [X86, ARM].each { |arch|
-      cvt_dgraph = RGL::DirectedAdjacencyGraph::new
-      INTRINSICS[arch][:CVT].each { |dest, origs|
-        origs.each { |orig, intrinsic|
-          cvt_dgraph.add_edge(orig, dest)
+    def generate_conversions
+      [X86, ARM].each { |arch|
+        cvt_dgraph = RGL::DirectedAdjacencyGraph::new
+        INTRINSICS[arch][:CVT].each { |dest, origs|
+          origs.each { |orig, intrinsic|
+            cvt_dgraph.add_edge(orig, dest) unless arch == X86 and (INSTRUCTIONS[intrinsic.to_s] & MODELS[get_model.to_s]).size == 0
+          }
+        }
+        cvt_dgraph.vertices.each { |source|
+          hash = {}
+          cvt_dgraph.edges.each { |e| hash[e.to_a] = 1 }
+          paths = cvt_dgraph.dijkstra_shortest_paths( hash, source )
+          paths.each { |dest, path|
+            CONVERSIONS[arch][dest][source] = path if path
+          }
+        }
+        types = []
+        INTRINSICS[arch].each { |intrinsic, instructions|
+          types += instructions.keys
+        }
+        types.uniq
+        types.each { |type|
+          CONVERSIONS[arch][type][type] = [type]
         }
       }
-      cvt_dgraph.vertices.each { |source|
-        hash = {}
-        cvt_dgraph.edges.each { |e| hash[e.to_a] = 1 }
-        paths = cvt_dgraph.dijkstra_shortest_paths( hash, source )
-        paths.each { |dest, path|
-          CONVERSIONS[arch][dest][source] = path if path
-        }
-      }
-      types = []
-      INTRINSICS[arch].each { |intrinsic, instructions|
-        types += instructions.keys
-      }
-      types.uniq
-      types.each { |type|
-        CONVERSIONS[arch][type][type] = [type]
-      }
-    }
+    end
+    module_function :generate_conversions
+
+    generate_conversions
 
   end
 
