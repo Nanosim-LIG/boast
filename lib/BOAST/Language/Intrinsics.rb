@@ -88,7 +88,7 @@ module BOAST
     module_function :get_conversion_path
 
     def get_vector_decl_X86( data_type )
-      raise IntrinsicsError, "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
+      raise IntrinsicsError, "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256,512].include?( data_type.total_size*8 )
       s = "__m#{data_type.total_size*8}"
       case data_type
       when Int
