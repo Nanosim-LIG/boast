@@ -73,6 +73,20 @@ EOF
     }
   end
 
+  def test_add_int16_double_skylake_avx512
+    push_env( :default_real_size => 8, :default_int_size => 2, :lang => C, :model => "skylake-avx512", :architecture => X86 ) {
+      a = Real :a, :vector_length => 2
+      b = Int  :b, :vector_length => 2
+      block = lambda { pr a + b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_add_pd( a, _mm_cvtepi64_pd( _mm_cvtepi16_epi64( b ) ) );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_raises( IntrinsicsError, &block )
+      }
+    }
+  end
+
   def test_add_int_double
     push_env( :default_real_size => 8, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 2
