@@ -27,6 +27,22 @@ EOF
     }
   end
 
+  def test_add_double
+    push_env( :default_real_size => 8, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :vector_length => 2
+      b = Real :b, :vector_length => 2
+      block = lambda { pr a + b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_add_pd( a, b );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_subprocess_output( <<EOF, "", &block )
+vaddq_f64( a, b );
+EOF
+      }
+    }
+  end
+
   def test_add_knl
     push_env( :default_real_size => 8, :lang => C, :model => :knl, :architecture => X86 ) {
       a = Real :a, :vector_length => 8
@@ -41,7 +57,7 @@ EOF
     }
   end
 
-  def test_add_int_real
+  def test_add_int_simple
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
       b = Int  :b, :vector_length => 4, :size => 2
@@ -52,6 +68,22 @@ EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f32( a, vcvtq_f32_s32( vmovl_s16( b ) ) );
+EOF
+      }
+    }
+  end
+
+  def test_add_int_double
+    push_env( :default_real_size => 8, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :vector_length => 2
+      b = Int  :b, :vector_length => 2
+      block = lambda { pr a + b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_add_pd( a, _mm_cvtpi32_pd( b ) );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_subprocess_output( <<EOF, "", &block )
+vaddq_f64( a, vcvt_f64_f32( vcvt_f32_s32( b ) ) );
 EOF
       }
     }
@@ -82,6 +114,22 @@ EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmulq_f32( a, b );
+EOF
+      }
+    }
+  end
+
+  def test_mul_double
+    push_env( :default_real_size => 8, :lang => C, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :vector_length => 2
+      b = Real :b, :vector_length => 2
+      block = lambda { pr a * b }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_mul_pd( a, b );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_subprocess_output( <<EOF, "", &block )
+vmulq_f64( a, b );
 EOF
       }
     }

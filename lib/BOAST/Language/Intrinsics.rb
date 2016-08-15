@@ -112,7 +112,7 @@ module BOAST
         raise IntrinsicsError, "Unsupported data size for int vector on ARM: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
         return get_vector_name( data_type ).to_s
       when Real
-        raise IntrinsicsError, "Unsupported data size for real vector on ARM: #{data_type.size*8}!" if data_type.size != 4
+        raise IntrinsicsError, "Unsupported data size for real vector on ARM: #{data_type.size*8}!" unless [4,8].include?( data_type.size )
         return get_vector_name( data_type ).to_s
       else
         raise IntrinsicsError, "Unsupported data type #{data_type} for vector on ARM!"
@@ -362,7 +362,7 @@ module BOAST
           }
         }
       }
-      [32].each { |size|
+      [32, 64].each { |size|
         vtype = vector_type_name( :float, size, vector_size )
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],
@@ -381,18 +381,24 @@ module BOAST
     }
     INTRINSICS[ARM][:CVT] = Hash::new { |h,k| h[k] = {} }
     [64, 128].each { |vector_size|
-      int_size = 32
-      float_size = 32
-      q = (vector_size == 128 ? "q" : "")
-      [:signed, :unsigned].each { |sign|
-        fvtype = vector_type_name( :float, float_size, vector_size )
-        ivtype = vector_type_name( :int, int_size, vector_size, sign )
-        ftype = type_name_ARM( :float, float_size )
-        itype = type_name_ARM( :int, int_size, sign )
-        INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
-        INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
+      [[32, 32],[64, 64]].each { |int_size, float_size|
+        q = (vector_size == 128 ? "q" : "")
+        [:signed, :unsigned].each { |sign|
+          fvtype = vector_type_name( :float, float_size, vector_size )
+          ivtype = vector_type_name( :int, int_size, vector_size, sign )
+          ftype = type_name_ARM( :float, float_size )
+          itype = type_name_ARM( :int, int_size, sign )
+          INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
+          INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
+        }
       }
     }
+    sfvtype = vector_type_name( :float, 32, 64 )
+    sdvtype = vector_type_name( :float, 64, 128 )
+    sftype = type_name_ARM( :float, 32 )
+    sdtype = type_name_ARM( :float, 64 )
+    INTRINSICS[ARM][:CVT][sfvtype][sdvtype] = "vcvt_#{sftype}_#{sdtype}".to_sym
+    INTRINSICS[ARM][:CVT][sdvtype][sfvtype] = "vcvt_#{sdtype}_#{sftype}".to_sym
     svsize = 64
     bvsize = 128
     [16, 32, 64].each { |bsize|
