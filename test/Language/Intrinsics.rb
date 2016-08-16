@@ -248,7 +248,7 @@ EOF
     }
   end
 
-  def test_mask_load
+  def test_mask_load_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -259,7 +259,7 @@ EOF
     }
   end
 
-  def test_zeromask_load
+  def test_zeromask_load_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -270,7 +270,7 @@ EOF
     }
   end
 
-  def test_fullmask_load
+  def test_fullmask_load_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -339,7 +339,7 @@ EOF
     }
   end
 
-  def test_mask_store
+  def test_mask_store_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -350,7 +350,7 @@ EOF
     }
   end
 
-  def test_fullmask_store
+  def test_fullmask_store_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -361,7 +361,7 @@ EOF
     }
   end
 
-  def test_zeromask_store
+  def test_zeromask_store_old
     push_env(:array_start => 0, :default_real_size => 4, :lang => C, :model => :sandybridge, :architecture => X86 ) {
       a = Real :a, :dim => [Dim()]
       b = Real :b, :vector_length => 4
@@ -442,6 +442,74 @@ EOF
 b = vdupq_n_f32( 0.0 );
 EOF
       }
+    }
+  end
+
+  def test_mask
+    push_env( :lang => C, :model => :knl ) {
+      m = Mask([1,1,0,1])
+      block = lambda { pr Expression( Addition, m, m ) }
+      assert_subprocess_output( <<EOF, "", &block )
+0x1011 + 0x1011;
+EOF
+      m = Mask([1,0,0,1], :length => 4)
+      assert_subprocess_output( <<EOF, "", &block )
+0x1001 + 0x1001;
+EOF
+      assert_kind_of(Variable, m.value)
+      assert_kind_of(Int, m.value.type)
+      assert_equal(1, m.value.type.size)
+      assert_raises(OperatorError) {
+        m = Mask([1,0,0,1], :length => 6)
+      }
+      m = Mask( Int(:a, :size => 1), :length => 6)
+      assert_subprocess_output( <<EOF, "", &block )
+a + a;
+EOF
+      assert_raises(OperatorError) {
+        m = Mask( Int(:a, :size => 1), :length => 9 )
+      }
+    }
+  end
+
+  def test_mask_load
+    push_env( :lang => C, :model => :knl ) {
+      m = Mask([1,1,0,1])
+      a = Real(:a, :dim => Dim())
+      b = Real(:b, :vector_length => 8)
+      block = lambda { pr b === Load(a, b, :mask => m ) }
+      assert_raises(OperatorError, &block)
+      b = Real(:b, :vector_length => 4)
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm256_mask_load_pd( b, 0x1011, &a );
+EOF
+      push_env( :model => :ivybridge ) {
+        assert_raises(IntrinsicsError, &block)
+      }
+    }
+  end
+
+  def test_maskz_load
+    push_env( :lang => C, :model => :knl ) {
+      m = Mask([1,1,0,1])
+      a = Real(:a, :dim => Dim())
+      b = Real(:b, :vector_length => 4)
+      block = lambda { pr b === Load(a, b, :mask => m, :zero => true ) }
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm256_maskz_load_pd( 0x1011, &a );
+EOF
+    }
+  end
+
+  def test_mask_store
+    push_env( :lang => C, :model => :knl ) {
+      m = Mask([1,1,0,1])
+      a = Real(:a, :dim => Dim())
+      b = Real(:b, :vector_length => 4)
+      block = lambda { pr Store(a, b, :mask => m ) }
+      assert_subprocess_output( <<EOF, "", &block )
+_mm256_mask_store_pd( (double * ) &a, 0x1011, b );
+EOF
     }
   end
 

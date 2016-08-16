@@ -192,7 +192,7 @@ module BOAST
       if arg1.class == Variable and arg1.type.vector_length > 1 then
         return "#{arg1} = #{Load(arg2, arg1)}"
       elsif arg2.class == Variable and arg2.type.vector_length > 1 then
-        return "#{Store(arg1, arg2, return_type)}"
+        return "#{Store(arg1, arg2, :store_type => return_type)}"
       end
       return basic_usage(arg1, arg2)
     end
@@ -304,6 +304,42 @@ module BOAST
 
   end
 
+  class Mask
+    extend Functor
+
+    attr_reader :value
+    attr_reader :length
+
+    def initialize( values, options = {} )
+      length = options[:length]
+      if values.kind_of?(Mask) then
+        raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length and values.length != length
+        @value = values.value
+        @length = length ? length : values.length
+      elsif values.kind_of?(Array) then
+        raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length != length
+        s = "0x"
+        s += values.collect { |v| v != 0 ? 1 : 0 }.reverse.join
+        @value = Int( s, :unsigned => true, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ) )
+        @length = values.length
+      elsif values.kind_of?(Variable) and values.type.kind_of?(Int) then
+        raise OperatorError, "Wrong mask size (#{values.type.size} for #{length / 8 + ( length % 8 > 0 ? 1 : 0 )})!" if length and values.type.size != length / 8 + ( length % 8 > 0 ? 1 : 0 )
+        @value = values
+        @length = length if length
+      else
+        raise OperatorError, "Illegal valuess for mask (#{values.class}), expecting Array of Int!"
+      end
+    end
+
+    def to_s
+      return @value.to_s
+    end
+
+    def to_var
+      return @value
+    end
+  end
+
   # @!parse module Functors; functorize Set; end
   class Set < Operator
     extend Functor
@@ -386,10 +422,14 @@ module BOAST
 
     attr_reader :source
     attr_reader :return_type
+    attr_reader :options
 
-    def initialize(source, return_type)
+    def initialize(source, return_type, options = {})
       @source = source
       @return_type = return_type.to_var
+      @options = options
+      @mask = options[:mask]
+      @zero = options[:zero]
     end
 
     def type
@@ -412,10 +452,22 @@ module BOAST
             end
             return @return_type.copy("vload#{@return_type.type.vector_length}(0, #{a2})", DISCARD_OPTIONS) if lang == CL
             return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
+            sym = ""
+            if @mask then
+              sym += "MASK"
+              sym += "Z" if @zero
+              sym += "_"
+            end
             if @source.alignment and @return_type.type.total_size and ( @source.alignment % @return_type.type.total_size ) == 0 then
-              instruction = intrinsics(:LOADA, @return_type.type)
+              sym += "LOADA"
             else
-              instruction = intrinsics(:LOAD, @return_type.type)
+              sym += "LOAD"
+            end
+            instruction = intrinsics( sym.to_sym, @return_type.type)
+            if @mask then
+              mask = Mask(@mask, :length => @return_type.type.vector_length)
+              return @return_type.copy("#{instruction}( #{mask}, #{a2} )", DISCARD_OPTIONS) if @zero
+              return @return_type.copy("#{instruction}( #{@return_type}, #{mask}, #{a2} )", DISCARD_OPTIONS)
             end
             return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
           else
@@ -516,12 +568,14 @@ module BOAST
     attr_reader :dest
     attr_reader :source
     attr_reader :store_type
+    attr_reader :options
 
-    def initialize(dest, source, store_type = nil)
+    def initialize(dest, source, options = {})
       @dest = dest
       @source = source
-      @store_type = store_type
+      @store_type = options[:store_type]
       @store_type = source.to_var unless @store_type
+      @mask = options[:mask]
     end
 
     def to_s
@@ -535,14 +589,20 @@ module BOAST
         type = @store_type.type
         return "vstore#{type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
         return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and type.total_size*8 == 64
-
+        sym = ""
+        sym += "MASK_" if @mask
         if @dest.alignment and type.total_size and ( @dest.alignment % type.total_size ) == 0 then
-          instruction = intrinsics(:STOREA, type)
+          sym += "STOREA"
         else
-          instruction = intrinsics(:STORE, type)
+          sym += "STORE"
         end
+        instruction = intrinsics(sym.to_sym, type)
         p_type = type.copy(:vector_length => 1)
         p_type = type if get_architecture == X86 and type.kind_of?(Int)
+        if @mask then
+          mask = Mask(@mask, :length => @store_type.type.vector_length)
+          return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{mask}, #{@source} )"
+        end
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
       end
       return Affectation.basic_usage(@dest, @source)
@@ -592,7 +652,7 @@ module BOAST
       type = @store_type.type
       raise LanguageError,  "Unsupported language!" unless lang == C
       raise OperatorError,  "Mask size is wrong: #{@mask.length} for #{type.vector_length}!" if @mask.length != type.vector_length
-      return Store( @dest, @source, @store_type ).to_s unless @mask.include?(0)
+      return Store( @dest, @source, :store_type => @store_type ).to_s unless @mask.include?(0)
       return nil if @mask.uniq.size == 1 and @mask.uniq.first == 0
       instruction = intrinsics(:MASKSTORE, type)
       s = ""
