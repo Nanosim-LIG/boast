@@ -233,7 +233,7 @@ EOF
     EnergyProbe = PowercapProbe
   elsif RedfstProbe.is_available?
     EnergyProbe = RedfstProbe
-  elsif EmlProbe.is_available.
+  elsif EmlProbe.is_available?
     EnergyProbe = EmlProbe
   else
     EnergyProbe = nil
