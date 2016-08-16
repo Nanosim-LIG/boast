@@ -123,7 +123,7 @@ EOF
 }
 EOF
     end
-    def is_available
+    def is_available?
       [] != Dir.glob( '/sys/class/powercap/intel-rapl:0:0' )
     end
   end
@@ -177,8 +177,13 @@ EOF
 }
 EOF
 		end
-    def is_available
-      [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
+    def is_available?
+      path = []
+      if ENV['LIBRARY_PATH'] then
+        path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
+      end
+      path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libredfst\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      return path != []
     end
   end
 
@@ -215,15 +220,20 @@ EOF
 }
 EOF
     end
-    def is_available
-      [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
+    def is_available?
+      path = []
+      if ENV['LIBRARY_PATH'] then
+        path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
+      end
+      path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libeml\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      return path != []
     end
   end
-  if PowercapProbe.is_available
+  if PowercapProbe.is_available?
     EnergyProbe = PowercapProbe
-  elsif RedfstProbe.is_available
+  elsif RedfstProbe.is_available?
     EnergyProbe = RedfstProbe
-  elsif EmlProbe.is_available
+  elsif EmlProbe.is_available.
     EnergyProbe = EmlProbe
   else
     EnergyProbe = nil
