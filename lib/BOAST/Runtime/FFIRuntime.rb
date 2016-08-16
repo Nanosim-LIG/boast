@@ -1,6 +1,9 @@
 module BOAST
 
+  # @private
   module FFIRuntime
+
+    private
 
     def target
       return library_path

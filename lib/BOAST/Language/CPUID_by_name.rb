@@ -5672,4 +5672,5 @@ X86CPUID_by_name ={"_m_from_int64"=>["MMX"],
  "_mm_mask_permutex2var_epi8"=>["AVX512VBMI", "AVX512VL"],
  "_mm_mask2_permutex2var_epi8"=>["AVX512VBMI", "AVX512VL"],
  "_mm_maskz_permutex2var_epi8"=>["AVX512VBMI", "AVX512VL"]}
+  private_constant :X86CPUID_by_name
 end

@@ -13,6 +13,22 @@ module BOAST
       @slices = slices
     end
 
+    def to_s
+      return to_s_fortran if lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( lang )
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+    private
+
     def to_s_c
       s = "#{@source}["
       dims = @source.dimension.reverse
@@ -65,20 +81,6 @@ module BOAST
         end
       }
       return "#{source}(#{slices_to_fortran.join(",")})"
-    end
-
-    def to_s
-      return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA].include?( lang )
-    end
-
-    def pr
-      s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
-      output.puts s
-      return self
     end
 
   end

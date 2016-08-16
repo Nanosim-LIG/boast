@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize Pragma; end
   class Pragma
     include PrivateStateAccessor
     include Inspectable

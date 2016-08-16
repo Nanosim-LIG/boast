@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize While; end
   class While < ControlStructure
     include Annotation
     ANNOTATIONS = [ :condition ]
@@ -20,6 +21,8 @@ module BOAST
       return { :while => '"do while (#{cond})"',
                :end => '"end do"' }
     end
+
+    private :get_c_strings, :get_fortran_strings
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings

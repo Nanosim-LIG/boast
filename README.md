@@ -4,6 +4,10 @@ BOAST
 This section will present some simple examples to familiarize the user
 with BOAST. More samples can be found in the git repository.
 
+Documentation can be found here:
+http://www.rubydoc.info/github/Nanosim-LIG/boast/master
+.
+
 Installation
 ------------
 
