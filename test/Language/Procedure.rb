@@ -33,7 +33,7 @@ EOF
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
     c = Int( :c )
-    p = Procedure("minimum", [a,b], [], :return => c) { pr c === Ternary( a < b, a, b) }
+    p = Procedure("minimum", [a,b], :return => c) { pr c === Ternary( a < b, a, b) }
     block = lambda { pr p }
     set_lang(FORTRAN)
     assert_subprocess_output( <<EOF, "", &block )

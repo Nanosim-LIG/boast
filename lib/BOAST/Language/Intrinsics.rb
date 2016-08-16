@@ -28,9 +28,11 @@ module BOAST
   class IntrinsicsError < Error
   end
 
+  # @private
   class InternalIntrinsicsError < Error
   end
 
+  # @private
   module Intrinsics
     extend PrivateStateAccessor
     INTRINSICS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
@@ -79,14 +81,14 @@ module BOAST
 
     def get_conversion_path(type_dest, type_orig)
       conversion_path = CONVERSIONS[get_architecture][get_vector_name(type_dest)][get_vector_name(type_orig)]
-      raise IntrinsicsError, "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}!" unless conversion_path
+      raise IntrinsicsError, "Unavailable conversion from #{get_vector_name(type_orig)} to #{get_vector_name(type_dest)} on #{get_architecture_name}#{get_architecture==X86 ? "(#{get_model})" : "" }!" unless conversion_path
       return conversion_path
     end
 
     module_function :get_conversion_path
 
     def get_vector_decl_X86( data_type )
-      raise IntrinsicsError, "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256].include?( data_type.total_size*8 )
+      raise IntrinsicsError, "Unsupported vector size on X86: #{data_type.total_size*8}!" unless [64,128,256,512].include?( data_type.total_size*8 )
       s = "__m#{data_type.total_size*8}"
       case data_type
       when Int
@@ -110,7 +112,7 @@ module BOAST
         raise IntrinsicsError, "Unsupported data size for int vector on ARM: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
         return get_vector_name( data_type ).to_s
       when Real
-        raise IntrinsicsError, "Unsupported data size for real vector on ARM: #{data_type.size*8}!" if data_type.size != 4
+        raise IntrinsicsError, "Unsupported data size for real vector on ARM: #{data_type.size*8}!" unless [4,8].include?( data_type.size )
         return get_vector_name( data_type ).to_s
       else
         raise IntrinsicsError, "Unsupported data type #{data_type} for vector on ARM!"
@@ -360,7 +362,7 @@ module BOAST
           }
         }
       }
-      [32].each { |size|
+      [32, 64].each { |size|
         vtype = vector_type_name( :float, size, vector_size )
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],
@@ -379,18 +381,24 @@ module BOAST
     }
     INTRINSICS[ARM][:CVT] = Hash::new { |h,k| h[k] = {} }
     [64, 128].each { |vector_size|
-      int_size = 32
-      float_size = 32
-      q = (vector_size == 128 ? "q" : "")
-      [:signed, :unsigned].each { |sign|
-        fvtype = vector_type_name( :float, float_size, vector_size )
-        ivtype = vector_type_name( :int, int_size, vector_size, sign )
-        ftype = type_name_ARM( :float, float_size )
-        itype = type_name_ARM( :int, int_size, sign )
-        INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
-        INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
+      [[32, 32],[64, 64]].each { |int_size, float_size|
+        q = (vector_size == 128 ? "q" : "")
+        [:signed, :unsigned].each { |sign|
+          fvtype = vector_type_name( :float, float_size, vector_size )
+          ivtype = vector_type_name( :int, int_size, vector_size, sign )
+          ftype = type_name_ARM( :float, float_size )
+          itype = type_name_ARM( :int, int_size, sign )
+          INTRINSICS[ARM][:CVT][ivtype][fvtype] = "vcvt#{q}_#{itype}_#{ftype}".to_sym
+          INTRINSICS[ARM][:CVT][fvtype][ivtype] = "vcvt#{q}_#{ftype}_#{itype}".to_sym
+        }
       }
     }
+    sfvtype = vector_type_name( :float, 32, 64 )
+    sdvtype = vector_type_name( :float, 64, 128 )
+    sftype = type_name_ARM( :float, 32 )
+    sdtype = type_name_ARM( :float, 64 )
+    INTRINSICS[ARM][:CVT][sfvtype][sdvtype] = "vcvt_#{sftype}_#{sdtype}".to_sym
+    INTRINSICS[ARM][:CVT][sdvtype][sfvtype] = "vcvt_#{sdtype}_#{sftype}".to_sym
     svsize = 64
     bvsize = 128
     [16, 32, 64].each { |bsize|
@@ -405,30 +413,35 @@ module BOAST
       }
     }
 
-    [X86, ARM].each { |arch|
-      cvt_dgraph = RGL::DirectedAdjacencyGraph::new
-      INTRINSICS[arch][:CVT].each { |dest, origs|
-        origs.each { |orig, intrinsic|
-          cvt_dgraph.add_edge(orig, dest)
+    def generate_conversions
+      [X86, ARM].each { |arch|
+        cvt_dgraph = RGL::DirectedAdjacencyGraph::new
+        INTRINSICS[arch][:CVT].each { |dest, origs|
+          origs.each { |orig, intrinsic|
+            cvt_dgraph.add_edge(orig, dest) unless arch == X86 and (INSTRUCTIONS[intrinsic.to_s] & MODELS[get_model.to_s]).size == 0
+          }
+        }
+        cvt_dgraph.vertices.each { |source|
+          hash = {}
+          cvt_dgraph.edges.each { |e| hash[e.to_a] = 1 }
+          paths = cvt_dgraph.dijkstra_shortest_paths( hash, source )
+          paths.each { |dest, path|
+            CONVERSIONS[arch][dest][source] = path if path
+          }
+        }
+        types = []
+        INTRINSICS[arch].each { |intrinsic, instructions|
+          types += instructions.keys
+        }
+        types.uniq
+        types.each { |type|
+          CONVERSIONS[arch][type][type] = [type]
         }
       }
-      cvt_dgraph.vertices.each { |source|
-        hash = {}
-        cvt_dgraph.edges.each { |e| hash[e.to_a] = 1 }
-        paths = cvt_dgraph.dijkstra_shortest_paths( hash, source )
-        paths.each { |dest, path|
-          CONVERSIONS[arch][dest][source] = path if path
-        }
-      }
-      types = []
-      INTRINSICS[arch].each { |intrinsic, instructions|
-        types += instructions.keys
-      }
-      types.uniq
-      types.each { |type|
-        CONVERSIONS[arch][type][type] = [type]
-      }
-    }
+    end
+    module_function :generate_conversions
+
+    generate_conversions
 
   end
 

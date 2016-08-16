@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize FuncCall; end
   class FuncCall
     include PrivateStateAccessor
     include Arithmetic
@@ -52,6 +53,8 @@ module BOAST
       s += "#{func_name}(#{@args.join(", ")})"
     end
 
+    private :to_s_fortran, :to_s_c
+
     def pr
       s=""
       s += indent
@@ -60,6 +63,10 @@ module BOAST
       output.puts s
       return self
     end
+  end
+
+  module Functors
+    alias Call FuncCall
   end
 
 end

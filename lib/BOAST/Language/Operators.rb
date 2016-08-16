@@ -304,6 +304,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Set; end
   class Set < Operator
     extend Functor
     include Intrinsics
@@ -375,6 +376,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Load; end
   class Load < Operator
     extend Functor
     include Intrinsics
@@ -410,7 +412,7 @@ module BOAST
             end
             return @return_type.copy("vload#{@return_type.type.vector_length}(0, #{a2})", DISCARD_OPTIONS) if lang == CL
             return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
-            if @source.alignment == @return_type.type.total_size then
+            if @source.alignment and @return_type.type.total_size and ( @source.alignment % @return_type.type.total_size ) == 0 then
               instruction = intrinsics(:LOADA, @return_type.type)
             else
               instruction = intrinsics(:LOAD, @return_type.type)
@@ -439,6 +441,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize MaskLoad; end
   class MaskLoad < Operator
     extend Functor
     include Intrinsics
@@ -502,6 +505,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Store; end
   class Store < Operator
     extend Functor
     include Intrinsics
@@ -532,7 +536,7 @@ module BOAST
         return "vstore#{type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
         return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and type.total_size*8 == 64
 
-        if @dest.alignment == type.total_size then
+        if @dest.alignment and type.total_size and ( @dest.alignment % type.total_size ) == 0 then
           instruction = intrinsics(:STOREA, type)
         else
           instruction = intrinsics(:STORE, type)
@@ -555,6 +559,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize MaskStore; end
   class MaskStore < Operator
     extend Functor
     include Intrinsics
@@ -615,6 +620,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize FMA; end
   class FMA < Operator
     extend Functor
     include Intrinsics
@@ -685,6 +691,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize FMS; end
   class FMS < Operator
     extend Functor
     include Intrinsics
@@ -756,6 +763,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Ternary; end
   class Ternary
     extend Functor
     include Arithmetic
@@ -772,22 +780,21 @@ module BOAST
       @operand3 = z
     end
 
-    def op_to_var
-      op1 = @operand1.respond_to?(:to_var) ? @operand1.to_var : @operand1
-      op1 = @operand1 unless op1
-      op2 = @operand2.respond_to?(:to_var) ? @operand2.to_var : @operand2
-      op2 = @operand2 unless op2
-      op3 = @operand3.respond_to?(:to_var) ? @operand3.to_var : @operand3
-      op3 = @operand3 unless op3
-      return [op1, op2, op3]
-    end
-
-    private :op_to_var
-
     def to_s
       return to_s_fortran if lang == FORTRAN
       return to_s_c if [C, CL, CUDA].include?( lang )
     end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+    private
 
     def to_s_fortran
       op1, op2, op3 = op_to_var
@@ -799,13 +806,14 @@ module BOAST
       "(#{op1} ? #{op2} : #{op3})"
     end
 
-    def pr
-      s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
-      output.puts s
-      return self
+    def op_to_var
+      op1 = @operand1.respond_to?(:to_var) ? @operand1.to_var : @operand1
+      op1 = @operand1 unless op1
+      op2 = @operand2.respond_to?(:to_var) ? @operand2.to_var : @operand2
+      op2 = @operand2 unless op2
+      op3 = @operand3.respond_to?(:to_var) ? @operand3.to_var : @operand3
+      op3 = @operand3 unless op3
+      return [op1, op2, op3]
     end
 
   end

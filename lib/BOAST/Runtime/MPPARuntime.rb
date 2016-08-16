@@ -1,5 +1,6 @@
 module BOAST
 
+  # @private
   module MPPAProbe
     extend PrivateStateAccessor
 
@@ -54,6 +55,7 @@ EOF
 
   end
 
+  # @private
   module MPPARuntime
     include CRuntime
 

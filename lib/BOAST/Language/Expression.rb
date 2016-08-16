@@ -2,6 +2,7 @@ module BOAST
 
   module_function
 
+  # @!parse module Functors; functorize Expression; end
   class Expression
     include PrivateStateAccessor
     include Arithmetic
@@ -39,6 +40,8 @@ module BOAST
       end
       return s
     end
+
+    private :to_s_base
       
     def to_var
       op1 = nil

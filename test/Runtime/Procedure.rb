@@ -15,6 +15,18 @@ end
 
 class TestProcedure < Minitest::Test
 
+  def test_repeat
+    a = Int(:a, :dim => Dim(1), :dir => :inout)
+    p = Procedure("inc", [a]) { pr a[1] === a[1] + 1 }
+    [FORTRAN, C].each { |l|
+      ah = NArray::int(1).fill!(0)
+      set_lang(l)
+      k = p.ckernel
+      k.run(ah, :repeat => 15)
+      assert_equal(15, ah[0])
+    }
+  end
+
   def test_procedure
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
@@ -32,7 +44,7 @@ class TestProcedure < Minitest::Test
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
     c = Int( :c )
-    p = Procedure("minimum", [a,b], [], :return => c) { pr c === Ternary( a < b, a, b) }
+    p = Procedure("minimum", [a,b], :return => c) { pr c === Ternary( a < b, a, b) }
     [FORTRAN, C].each { |l|
       set_lang(l)
       k = p.ckernel
@@ -64,7 +76,11 @@ class TestProcedure < Minitest::Test
   end
 
   def test_procedure_opencl_array
-    silence_warnings { require 'opencl_ruby_ffi' }
+    begin
+      silence_warnings { require 'opencl_ruby_ffi' }
+    rescue
+      skip "Missing OpenCL on the platform!"
+    end
     push_env(:array_start => 0) {
       a = Int( :a, :dir => :inout, :dim => [Dim()] )
       b = Int( :b, :dir => :in )

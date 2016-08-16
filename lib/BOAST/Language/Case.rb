@@ -1,5 +1,6 @@
 module BOAST
 
+  # @!parse module Functors; functorize CaseCondition; end
   class CaseCondition < ControlStructure
     attr_reader :block
     attr_reader :constants
@@ -20,6 +21,8 @@ module BOAST
                :default => '"case default"',
                :break => 'nil' }
     end
+
+    private :get_c_strings, :get_fortran_strings
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
@@ -70,6 +73,7 @@ module BOAST
 
   end
 
+  # @!parse module Functors; functorize Case; end
   class Case < ControlStructure
 
     attr_reader :expression
@@ -95,6 +99,8 @@ module BOAST
       return { :switch => '"select case (#{expr})"',
                :end => '"end select"' }
     end
+
+    private :get_c_strings, :get_fortran_strings
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings

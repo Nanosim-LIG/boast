@@ -1,5 +1,6 @@
 module BOAST
 
+  # Base class for BOAST data types. Inherited class will define a functor.
   class DataType
     include Intrinsics
     include PrivateStateAccessor
@@ -10,6 +11,7 @@ module BOAST
 
   end
 
+  # @!parse module VarFunctors; var_functorize Sizet; end
   class Sizet < DataType
 
     attr_reader :signed
@@ -60,6 +62,7 @@ module BOAST
 
   end
  
+  # @!parse module VarFunctors; var_functorize Real; end
   class Real < DataType
 
     attr_reader :size
@@ -74,6 +77,10 @@ module BOAST
       return false
     end
 
+    # Creates a new instance of Real.
+    # @param [Hash] hash contains named properties for the type
+    # @option hash [Integer] :size size of the Real type in byte. By default {BOAST.get_default_real_size}.
+    # @option hash [Integer] :vector_length length of the vector of Real. By default 1.
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
@@ -135,6 +142,7 @@ module BOAST
 
   end
 
+  # @!parse module VarFunctors; var_functorize Int; end
   class Int < DataType
 
     attr_reader :size
@@ -147,6 +155,11 @@ module BOAST
       return false
     end
 
+    # Creates a new instance of Int.
+    # @param [Hash] hash contains named properties for the type
+    # @option hash [Integer] :size size of the Int type in byte. By default {BOAST.get_default_int_size}.
+    # @option hash [Integer] :vector_length length of the vector of Int. By default 1.
+    # @option hash [Integer] :signed specifies if the Int is signed or not. By default {BOAST.get_default_int_signed}.
     def initialize(hash={})
       if hash[:size] then
         @size = hash[:size]
@@ -246,10 +259,15 @@ module BOAST
 
   end
 
+  # @!parse module VarFunctors; var_functorize CStruct; end
   class CStruct < DataType
 
     attr_reader :name, :members, :members_array
 
+    # Creates a new structured type.
+    # @param [Hash] hash named options
+    # @option hash [#to_s] :type_name
+    # @option hash [Array<Variable>] :members list of Variable that create the type
     def initialize(hash={})
       @name = hash[:type_name]
       @members = {}
@@ -261,29 +279,24 @@ module BOAST
       }
     end
 
+    def decl
+      return decl_c if [C, CL, CUDA].include?( lang )
+      return decl_fortran if lang == FORTRAN
+    end
+
+    def define
+      return define_c if [C, CL, CUDA].include?( lang )
+      return define_fortran if lang == FORTRAN
+    end
+
+    private
+
     def decl_c
       return "struct #{@name}" if [C, CL, CUDA].include?( lang )
     end
 
     def decl_fortran
       return "TYPE(#{@name})" if lang == FORTRAN
-    end
-
-    def decl
-      return decl_c if [C, CL, CUDA].include?( lang )
-      return decl_fortran if lang == FORTRAN
-    end
-
-    def finalize
-       s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
-       return s
-    end
-
-    def define
-      return define_c if [C, CL, CUDA].include?( lang )
-      return define_fortran if lang == FORTRAN
     end
 
     def define_c
@@ -318,8 +331,16 @@ module BOAST
       return self
     end
 
+    def finalize
+       s = ""
+       s += ";" if [C, CL, CUDA].include?( lang )
+       s+="\n"
+       return s
+    end
+
   end
 
+  # @!parse module VarFunctors; var_functorize CustomType; end
   class CustomType < DataType
 
     attr_reader :size, :name, :vector_length

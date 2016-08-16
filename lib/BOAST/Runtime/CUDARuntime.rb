@@ -1,7 +1,10 @@
 module BOAST
 
+  # @private
   module CUDARuntime
     include CRuntime
+
+    private
 
     alias fill_library_source_old fill_library_source
     alias fill_library_header_old fill_library_header
@@ -25,15 +28,18 @@ module BOAST
       fill_library_source_old
       get_output.write <<EOF
 extern "C" {
-  #{@procedure.boast_header_s(CUDA)}{
-    dim3 dimBlock(block_size[0], block_size[1], block_size[2]);
-    dim3 dimGrid(block_number[0], block_number[1], block_number[2]);
+  #{@procedure.send(:boast_header_s,CUDA)}{
+    int _boast_i;
+    dim3 dimBlock(_boast_block_size[0], _boast_block_size[1], _boast_block_size[2]);
+    dim3 dimGrid(_boast_block_number[0], _boast_block_number[1], _boast_block_number[2]);
     cudaEvent_t __start, __stop;
     float __time;
     cudaEventCreate(&__start);
     cudaEventCreate(&__stop);
     cudaEventRecord(__start, 0);
-    #{@procedure.name}<<<dimGrid,dimBlock>>>(#{@procedure.parameters.join(", ")});
+    for( _boast_i = 0; _boast_i < _boast_repeat; _boast_i ++) {
+      #{@procedure.name}<<<dimGrid,dimBlock>>>(#{@procedure.parameters.join(", ")});
+    }
     cudaEventRecord(__stop, 0);
     cudaEventSynchronize(__stop);
     cudaEventElapsedTime(&__time, __start, __stop);
@@ -122,7 +128,7 @@ EOF
     end
 
     def create_procedure_call_parameters
-      return create_procedure_call_parameters_old + ["_boast_block_number", "_boast_block_size"]
+      return create_procedure_call_parameters_old + ["_boast_block_number", "_boast_block_size", "_boast_repeat"]
     end
 
     def create_procedure_call
