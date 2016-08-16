@@ -56,7 +56,7 @@ module BOAST
 
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
-      eval @checkers
+      eval @checkers if @checkers
       s = <<EOF       
       points.reject!{ |#{HASH_NAME}|
         not @rules.all?{ |r| eval r }
@@ -71,6 +71,7 @@ EOF
         h[p.name] = p.values
       }
       h[:rules] = @rules if @rules.length > 0
+      h[:checkers] = @checkers if @checkers.length > 0
       return h
     end
   end
