@@ -29,10 +29,10 @@ module BOAST
         @parameters = []
         parameters[0].each { |key, value|
           if key == :rules then
-            @rules = value
+            @rules = [value].flatten
             format_rules
           elsif key == :checkers then
-            @checkers = value
+            @checkers = [value].flatten
           else
             @parameters.push( OptimizationParameter::new(key, value) )
           end
@@ -56,13 +56,17 @@ module BOAST
 
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
-      eval @checkers if @checkers
-      s = <<EOF       
+      if @rules then
+        if @checkers
+          @checkers.each { |checker| eval checker }
+        end
+        s = <<EOF
       points.reject!{ |#{HASH_NAME}|
         not @rules.all?{ |r| eval r }
       }
 EOF
-      eval s
+        eval s
+      end
     end
 
     def to_h
@@ -70,8 +74,8 @@ EOF
       @parameters.each { |p|
         h[p.name] = p.values
       }
-      h[:rules] = @rules if @rules.length > 0
-      h[:checkers] = @checkers if @checkers.length > 0
+      h[:rules] = @rules if @rules
+      h[:checkers] = @checkers if @checkers
       return h
     end
   end
@@ -195,7 +199,7 @@ EOF
         }
         pts4 = pts3
       end
-      @search_space.remove_unfeasible pts4 if @search_space.rules
+      @search_space.remove_unfeasible pts4
       return pts4
     end
 
