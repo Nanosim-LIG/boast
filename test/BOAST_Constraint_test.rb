@@ -4,7 +4,7 @@ gem 'minitest'
 require 'minitest/autorun'
 include BOAST
 
-class TestOptimizationSpace < Minitest::Unit::TestCase
+class TestOptimizationSpace < Minitest::Test
   def test_format_rules
     opt_space = OptimizationSpace::new(:rules => [":lws_y <= :threads_number", ":threads_number % :lws_y == 0"])
 
