@@ -3,21 +3,6 @@ require 'BOAST'
 include BOAST
 require'optparse'
 
-def compute_kernel_size(elements_number=1, y_component_number=1, vector_length=1, temporary_size=2, load_overlap=false, threads_number=32)
-  vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
-  l_o = load_overlap ? 1 : 0
-  
-  tempload = (1 - l_o) * (vector_number * vector_length) / vector_length * vector_length
-  temp =  l_o * 3 * vector_number * (y_component_number+2) * vector_length
-  res = vector_number * y_component_number * vector_length
-  tempc = 3 * vector_number * (y_component_number + 2) * temporary_size * vector_length
-  out_vec = (1 - l_o) * tempc
-  resc = vector_number * y_component_number * temporary_size * vector_length
-  
-  return (tempload + temp + res + tempc + out_vec + resc) * threads_number
-end
-
-
 options = {}
 
 opt_parser = OptionParser.new { |opts|
@@ -66,25 +51,8 @@ options[:algo] = options.fetch(:algo,"BOTH")
 opt_space = OptimizationSpace::new( YAML::load( File::read(ARGV[0]) ) )
 oracle = YAML::load( File::read(ARGV[1]) )
 
-# Compute the size of the kernel
-checker = Proc.new do |elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number|
-  vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
-  l_o = load_overlap ? 1 : 0
-  
-  tempload = (1 - l_o) * (vector_number * vector_length) / vector_length * vector_length
-  temp =  l_o * 3 * vector_number * (y_component_number+2) * vector_length
-  res = vector_number * y_component_number * vector_length
-  tempc = 3 * vector_number * (y_component_number + 2) * temporary_size * vector_length
-  out_vec = (1 - l_o) * tempc
-  resc = vector_number * y_component_number * temporary_size * vector_length
-  
-  (tempload + temp + res + tempc + out_vec + resc) * threads_number
-end
-
 opt_space = OptimizationSpace::new( YAML::load( File::read(ARGV[0]) ) )
 oracle = YAML::load( File::read(ARGV[1]) )
-
-opt_space.checkers.push checker
 
 if options[:algo] == "BOTH" or options[:algo] == "BR"  
   optimizer = BruteForceOptimizer::new( opt_space )
