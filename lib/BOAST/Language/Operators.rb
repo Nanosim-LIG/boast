@@ -338,7 +338,7 @@ module BOAST
         raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length != length
         s = "0x"
         s += values.collect { |v| v != 0 ? 1 : 0 }.reverse.join
-        @value = Int( s, :unsigned => true, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ), :constant => s )
+        @value = Int( s, :signed => false, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ), :constant => s )
         @length = values.length
         @pos_values = values.reject { |e| e == 0 }.length
       elsif values.kind_of?(Variable) and values.type.kind_of?(Int) then
@@ -488,8 +488,8 @@ module BOAST
             end
             instruction = intrinsics( sym.to_sym, @return_type.type)
             if mask and not mask.full? then
-              return @return_type.copy("#{instruction}( #{mask}, #{a2} )", DISCARD_OPTIONS) if @zero
-              return @return_type.copy("#{instruction}( #{@return_type}, #{mask}, #{a2} )", DISCARD_OPTIONS)
+              return @return_type.copy("#{instruction}( (#{mask.value.type.decl})#{mask}, #{a2} )", DISCARD_OPTIONS) if @zero
+              return @return_type.copy("#{instruction}( #{@return_type}, (#{mask.value.type.decl})#{mask}, #{a2} )", DISCARD_OPTIONS)
             end
             return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
           else
@@ -624,7 +624,7 @@ module BOAST
         instruction = intrinsics(sym.to_sym, type)
         p_type = type.copy(:vector_length => 1)
         p_type = type if get_architecture == X86 and type.kind_of?(Int)
-        return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{mask}, #{@source} )" if mask and not mask.full?
+        return "#{instruction}( (#{p_type.decl} * ) #{dst}, (#{mask.value.type.decl})#{mask}, #{@source} )" if mask and not mask.full?
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
       end
       return Affectation.basic_usage(@dest, @source)
