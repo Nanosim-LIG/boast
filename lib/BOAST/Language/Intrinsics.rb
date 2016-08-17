@@ -66,8 +66,27 @@ module BOAST
       end
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
       return instruction if get_architecture == ARM
-      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
-      raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{INSTRUCTIONS[instruction.to_s].join(" or ")})" unless supported
+      supported = false
+      INSTRUCTIONS[instruction.to_s].each { |cpuid|
+        if cpuid.kind_of?( Array ) then
+          supported = true if (cpuid - MODELS[get_model.to_s]).empty?
+        else
+          supported = true if MODELS[get_model.to_s].include?( cpuid )
+        end
+      }
+#      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
+      if not supported then
+        required = ""
+        INSTRUCTIONS[instruction.to_s].each { |cpuid|
+          required += " or " if required != ""
+          if cpuid.kind_of?( Array ) then
+            required += "( #{cpuid.join(" and ")} )"
+          else
+            required += "#{cpuid}"
+          end
+        }
+        raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{required})"
+      end
       return instruction
     end
 
@@ -420,7 +439,18 @@ module BOAST
         cvt_dgraph = RGL::DirectedAdjacencyGraph::new
         INTRINSICS[arch][:CVT].each { |dest, origs|
           origs.each { |orig, intrinsic|
-            cvt_dgraph.add_edge(orig, dest) unless arch == X86 and (INSTRUCTIONS[intrinsic.to_s] & MODELS[get_model.to_s]).size == 0
+            supported = true
+            if arch == X86
+              supported = false
+              INSTRUCTIONS[intrinsic.to_s].each { |cpuid|
+                if cpuid.kind_of?( Array ) then
+                  supported = true if (cpuid - MODELS[get_model.to_s]).empty?
+                else
+                  supported = true if MODELS[get_model.to_s].include?( cpuid )
+                end
+              }
+            end
+            cvt_dgraph.add_edge(orig, dest) if supported
           }
         }
         cvt_dgraph.vertices.each { |source|
