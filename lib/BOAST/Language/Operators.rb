@@ -309,6 +309,23 @@ module BOAST
 
     attr_reader :value
     attr_reader :length
+    attr_reader :pos_values
+
+    def empty?
+      if @pos_values then
+        return @pos_values == 0
+      else
+        return false
+      end
+    end
+
+    def full?
+      if @pos_values and @length
+        return @pos_values == @length
+      else
+        return false
+      end
+    end
 
     def initialize( values, options = {} )
       length = options[:length]
@@ -316,12 +333,14 @@ module BOAST
         raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length and values.length != length
         @value = values.value
         @length = length ? length : values.length
+        @pos_values = values.pos_values
       elsif values.kind_of?(Array) then
         raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length != length
         s = "0x"
         s += values.collect { |v| v != 0 ? 1 : 0 }.reverse.join
-        @value = Int( s, :unsigned => true, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ) )
+        @value = Int( s, :unsigned => true, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ), :constant => s )
         @length = values.length
+        @pos_values = values.reject { |e| e == 0 }.length
       elsif values.kind_of?(Variable) and values.type.kind_of?(Int) then
         raise OperatorError, "Wrong mask size (#{values.type.size} for #{length / 8 + ( length % 8 > 0 ? 1 : 0 )})!" if length and values.type.size != length / 8 + ( length % 8 > 0 ? 1 : 0 )
         @value = values
@@ -453,7 +472,11 @@ module BOAST
             return @return_type.copy("vload#{@return_type.type.vector_length}(0, #{a2})", DISCARD_OPTIONS) if lang == CL
             return @return_type.copy("_m_from_int64( *((int64_t * ) #{a2} ) )", DISCARD_OPTIONS) if get_architecture == X86 and @return_type.type.total_size*8 == 64
             sym = ""
-            if @mask then
+            mask = nil
+            mask = Mask(@mask, :length => @return_type.type.vector_length) if @mask
+            if mask and not mask.full? then
+              return Set(0, @return_type) if @zero and mask.empty?
+              return @return_type if mask.empty?
               sym += "MASK"
               sym += "Z" if @zero
               sym += "_"
@@ -464,8 +487,7 @@ module BOAST
               sym += "LOAD"
             end
             instruction = intrinsics( sym.to_sym, @return_type.type)
-            if @mask then
-              mask = Mask(@mask, :length => @return_type.type.vector_length)
+            if mask and not mask.full? then
               return @return_type.copy("#{instruction}( #{mask}, #{a2} )", DISCARD_OPTIONS) if @zero
               return @return_type.copy("#{instruction}( #{@return_type}, #{mask}, #{a2} )", DISCARD_OPTIONS)
             end
@@ -590,7 +612,10 @@ module BOAST
         return "vstore#{type.vector_length}( #{@source}, 0, #{dst} )" if lang == CL
         return "*((int64_t * ) #{dst}) = _m_to_int64( #{@source} )" if get_architecture == X86 and type.total_size*8 == 64
         sym = ""
-        sym += "MASK_" if @mask
+        mask = nil
+        mask = Mask(@mask, :length => @store_type.type.vector_length) if @mask
+        return "" if mask and mask.empty?
+        sym += "MASK_" if mask and not mask.full?
         if @dest.alignment and type.total_size and ( @dest.alignment % type.total_size ) == 0 then
           sym += "STOREA"
         else
@@ -599,10 +624,7 @@ module BOAST
         instruction = intrinsics(sym.to_sym, type)
         p_type = type.copy(:vector_length => 1)
         p_type = type if get_architecture == X86 and type.kind_of?(Int)
-        if @mask then
-          mask = Mask(@mask, :length => @store_type.type.vector_length)
-          return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{mask}, #{@source} )"
-        end
+        return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{mask}, #{@source} )" if mask and not mask.full?
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
       end
       return Affectation.basic_usage(@dest, @source)
