@@ -47,7 +47,7 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
 
   def test_bruteforce_point
     checker = <<EOF 
-#    def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
+      def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
       vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
       l_o = load_overlap ? 1 : 0
   
@@ -61,6 +61,7 @@ class TestOptimizationSpace < Minitest::Unit::TestCase
       (tempload + temp + res + tempc + out_vec + resc) * threads_number
     end
 EOF
+
     opt_space = OptimizationSpace::new( :elements_number => 1..24,
                                         :y_component_number => 1..6,
                                         :vector_length      => [1,2,4,8,16],
@@ -90,13 +91,12 @@ EOF
       assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
       assert(compute_kernel_size(o[:elements_number], o[:y_component_number], o[:vector_length], o[:temporary_size], o[:load_overlap], o[:threads_number]) < compute_kernel_size(6,6,8,2,false,1024), "Checkers failed")
     }
-    assert(optimizer.points.length > 0)
-    puts "Number of points generated for the brute force : #{optimizer.points.length}"
+    assert_equal(23100, optimizer.points.length)
   end 
 
   def test_bruteforce_constraint_save
     checker = <<EOF 
-   def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
+    def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
       vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
       l_o = load_overlap ? 1 : 0
   
@@ -139,8 +139,7 @@ EOF
       assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
       assert(compute_kernel_size(o[:elements_number], o[:y_component_number], o[:vector_length], o[:temporary_size], o[:load_overlap], o[:threads_number]) < compute_kernel_size(6,6,8,2,false,1024), "Checkers failed")
     }
-    assert(optimizer.points.length > 0)
-    puts "Number of points generated for the brute force : #{optimizer.points.length}"
+    assert_equal(12, optimizer.points.length)
 
     File::open("/tmp/parameters.yaml", "w") { |f|
       f.print YAML::dump(opt_space.to_h)
@@ -151,10 +150,9 @@ EOF
     assert(checker2 == checker)
   end 
 
-
   def test_algo_gen_point
     checker = <<EOF
-#     def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
+    def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
       vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
       l_o = load_overlap ? 1 : 0
       
@@ -188,7 +186,7 @@ EOF
 
     optimizer = GeneticOptimizer::new(opt_space)
     optimizer.optimize(:generations_limit => 10, :evolution_types => [Darwinning::EvolutionTypes::MutativeReproduction.new(mutation_rate: 0.00) ]){ |opts|
-      rand(100)
+      rand()
     }
 
     eval checker
@@ -202,8 +200,7 @@ EOF
           assert(compute_kernel_size(g.to_a[0][:elements_number], g.to_a[0][:y_component_number], g.to_a[0][:vector_length], g.to_a[0][:temporary_size], g.to_a[0][:load_overlap], g.to_a[0][:threads_number]) < compute_kernel_size(6,6,8,2,false,1024), "Checkers failed")
       }
     }
-    assert(optimizer.history.flatten(1).length > 0)
-    puts "Number of points for genetic algorithm : #{optimizer.history.flatten(1).length}"
+    assert_equal(220, optimizer.history.flatten(1).length)
   end
 
 end
