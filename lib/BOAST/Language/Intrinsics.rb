@@ -244,10 +244,11 @@ module BOAST
           instructions.push( [:SET, "setr"] ) unless size < 32 and vector_size == 512
           instructions.push( [:SET1, "set1"] )
           instructions.push( [:MUL, "mullo"] ) if vector_size > 64 and size >= 16
-          instructions.push( [:MASKLOAD, "maskload"], [:MASKSTORE, "maskstore"] ) if vector_size <= 256 and vector_size >= 128 and size >= 32
-          instructions.push( [:MASK_LOAD,  "mask_load"],   [:MASK_STORE,  "mask_store"],
-                             [:MASK_LOADU, "mask_loadu"],  [:MASK_STOREU, "mask_storeu"],
-                             [:MASKZ_LOAD, "maskz_load"],  [:MASKZ_LOADU, "maskz_loadu"], ) if vector_size >= 128 and size >= 32
+          instructions.push( [:MASKLOAD,    "maskload"],    [:MASKSTORE, "maskstore"] ) if vector_size <= 256 and vector_size >= 128 and size >= 32
+          instructions.push( [:MASK_LOAD,   "mask_loadu"],  [:MASK_STORE,  "mask_storeu"],
+                             [:MASK_LOADA,  "mask_load"],   [:MASK_STOREA, "mask_store"],
+                             [:MASKZ_LOAD,  "maskz_loadu"],
+                             [:MASKZ_LOADA, "maskz_load"], ) if vector_size >= 128 and size >= 32
           instructions.each { |cl, ins|
             INTRINSICS[X86][cl][vtype] = "_mm#{vs}_#{ins}_#{type}".to_sym
           }
@@ -278,9 +279,10 @@ module BOAST
                         [:LOAD, "loadu"],        [:LOADA, "load"],
                         [:STORE, "storeu"],  [:STOREA, "store"],
                         [:SET, "setr"],      [:SET1, "set1"], [:SETZERO, "setzero"],
-                        [:MASK_LOAD,  "mask_load"],  [:MASK_STORE,  "mask_store"],
-                        [:MASK_LOADU, "mask_loadu"], [:MASK_STOREU, "mask_storeu"],
-                        [:MASKZ_LOAD, "maskz_load"], [:MASKZ_LOADU, "maskz_loadu"] ]
+                        [:MASK_LOAD,   "mask_loadu"],  [:MASK_STORE,  "mask_storeu"],
+                        [:MASK_LOADA,  "mask_load"],   [:MASK_STOREA, "mask_store"],
+                        [:MASKZ_LOAD,  "maskz_loadu"],
+                        [:MASKZ_LOADA, "maskz_load"]]
         instructions.push( [:MASKLOAD, "maskload"], [:MASKSTORE, "maskstore"] ) if vector_size < 512
         instructions.push( [:ADDSUB, "addsub"] ) if vector_size < 512
         instructions.each { |cl, ins|
