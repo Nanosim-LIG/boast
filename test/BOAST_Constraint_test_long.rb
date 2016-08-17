@@ -147,7 +147,7 @@ EOF
 
     new_yaml = YAML::load( File::read("/tmp/parameters.yaml") )
     checker2 = new_yaml[:checkers]
-    assert(checker2 == checker)
+    assert(checker2 == [checker])
   end 
 
   def test_algo_gen_point
