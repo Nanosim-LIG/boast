@@ -32,7 +32,7 @@ module BOAST
       module #{module_name}
         extend FFI::Library
         ffi_lib "#{library_path}"
-        attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi(false,@lang).to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi(false,@lang) : "void" }
+        attach_function :#{method_name}, [ #{@procedure.parameters.collect{ |p| ":"+p.decl_ffi(false,@lang).to_s }.join(", ")} ], :#{@procedure.properties[:return] ? @procedure.properties[:return].type.decl_ffi : "void" }
         def run(*args)
           raise "Wrong number of arguments for \#{@procedure.name} (\#{args.length} for \#{@procedure.parameters.length})" if args.length < @procedure.parameters.length or args.length > @procedure.parameters.length + 1
           ev_set = nil
