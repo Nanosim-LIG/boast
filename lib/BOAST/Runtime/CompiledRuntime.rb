@@ -220,6 +220,7 @@ EOF
         param_copy = param.copy
         param_copy.constant = nil
         param_copy.direction = nil
+        param_copy.reference = nil
         param_copy.decl
       }
       get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]

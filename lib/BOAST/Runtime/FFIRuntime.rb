@@ -58,11 +58,11 @@ module BOAST
             }
           else
             @procedure.parameters.each_with_index { |p, i|
-              if p.scalar_output? then
+              if p.scalar_output? or p.reference? then
                 arg_p = FFI::MemoryPointer::new(p.decl_ffi(true, @lang))
                 arg_p.send("write_\#{p.decl_ffi(true,@lang)}",args[i])
                 t_args.push(arg_p)
-                r_args[p] = arg_p
+                r_args[p] = arg_p if p.scalar_output?
               else
                 t_args.push( args[i] )
               end

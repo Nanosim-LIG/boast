@@ -40,6 +40,20 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_procedure_reference
+    a = Int( :a, :dir => :in )
+    b = Int( :b, :dir => :in, :reference => true )
+    c = Int( :c, :dir => :out )
+    p = Procedure("minimum", [a,b,c]) { pr c === Ternary( a < b, a, b) }
+    [FORTRAN, C].each { |l|
+      set_lang(l)
+      k = p.ckernel
+      r = k.run(10, 5, 0)
+      assert_equal(5, r[:reference_return][:c])
+      assert_equal({:c=>5}, r[:reference_return])
+    }
+  end
+
   def test_function
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )

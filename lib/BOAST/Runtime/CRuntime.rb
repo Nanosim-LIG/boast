@@ -26,7 +26,7 @@ module BOAST
       @procedure.parameters.each { |param|
         if param.dimension then
           params.push( param.name )
-        elsif param.direction == :out or param.direction == :inout then
+        elsif param.direction == :out or param.direction == :inout or param.reference? then
           params.push( "&"+param.name )
         else
           params.push( param.name )

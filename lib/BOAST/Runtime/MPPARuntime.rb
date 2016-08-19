@@ -205,7 +205,7 @@ EOF
       #Parameters declaration
       @procedure.parameters.each { |param|
         get_output.print "  #{param.type.decl} "
-        get_output.print "*" if param.dimension or param.scalar_output?
+        get_output.print "*" if param.dimension or param.scalar_output? or param.reference?
         get_output.puts "#{param.name};"
         if param.dimension then
           get_output.puts "  size_t _mppa_#{param}_size;"

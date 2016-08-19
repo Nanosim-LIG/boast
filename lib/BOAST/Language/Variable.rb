@@ -179,6 +179,7 @@ module BOAST
     attr_reader :restrict
     attr_reader :deferred_shape
     attr_reader :optional
+    attr_accessor :reference
     attr_accessor :alignment
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
@@ -231,6 +232,10 @@ module BOAST
       !!@deferred_shape
     end
 
+    def reference?
+      !!@reference
+    end
+
     # Creates a new {Variable}
     # @param [#to_s] name
     # @param [DataType] type
@@ -239,6 +244,7 @@ module BOAST
     # @option properties [Array<Dimension>] :dimension (or *:dim*) variable is an array rather than a scalar. Dimensions are given in Fortran order (contiguous first).
     # @option properties [Object] :constant (or *:const*) states that the variable is a constant and give its value. For Variable with the *:dimension* property set must be a {ConstArray}
     # @option properties [Boolean] :restrict specifies that the compiler can assume no aliasing to this array.
+    # @option properties [Boolean] :reference specifies that this variable is passed by reference.
     # @option properties [Symbol] :allocate specify that the variable is to be allocated and where. Can only be *:heap* or *:stack* for now.
     # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
     # @option properties [Boolean] :texture for OpenCL and CUDA. In OpenCL also specifies that a sampler has to be generated to access the array variable.
@@ -258,6 +264,7 @@ module BOAST
       @alignment = properties[:align]
       @deferred_shape = properties[:deferred_shape]
       @optional = properties[:optional]
+      @reference = properties[:reference]
       @force_replace_constant = false
       if not properties[:replace_constant].nil? then
         @replace_constant = properties[:replace_constant]
@@ -308,7 +315,7 @@ module BOAST
         s = @constant.to_s + @type.suffix
         return s
       end
-      if @scalar_output and [C, CL, CUDA].include?( lang ) and not decl_module? then
+      if @scalar_output or @reference and [C, CL, CUDA].include?( lang ) and not decl_module? then
         return "(*#{name})"
       end
       return @name
@@ -348,7 +355,7 @@ module BOAST
       if dimension? then
         s += " *" unless (use_vla? and lang != FORTRAN)
       end
-      if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout ) then
+      if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout or @reference ) then
         s += " *"
       end
       s += " #{@name}"
@@ -365,7 +372,7 @@ module BOAST
     def decl_ffi(alloc, lang)
       return :pointer if lang == FORTRAN and not alloc
       return :pointer if dimension?
-      return :pointer if @direction == :out or @direction == :inout and not alloc
+      return :pointer if @direction == :out or @direction == :inout or @reference and not alloc
       return @type.decl_ffi
     end
 
@@ -426,7 +433,7 @@ module BOAST
     end
 
     def __pointer?(device = false)
-      return !!( ( not dimension? and ( @direction == :out or @direction == :inout ) ) or __pointer_array?(device) )
+      return !!( ( not dimension? and ( @direction == :out or @direction == :inout or @reference ) ) or __pointer_array?(device) )
     end
 
     def __restrict?
