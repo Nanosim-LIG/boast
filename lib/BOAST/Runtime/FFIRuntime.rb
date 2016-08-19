@@ -72,9 +72,15 @@ module BOAST
           counters = nil
           ev_set.start if ev_set
           begin
-            start = Time::new
-            ret = #{method_name}(*t_args)
-            stop = Time::new
+            if options[:repeat] then
+              start = Time::new
+              options[:repeat].times { ret = #{method_name}(*t_args) }
+              stop = Time::new
+            else
+              start = Time::new
+              ret = #{method_name}(*t_args)
+              stop = Time::new
+            end
           ensure
             if ev_set then
               counters = ev_set.stop
