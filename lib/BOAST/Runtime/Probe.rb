@@ -63,6 +63,9 @@ EOF
       get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
     end
 
+    def get_options
+    end
+
   end
 
   # @private
