@@ -32,7 +32,7 @@ class TestProcedure < Minitest::Test
       }
     }
     r = []
-    n = 1024
+    n = 4096
     ah = NArray.int(n)
     bh = NArray.int(n)
     ch = NArray.int(n)
@@ -45,7 +45,7 @@ class TestProcedure < Minitest::Test
     r = k.run(n, ah, bh, ch)
     t0 = r[:duration]
     e0 = r[:energy]
-    8.times { k.run(n, ah, bh, ch) }
+    8.times { k.run(n/2, ah, bh, ch) }
     r = k.run(n, ah, bh, ch)
     t1 = r[:duration]
     e1 = r[:energy]
