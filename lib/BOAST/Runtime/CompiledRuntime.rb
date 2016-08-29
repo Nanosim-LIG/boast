@@ -407,7 +407,6 @@ EOF
     def build(options={})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
-      linker, ldshared, ldflags = setup_compilers(compiler_options)
       @compiler_options = compiler_options
       if @compiler_options[:probes] then
         @probes = @compiler_options[:probes]
@@ -417,6 +416,8 @@ EOF
         @probes.push AffinityProbe unless OS.mac?
       end
       @probes = [MPPAProbe] if @architecture == MPPA
+      compiler_options[:probes] = @probes
+      linker, ldshared, ldflags = setup_compilers(compiler_options)
 
       @marker = Tempfile::new([@procedure.name,""])
 

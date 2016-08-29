@@ -170,6 +170,14 @@ module BOAST
       return [linker, ldshared, ldflags]
     end
 
+    def setup_probes(options)
+      @probes.map(&:get_options).each { |x|
+        x.each { |key, value|
+          options[key] += " #{value}"
+        } if x
+      }
+    end
+
     def setup_compilers(options = {})
       Rake::Task::clear
       verbose = options[:VERBOSE]
@@ -192,6 +200,8 @@ module BOAST
           status.success?
         end
       }
+
+      setup_probes(options)
 
       setup_c_compiler(options, includes, narray_path, runner)
       setup_cxx_compiler(options, includes, runner)
