@@ -171,6 +171,9 @@ EOF
       path = ENV['LIBRARY_PATH'] if ENV.has_key? 'LIBRARY_PATH'
       [] != path.split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
     end
+    def get_options
+      return :LDFLAGS => '-redfst'
+    end
   end
 
   module EmlProbe
