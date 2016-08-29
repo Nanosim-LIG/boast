@@ -115,6 +115,8 @@ EOF
     def is_available
       [] != Dir.glob( '/sys/class/powercap/intel-rapl:0:0' )
     end
+    def get_options
+    end
   end
 
   module RedfstProbe
