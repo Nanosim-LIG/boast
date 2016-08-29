@@ -41,12 +41,15 @@ class TestProcedure < Minitest::Test
     bh.random!(n)
     ch.random!(n)
     k = p.ckernel
+    assert( k.build :probes => [TimerProbe, probe] )
     8.times { k.run(n, ah, bh, ch) }
     r = k.run(n, ah, bh, ch)
+    assert(r.has_key? :energy)
     t0 = r[:duration]
     e0 = r[:energy]
     8.times { k.run(n/2, ah, bh, ch) }
     r = k.run(n, ah, bh, ch)
+    assert(r.has_key? :energy)
     t1 = r[:duration]
     e1 = r[:energy]
     e0.each {|name, x|
