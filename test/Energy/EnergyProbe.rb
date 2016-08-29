@@ -12,10 +12,7 @@ def silence_warnings(&block)
   result
 end
 
-
-class TestProcedure < Minitest::Test
-
-  def test_powercap
+def test_energy probe
     n = Int( :n, :dir => :in )
     a = Int( :a, :dir => :in, :dim => [Dim(n)] )
     b = Int( :b, :dir => :in, :dim => [Dim(n)] )
@@ -59,6 +56,19 @@ class TestProcedure < Minitest::Test
       next if energy0 < 0.01 and energy1 < 0.01
       assert(((energy0 / t0 - energy1 / t1).abs) / (energy1 / t1) < 0.1)
     }
-  end
+end
 
+class TestProcedure < Minitest::Test
+  def test_powercap
+    skip "Powercap is not available." if not PowercapProbe.is_available
+    test_energy PowercapProbe
+  end
+  def test_redfst
+    skip "ReDFST is not available." if not RedfstProbe.is_available
+    test_energy RedfstProbe
+  end
+  def test_eml
+    skip "EML is not available." if not EmlProbe.is_available
+    test_energy EmlProbe
+  end
 end
