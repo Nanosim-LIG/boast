@@ -167,7 +167,9 @@ EOF
 EOF
 		end
     def is_available
-      ENV.has_key? 'LIBRARY_PATH' and [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
+      path = '/lib:/usr/lib'
+      path = ENV['LIBRARY_PATH'] if ENV.has_key? 'LIBRARY_PATH'
+      [] != path.split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
     end
   end
 
@@ -205,7 +207,10 @@ EOF
 EOF
     end
     def is_available
-      ENV.has_key? 'LIBRARY_PATH' and [] != ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
+      path = '/lib:/usr/lib'
+      path = ENV['LIBRARY_PATH'] if ENV.has_key? 'LIBRARY_PATH'
+      [] != path.split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
+    end
     end
   end
   if PowercapProbe.is_available
