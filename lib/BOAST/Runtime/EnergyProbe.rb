@@ -211,6 +211,8 @@ EOF
       path = ENV['LIBRARY_PATH'] if ENV.has_key? 'LIBRARY_PATH'
       [] != path.split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
     end
+    def get_options
+      return :LDFLAGS => '-leml'
     end
   end
   if PowercapProbe.is_available
