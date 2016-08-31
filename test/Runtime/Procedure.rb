@@ -115,4 +115,31 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_procedure_opencl_array_repeat
+    begin
+      silence_warnings { require 'opencl_ruby_ffi' }
+    rescue
+      skip "Missing OpenCL on the platform!"
+    end
+    push_env(:array_start => 0) {
+      repeat = 3
+      a = Int( :a, :dir => :inout, :dim => [Dim()] )
+      b = Int( :b, :dir => :in )
+      i = Int( :i )
+      p = Procedure("vector_inc", [a, b]) {
+        decl i
+        pr i === get_global_id(0)
+        pr a[i] === a[i] + b
+      }
+      nelem = 1024
+      ah = NArray.int(nelem)
+      set_lang(CL)
+      ah.random!(100)
+      a_out_ref = ah + 2 * repeat
+      k = p.ckernel
+      r = k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1], :repeat => repeat)
+      assert_equal(a_out_ref, ah)
+    }
+  end
+
 end

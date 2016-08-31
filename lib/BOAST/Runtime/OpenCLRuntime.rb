@@ -153,17 +153,32 @@ def self.run(*args)
   if not lws then
     lws = opts[:block_size]
   end
-  event = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+  if opts[:repeat] and opts[:repeat] > 1 then
+    event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+    (opts[:repeat] - 2).times {
+      @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+    }
+    event2 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+  else
+    event = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+  end
   @procedure.parameters.each_index { |i|
     if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
       read_opencl_param( params[i], args[i], @procedure.parameters[i] )
     end
   }
   @queue.finish
+  if opts[:repeat] and opts[:repeat] > 1 then
+    start_t = event1.profiling_command_start
+    end_t = event2.profiling_command_end
+  else
+    start_t = event.profiling_command_start
+    end_t = event.profiling_command_end
+  end
   result = {}
-  result[:start] = event.profiling_command_start
-  result[:end] = event.profiling_command_end
-  result[:duration] = (result[:end] - result[:start])/1000000000.0
+  result[:start] = start_t
+  result[:end] = end_t
+  result[:duration] = (end_t - start_t)/1000000000.0
   return result
 end
 EOF
