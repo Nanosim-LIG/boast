@@ -153,14 +153,12 @@ def self.run(*args)
   if not lws then
     lws = opts[:block_size]
   end
+  event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
   if opts[:repeat] and opts[:repeat] > 1 then
-    event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
     (opts[:repeat] - 2).times {
       @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
     }
     event2 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
-  else
-    event = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
   end
   @procedure.parameters.each_index { |i|
     if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
@@ -168,12 +166,11 @@ def self.run(*args)
     end
   }
   @queue.finish
+  start_t = event1.profiling_command_start
   if opts[:repeat] and opts[:repeat] > 1 then
-    start_t = event1.profiling_command_start
     end_t = event2.profiling_command_end
   else
-    start_t = event.profiling_command_start
-    end_t = event.profiling_command_end
+    end_t = event1.profiling_command_end
   end
   result = {}
   result[:start] = start_t
