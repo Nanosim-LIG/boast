@@ -2,14 +2,25 @@ module BOAST
 
   module TopLevelExpressions
 
+    # Creates a return Expression
+    # @param [#to_var] value to return
+    # @return [Expression]
     def Return(value)
       return Expression::new("return",nil, value)
     end
 
+    # Creates an Expression using the boolean And Operator
+    # @param [#to_var] a
+    # @param [#to_var] b
+    # @return [Expression]
     def And(a, b)
       return Expression::new(And, a, b)
     end
 
+    # Creates an Expression using the boolean Or Operator
+    # @param [#to_var] a
+    # @param [#to_var] b
+    # @return [Expression]
     def Or(a, b)
       return Expression::new(Or, a, b)
     end
@@ -20,12 +31,19 @@ module BOAST
 
   EXTENDED.push TopLevelExpressions
 
+  # Defines arithmetic operation, mostly using operator overloading.
   module Arithmetic
 
+    # Returns an Exponentiation Expression bewtween self and x
+    # @param [#to_var] x
+    # @return [Expression]
     def **(x)
       return Expression::new(Exponentiation,self,x)
     end
 
+    # Returns an Affectation Expression x into self
+    # @param [#to_var] x
+    # @return [Expression]
     def ===(x)
       return Expression::new(Affectation,self,x)
     end
