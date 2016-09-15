@@ -178,6 +178,7 @@ EOF
 EOF
 		end
     def is_available?
+      return false if OS.mac?
       path = []
       if ENV['LIBRARY_PATH'] then
         path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
@@ -221,6 +222,7 @@ EOF
 EOF
     end
     def is_available?
+      return false if OS.mac?
       path = []
       if ENV['LIBRARY_PATH'] then
         path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
