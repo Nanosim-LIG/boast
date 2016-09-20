@@ -13,7 +13,7 @@ Installation
 
 BOAST is ruby based, so ruby needs to be installed on the machine.
 Installation of boast can be done using the ruby built-in package
-manager: *gem*. See following Listing for reference.
+manager: *gem*. See following Listing for reference.
 
 ```bash
 sudo apt-get install ruby ruby-dev
@@ -25,7 +25,7 @@ Variable and Procedure Declaration
 
 The following samples are presented using *irb* ruby interactive interpreter.
 It can be launched using the *irb* command in a terminal.  Following
-Listing shows the declaration of two variables of different kind.
+Listing shows the declaration of two variables of different kind.
 
     irb(main):001:0> require 'BOAST'
     => true
@@ -53,7 +53,7 @@ variables as parameters. For clarity irb echoes have been suppressed.
 Switching Language
 ------------------
 
-Following Listing shows how to switch BOAST to C.  Available languages are
+Following Listing shows how to switch BOAST to C.  Available languages are
 *FORTRAN*, *C*, *CUDA* and *CL*.
 
     008:0> BOAST::lang = BOAST::C
@@ -65,7 +65,7 @@ Following Listing shows how to switch BOAST to C.  Available languages are
 Defining a Complete Procedure
 -----------------------------
 
-Following Listing shows how to define a procedure and the associated code. Note
+Following Listing shows how to define a procedure and the associated code. Note
 that here the parameters of the procedure have been associated a direction:
 one, *a*, is an input parameter while the other, *b*, is an output parameter.
 
@@ -91,7 +91,7 @@ one, *a*, is an input parameter while the other, *b*, is an output parameter.
 Creating, Building and Running a Computing Kernel
 -------------------------------------------------
 
-Following Listing shows how to create a Computing kernel (*CKernel*) and build
+Following Listing shows how to create a Computing kernel (*CKernel*) and build
 it. Once a computing kernel is instantiated the output of BOAST will be
 redirected to the computing kernel source code.  Line 4 sets the entry point of
 the computing kernel to the procedure we just defined. By default compilation
@@ -129,17 +129,17 @@ Using Arrays in Procedures
 --------------------------
 
 Most computing kernels don't work on scalar values but rather on arrays
-of data. Following Listing shows how to use arrays in computing
+of data. Following Listing shows how to use arrays in computing
 kernels. In this case we place ourselves in BOAST namespace to reduce
 the syntax overhead. Variables *a* and *b* are one-dimensional arrays of
 size *n*. Arrays in BOAST start at index 1 unless specified otherwise.
 For instance `Dim(0,n-1)` would have created a dimension starting at 0.
 Array bounds can also be negative and several dimensions can be
 specified to obtain muti-dimensional arrays. For self contained
-procedures/kernels one can use the shortcut written on line 13 to create
+procedures/kernels one can use the shortcut written on line 13 to create
 a CKernel object. As we are not specifying build options the build
 command can also be omitted and will be automatically called when
-running the kernel the first time. Lines 17 to 19 are used to check the
+running the kernel the first time. Lines 17 to 19 are used to check the
 result of the kernel.
 
     001:0> require 'BOAST'
@@ -168,11 +168,11 @@ result of the kernel.
 The Canonical Case: Vector Addition
 -----------------------------------
 
-Following Listing shows the addition of two vectors in a third one. Here BOAST
+Following Listing shows the addition of two vectors in a third one. Here BOAST
 is configured to have arrays starting at 0 and to use single precision reals by
-default (Lines 5 and 6). The kernel declaration is encapsulated inside a method
+default (Lines 5 and 6). The kernel declaration is encapsulated inside a method
 to avoid cluttering the global namespace. Line 15 the expression `c[i] === a[i]+ b[i]`
-is stored inside a variable *expr* for later use. Lines 16 to 23 show
+is stored inside a variable *expr* for later use. Lines 16 to 23 show
 that the kernel differs depending on the target language, in CUDA and OpenCL
 each thread will process one element.
 
@@ -208,8 +208,8 @@ end
 Following Listing shows the a way to check the validity of the previous kernel
 over the available range of languages. The options that are passed to run are
 only relevant for GPU languages and are thus ignored in FORTRAN and C
-(Line 16). Success is only printed if results are validated, else an exception
-is raised (Lines 17 to 20).
+(Line 16). Success is only printed if results are validated, else an exception
+is raised (Lines 17 to 20).
 
 ```ruby
 n = 1024*1024
@@ -235,6 +235,55 @@ c_ref = a + b
 }
 puts "Success!"
 ```
+
+Options
+-------
+
+Options can be passed through environment variables. Most BOAST states can be
+set this way. Nonetheless here is a list of the most used ones, their possible values:
+
+* BOAST_LANG: can be C, FORTRAN, OpenCL or CUDA
+
+Compiler related:
+
+* CC: c compiler
+* CFLAGS: c compiler flags
+* FC: fortran compiler
+* FCFLAGS: fortran compiler flags
+* CXX: c++ compiler
+* CXXFLAGS: c++ compiler flags
+* LD: linker (default CC)
+* LDFLAGS: linker flags
+* NVCC: cuda compiler
+* NVCCFLAGS: cuda compiler flags
+
+OpenCL related:
+
+* CLFLAGS: OpenCL compilation flags
+* CLPLATFORM: restricts OpenCL platforms to those that with matching CL_PLATFORM_NAME property
+* CLVENDOR: restricts OpenCL platforms to those that with matching CL_PLATFORM_VENDOR property
+* CLDEVICE: restricts OpenCL devices to those that with matching CL_DEVICE__NAME property
+* CLDEVICETYPE: can be CPU, GPU, ACCELERATOR, CUSTOM, DEFAULT or ALL
+
+Debug Related:
+
+* VERBOSE: anything else than false or nil should enable, print compilation lines
+* DEBUG_SOURCE: print source files before compiling them
+* KEEP_TEMP: keep temporary files
+* INSPECT: allow boast reflexive inspect
+* DISABLE_OPENMP: forcibly disable OpenMP
+
+Architecture related:
+
+* MODEL: use a different model than native for -march flag (see gcc documentation for available models)
+* USE_VLA: activate variable length array support in C, check the compiler support/option flags
+
+Communication:
+
+* ANNOTATE: enables source code YAML annotation
+* ANNOTATE_LIST: coma separated list of control structure to annotate (For by default)
+* ANNOTATE_LEVEL: level of recursivity for annotations
+* ANNOTATE_INDEPTH_LIST: coma separated white list of control structure to recursively annotate (For by default)
 
 Acknowledgment
 --------------
