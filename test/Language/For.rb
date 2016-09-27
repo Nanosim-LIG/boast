@@ -31,6 +31,31 @@ EOF
     end
   end
 
+  def test_pr_for_downward
+    i = Int("i")
+    a = Int("a", :dim => Dim())
+    f = For(i, 5, 0, :step => -1) { pr a[i] === i }
+    block = lambda { pr f }
+    begin
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
+do i = 5, 0, -1
+  a(i) = i
+end do
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+for (i = 5; i >= 0; i += -1) {
+  a[i - (1)] = i;
+}
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
   def test_pr_for_args
     i = Int("i")
     n = Int("n")

@@ -39,21 +39,20 @@ module BOAST
           @openmp = OpenMP::For({})
         end
       end
-      begin
-        push_env( :replace_constants => true )
-        if @step.kind_of?(Variable) then
-          step = @step.constant
-        elsif @step.kind_of?(Expression) then
-          step = eval "#{@step}"
-        else
-          step = @step.to_i
+      push_env( :replace_constants => true ) {
+        begin
+          if @step.kind_of?(Variable) then
+            step = @step.constant
+          elsif @step.kind_of?(Expression) then
+            step = eval "#{@step}"
+          else
+            step = @step.to_i
+          end
+          @operator = ">=" if step < 0
+        rescue
+          STDERR.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
         end
-        @operator = ">=" if step < 0
-      rescue
-        STDERR.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
-      ensure
-        pop_env( :replace_constants )
-      end
+      }
     end
 
     def get_c_strings
