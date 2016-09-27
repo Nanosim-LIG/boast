@@ -28,8 +28,8 @@ module BOAST
     # @param [Hash] options contains named options
     # @param [Block] block if gigen, will be evaluated during pr
     # @option options [#to_s] :step spcifies the increment in the for loop
-    # @option options [Boolean] :openmp specifies if an OpenMP For pragma has to be generated
-    # @option options [Boolean,Hash] :unroll specifies if pr must try to unroll the loop. If a Hash is specified it conatins the OpenMP clauses and their values.
+    # @option options [Boolean,Hash] :openmp specifies if an OpenMP For pragma has to be generated. If a Hash is specified it conatins the OpenMP clauses and their values.
+    # @option options [Boolean] :unroll specifies if pr must try to unroll the loop
     # @option options [Object,Array<Object>] :args arguments to be passed to the block. Will be superseeded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
       default_options = {:step => 1}
