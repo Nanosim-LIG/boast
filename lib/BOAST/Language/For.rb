@@ -11,14 +11,26 @@ module BOAST
     attr_reader :step
     attr_accessor :block
 
+    # returns the Boolean evaluation of the unroll attribute.
     def unroll?
       return !!@unroll
     end
 
+    # Sets the unroll attribute to val.
     def unroll=(val)
       @unroll = val
     end
 
+    # Creates a new instance of the For construct.
+    # @param [Variable] iterator
+    # @param [#to_s] first iteration start
+    # @param [#to_s] last iteration stop (inclusive)
+    # @param [Hash] options contains named options
+    # @param [Block] block if gigen, will be evaluated during pr
+    # @option options [#to_s] :step spcifies the increment in the for loop
+    # @option options [Boolean] :openmp specifies if an OpenMP For pragma has to be generated
+    # @option options [Boolean,Hash] :unroll specifies if pr must try to unroll the loop. If a Hash is specified it conatins the OpenMP clauses and their values.
+    # @option options [Object,Array<Object>] :args arguments to be passed to the block. Will be superseeded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
       default_options = {:step => 1}
       default_options.update( options )
@@ -73,11 +85,14 @@ module BOAST
     eval token_string_generator( * %w{for i b e s o})
     eval token_string_generator( * %w{end})
 
+    # Returns a string representation of the For construct.
     def to_s
       s = for_string(@iterator, @first, @last, @step, @operator)
       return s
     end
 
+    # Creates a copy of this For construct with the unroll option set and returns it
+    # @return [For]
     def unroll
       opts = @options.clone
       opts[:unroll] = true
@@ -134,6 +149,8 @@ module BOAST
 
     private :pr_unroll
 
+    # Opens the for construct (keyword, iterator, bounds, step, opening bracket in C like languages). The result is printed to the BOAST output.
+    # @return [self]
     def open
       @openmp.open if @openmp
       s=""
@@ -144,6 +161,9 @@ module BOAST
       return self
     end 
 
+    # Prints the For construct to the BOAST output, included the Block provided during initialization (if any).
+    # @param [nil,Array<Object>] args arguments to pass the block
+    # @return [self]
     def pr(*args)
       args = @args if args.length == 0 and @args
       return pr_unroll(*args) if unroll?
@@ -155,6 +175,8 @@ module BOAST
       return self
     end
 
+    # Closes the For construct (keyword, closing bracket in C like languages). The result is printed to the BOAST output.
+    # @return [self]
     def close
       decrement_indent_level      
       s = ""
