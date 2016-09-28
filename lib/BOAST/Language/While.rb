@@ -7,6 +7,9 @@ module BOAST
 
     attr_reader :condition
 
+    # Creates a new instance of the While construct.
+    # @param [Expression] condition
+    # @param [Block] block if given, will be evaluated when {pr} is called
     def initialize(condition, &block)
       @condition = condition
       @block = block
@@ -30,10 +33,13 @@ module BOAST
     eval token_string_generator( * %w{while cond} )
     eval token_string_generator( * %w{end} )
 
+    # Returns a string representation of the While construct.
     def to_s
       return while_string(@condition)
     end
 
+    # Opens the While construct (keyword, condition, opening bracket in C like languages). The result is printed to the BOAST output.
+    # @return [self]
     def open
       s=""
       s += indent
@@ -43,6 +49,10 @@ module BOAST
       return self
     end
 
+    # Prints the While construct to the BOAST output (see {open}).
+    # If a block is provided during initialization, it will be printed and the construct will be closed (see {close}).
+    # @param [Array<Object>] args any number of arguments to pass the block
+    # @return [self]
     def pr(*args)
       args = @args if args.length == 0 and @args
       open
@@ -53,6 +63,8 @@ module BOAST
       return self
     end
 
+    # Closes the While construct (keyword, closing bracket in C like languages). The result is printed to the BOAST output.
+    # @return [self]
     def close
       decrement_indent_level      
       s = ""

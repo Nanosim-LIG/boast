@@ -30,7 +30,7 @@ module BOAST
     # @option options [#to_s] :step spcifies the increment in the for loop
     # @option options [Boolean,Hash] :openmp specifies if an OpenMP For pragma has to be generated. If a Hash is specified it conatins the OpenMP clauses and their values.
     # @option options [Boolean] :unroll specifies if {pr} must try to unroll the loop
-    # @option options [Object,Array<Object>] :args arguments to be passed to the block. Will be superseeded by those provided by {pr}
+    # @option options [Array<Object>] :args arguments to be passed to the block. Will be superseded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
       default_options = {:step => 1}
       default_options.update( options )
@@ -149,7 +149,7 @@ module BOAST
 
     private :pr_unroll
 
-    # Opens the for construct (keyword, iterator, bounds, step, opening bracket in C like languages). The result is printed to the BOAST output.
+    # Opens the For construct (keyword, iterator, bounds, step, opening bracket in C like languages). The result is printed to the BOAST output.
     # @return [self]
     def open
       @openmp.open if @openmp
@@ -161,8 +161,9 @@ module BOAST
       return self
     end 
 
-    # Prints the For construct to the BOAST output, included the Block provided during initialization (if any).
-    # @param [nil,Array<Object>] args arguments to pass the block
+    # Prints the For construct to the BOAST output (see {open}).
+    # If a block is provided during initialization, it will be printed and the construct will be closed (see {close}).
+    # @param [Array<Object>] args any number of arguments to pass the block
     # @return [self]
     def pr(*args)
       args = @args if args.length == 0 and @args
