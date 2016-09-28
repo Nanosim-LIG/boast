@@ -21,6 +21,8 @@ module BOAST
 
     class << self
 
+      private
+
       def token_string_generator(name, *args)
        s = <<EOF
     def #{name}_string(#{args.join(",")})
@@ -28,8 +30,6 @@ module BOAST
     end
 EOF
       end
-
-      private :token_string_generator
 
     end
 
