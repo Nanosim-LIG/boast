@@ -5,6 +5,15 @@ module BOAST
 
     attr_reader :conditions
 
+    # Creates a new instance of the If construct
+    # @overload initialize(condition, &block)
+    #   Creates a simple If construct
+    #   @param [Expression] condition
+    #   @param [Block] block if given, will be evaluated when {pr} is called
+    # @overload initialize(conditions, &block)
+    #   Creates a multi-condition If construct
+    #   @param [Hash{Expression, :else => Block}] conditions each condition and its associated block (can be nil)
+    #   @param [Block] block else Block if :else is not specified in the conditions or nil
     def initialize(conditions, &block)
       @conditions = []
       @blocks = []
@@ -46,6 +55,8 @@ module BOAST
     eval token_string_generator( * %w{else} )
     eval token_string_generator( * %w{end} )
 
+    # Returns a string representation of the If construct.
+    # @param [Fixnum] condition_number condition to print
     def to_s(condition_number = 0)
       s = ""
       if condition_number == 0 then
@@ -60,6 +71,9 @@ module BOAST
       return s
     end
 
+    # Opens the If construct. The result is printed on the BOAST output. If a condition number is given, will print the corresponding condition (or else if none exist)
+    # @param [Fixnum] condition_number condition to print
+    # @return [self]
     def open(condition_number = 0)
       decrement_indent_level if condition_number > 0
       s = ""
@@ -70,6 +84,10 @@ module BOAST
       return self
     end
 
+    # Prints the If construct to the BOAST output (see {open}).
+    # If block/blocks is/are provided during initialization, they will be printed and the construct will be closed (see {close}).
+    # @param [Array<Object>] args any number of arguments to pass to the block/blocks
+    # @return [self]
     def pr(*args)
       args = @args if args.length == 0 and @args
       if @blocks.size > 0 then
@@ -84,6 +102,8 @@ module BOAST
       return self
     end
 
+    # Closes the If construct (keyword, closing bracket in C like languages). The result is printed to the BOAST output.
+    # @return [self]
     def close
       decrement_indent_level
       s = ""
