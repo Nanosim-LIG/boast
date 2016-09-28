@@ -178,4 +178,62 @@ EOF
     end
   end
 
+  def test_open_open_close_if
+    f = If(@cond1 => nil, @cond2 => nil, :else => nil)
+    opn_block = lambda { opn f }
+    open1_block = lambda { f.open(1) }
+    open2_block = lambda { f.open(2) }
+    close_block = lambda { close f }
+    begin
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &opn_block )
+if (i < n) then
+EOF
+      assert_subprocess_output( <<EOF, "", &@block1 )
+  a(i) = i
+EOF
+      assert_subprocess_output( <<EOF, "", &open1_block )
+else if (i == n) then
+EOF
+      assert_subprocess_output( <<EOF, "", &@block2 )
+  a(i) = 0
+EOF
+      assert_subprocess_output( <<EOF, "", &open2_block )
+else
+EOF
+      assert_subprocess_output( <<EOF, "", &@block3 )
+  a(i) =  -(i)
+EOF
+      assert_subprocess_output( <<EOF, "", &close_block )
+end if
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &opn_block )
+if (i < n) {
+EOF
+        assert_subprocess_output( <<EOF, "", &@block1 )
+  a[i - (1)] = i;
+EOF
+        assert_subprocess_output( <<EOF, "", &open1_block )
+} else if (i == n) {
+EOF
+        assert_subprocess_output( <<EOF, "", &@block2 )
+  a[i - (1)] = 0;
+EOF
+        assert_subprocess_output( <<EOF, "", &open2_block )
+} else {
+EOF
+        assert_subprocess_output( <<EOF, "", &@block3 )
+  a[i - (1)] =  -(i);
+EOF
+        assert_subprocess_output( <<EOF, "", &close_block )
+}
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
 end

@@ -60,10 +60,11 @@ module BOAST
       return s
     end
 
-    def open
+    def open(condition_number = 0)
+      decrement_indent_level if condition_number > 0
       s = ""
       s += indent
-      s += to_s
+      s += to_s(condition_number)
       output.puts s
       increment_indent_level
       return self
@@ -72,14 +73,8 @@ module BOAST
     def pr(*args)
       args = @args if args.length == 0 and @args
       if @blocks.size > 0 then
-        increment_indent_level
         @blocks.each_index { |indx|
-          decrement_indent_level
-          s = ""
-          s += indent
-          s += to_s(indx)
-          output.puts s
-          increment_indent_level
+          open(indx)
           @blocks[indx].call(*args)
         }
         close
