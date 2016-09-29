@@ -61,11 +61,12 @@ module BOAST
       return self
     end
 
-    def pr(*args)
+    def pr(*args, &block)
       args = @args if args.length == 0 and @args
+      block = @block unless block
       open
-      if @block then
-        @block.call(*args)
+      if block then
+        block.call(*args)
         close
       end
       return self
@@ -79,6 +80,10 @@ module BOAST
     attr_reader :expression
     attr_reader :case_conditions
 
+    # Creates a new instance of the Caonstruct
+    # @param [#to_s] expression tested Expression/Variable
+    # @param [Hash{#to_s, :default => Proc}] control conditions and associated blocks.
+    # @param [Proc,nil] block if provided, and :default is not defined in control (or nil), will be used as the default block.
     def initialize(expression, control = {}, &block)
       @expression = expression
       @case_conditions = []
