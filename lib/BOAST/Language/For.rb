@@ -162,7 +162,8 @@ module BOAST
 
     # Prints the For construct to the BOAST output (see {open}).
     # If a block is provided during initialization, it will be printed and the construct will be closed (see {close}).
-    # @param [Array<Object>] args any number of arguments to pass the block
+    # @param [Array<Object>] args any number of arguments to pass to the block
+    # @param [Proc] block an optional block to be evaluated. Supersede the one given at initialization
     # @return [self]
     def pr(*args, &block)
       args = @args if args.length == 0 and @args
