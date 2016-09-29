@@ -26,7 +26,7 @@ module BOAST
     # @param [#to_s] first iteration start
     # @param [#to_s] last iteration stop (inclusive)
     # @param [Hash] options contains named options
-    # @param [Proc,nil] block if given, will be evaluated when {pr} is called
+    # @param [Block] block if given, will be evaluated when {pr} is called
     # @option options [#to_s] :step spcifies the increment in the for loop
     # @option options [Boolean,Hash] :openmp specifies if an OpenMP For pragma has to be generated. If a Hash is specified it conatins the OpenMP clauses and their values.
     # @option options [Boolean] :unroll specifies if {pr} must try to unroll the loop

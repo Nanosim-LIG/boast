@@ -174,9 +174,9 @@ module BOAST
   # Calls the given object pr method with the optional arguments.
   # @param a a BOAST Expression, ControlStructure or Procedure
   # @param args an optional list of parameters
-  def pr(a, *args)
+  def pr(a, *args, &block)
     pr_annotate(a) if annotate?
-    a.pr(*args)
+    a.pr(*args, &block)
   end
 
   # One of BOAST keywords: declares BOAST Variables and Procedures.
