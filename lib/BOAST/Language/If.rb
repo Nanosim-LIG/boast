@@ -9,11 +9,11 @@ module BOAST
     # @overload initialize(condition, &block)
     #   Creates a simple If construct
     #   @param [Expression] condition
-    #   @param [Block] block if given, will be evaluated when {pr} is called
+    #   @param [Proc,nil] block if given, will be evaluated when {pr} is called
     # @overload initialize(conditions, &block)
     #   Creates a multi-condition If construct
-    #   @param [Hash{Expression, :else => Block}] conditions each condition and its associated block (can be nil)
-    #   @param [Block] block else Block if :else is not specified in the conditions or nil
+    #   @param [Hash{Expression, :else => Proc}] conditions each condition and its associated block (can be nil)
+    #   @param [Proc,nil] block else block if :else is not specified in the conditions or nil
     def initialize(conditions, &block)
       @conditions = []
       @blocks = []

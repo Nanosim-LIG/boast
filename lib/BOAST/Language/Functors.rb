@@ -49,7 +49,7 @@ EOF
     #   Creates a new Variable of type $1.
     #   @param [#to_s] name name of the Variable
     #   @param [Object] args parameters to use when creating a Variable
-    #   @param [Block] block block of code will be forwarded
+    #   @param [Proc] block block of code will be forwarded
     def var_functorize(klass)
       name = klass.name.split('::').last
       s = <<EOF

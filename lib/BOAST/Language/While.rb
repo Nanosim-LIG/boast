@@ -9,7 +9,7 @@ module BOAST
 
     # Creates a new instance of the While construct.
     # @param [Expression] condition
-    # @param [Block] block if given, will be evaluated when {pr} is called
+    # @param [Proc,nil] block if given, will be evaluated when {pr} is called
     def initialize(condition, &block)
       @condition = condition
       @block = block
