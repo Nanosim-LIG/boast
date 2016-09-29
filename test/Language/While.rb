@@ -31,6 +31,33 @@ EOF
     end
   end
 
+  def test_pr_block_while
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    w = While(i < n)
+    l = lambda { pr a[i] === i }
+    block = lambda { pr w, &l }
+    begin
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
+do while (i < n)
+  a(i) = i
+end do
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+while (i < n) {
+  a[i - (1)] = i;
+}
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
   def test_pr_while_args
     i = Int("i")
     n = Int("n")
