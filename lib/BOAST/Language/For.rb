@@ -26,7 +26,7 @@ module BOAST
     # @param [#to_s] first iteration start
     # @param [#to_s] last iteration stop (inclusive)
     # @param [Hash] options contains named options
-    # @param [Block] block if given, will be evaluated when {pr} is called
+    # @param [Proc,nil] block if given, will be evaluated when {pr} is called
     # @option options [#to_s] :step spcifies the increment in the for loop
     # @option options [Boolean,Hash] :openmp specifies if an OpenMP For pragma has to be generated. If a Hash is specified it conatins the OpenMP clauses and their values.
     # @option options [Boolean] :unroll specifies if {pr} must try to unroll the loop
@@ -99,8 +99,9 @@ module BOAST
       return For::new(@iterator, @first, @last, opts, &block)
     end
 
-    def pr_unroll(*args)
-      raise "Block not given!" if not @block
+    def pr_unroll(*args, &block)
+      block = @block unless block
+      raise "Block not given!" unless block
       begin
         begin
           push_env( :replace_constants => true )
@@ -131,17 +132,15 @@ module BOAST
         end
       rescue Exception => ex
         open
-        if @block then
-          @block.call(*args)
-          close
-        end
+        block.call(*args)
+        close
         return self
       end
       range = first..last
       @iterator.force_replace_constant = true
       range.step(step) { |i|
         @iterator.constant = i
-        @block.call(*args)
+        block.call(*args)
       }
       @iterator.force_replace_constant = false
       @iterator.constant = nil
@@ -165,12 +164,13 @@ module BOAST
     # If a block is provided during initialization, it will be printed and the construct will be closed (see {close}).
     # @param [Array<Object>] args any number of arguments to pass the block
     # @return [self]
-    def pr(*args)
+    def pr(*args, &block)
       args = @args if args.length == 0 and @args
-      return pr_unroll(*args) if unroll?
+      block = @block unless block
+      return pr_unroll(*args, &block) if unroll?
       open
-      if @block then
-        @block.call(*args)
+      if block then
+        block.call(*args)
         close
       end
       return self
