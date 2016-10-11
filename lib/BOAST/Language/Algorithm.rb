@@ -53,32 +53,12 @@ module BOAST
 
   # Returns the symbol corresponding to the active architecture
   def get_architecture_name
-    case architecture
-    when X86
-      return :X86
-    when ARM
-      return :ARM
-    when MPPA
-      return :MPPA
-    else
-      return nil
-    end
+    return ARCHITECTURES[architecture]
   end
 
   # Returns the symbol corresponding to the active language
   def get_lang_name
-    case lang
-    when C
-      return :C
-    when FORTRAN
-      return :FORTRAN
-    when CL
-      return :CL
-    when CUDA
-      return :CUDA
-    else
-      nil
-    end
+    return LANGUAGES[lang]
   end
 
   @@output = STDOUT

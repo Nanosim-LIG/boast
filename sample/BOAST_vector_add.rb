@@ -37,7 +37,7 @@ c_ref = a + b
 
 [:FORTRAN, :C, :CL, :CUDA].each { |l|
   set_lang( BOAST.const_get(l)  )
-  puts "#{l}:"
+  puts "#{get_lang_name}:"
   k = vector_add
   puts k.print
   c.random!

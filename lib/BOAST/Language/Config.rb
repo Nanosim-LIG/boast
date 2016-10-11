@@ -2,13 +2,17 @@ require 'os'
 require 'yaml'
 
 module BOAST
-  FORTRAN = 1
-  C = 2
-  CL = 3
-  CUDA = 4
-  X86 = 1
-  ARM = 2
-  MPPA = 3
+
+  LANGUAGES = ['FORTRAN', 'C', 'CL', 'CUDA']
+  ARCHITECTURES = ['X86', 'ARM', 'MPPA']
+
+  LANGUAGES.each_with_index { |l, i|
+    const_set(l, i)
+  }
+
+  ARCHITECTURES.each_with_index { |a, i|
+    const_set(a, i)
+  }
 
   @@boast_config = {
     :fortran_line_length => 72
@@ -147,8 +151,19 @@ module BOAST
 
   # @private
   def get_default_architecture
-    architecture = const_get(ENV["ARCHITECTURE"]) if ENV["ARCHITECTURE"]
-    architecture = const_get(ENV["ARCH"]) if not architecture and ENV["ARCH"]
+    arhchitecture = nil
+    begin
+      env = nil
+      if ENV["ARCHITECTURE"] then
+        env = ENV["ARCHITECTURE"]
+      elsif ENV["ARCH"] then
+        env = ENV["ARCH"]
+      end
+      raise "Error" if env and not ARCHITECTURES.include?(env)
+      architecture = const_get(env) if env
+    rescue
+      raise "'#{env}' is not a valid value for ARCH or ARCHITECTURE!"
+    end
     return architecture if architecture
     return ARM if YAML::load( OS.report )["host_cpu"].match("arm")
     return X86

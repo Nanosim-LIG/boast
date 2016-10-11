@@ -446,7 +446,7 @@ EOF
   end
 
   def test_mask
-    push_env(:array_start => 0, :lang => C, :model => :knl ) {
+    push_env(:array_start => 0, :lang => C, :model => :knl, :architecture => X86 ) {
       m = Mask([1,1,0,1])
       block = lambda { pr Expression( Addition, m, m ) }
       assert_subprocess_output( <<EOF, "", &block )
@@ -476,7 +476,7 @@ EOF
   end
 
   def test_mask_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,0,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 8)
@@ -493,7 +493,7 @@ EOF
   end
 
   def test_maskz_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,0,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
@@ -505,7 +505,7 @@ EOF
   end
 
   def test_full_mask_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,1,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 8)
@@ -524,7 +524,7 @@ EOF
   end
 
   def test_full_maskz_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,1,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
@@ -536,7 +536,7 @@ EOF
   end
 
   def test_empty_mask_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([0,0,0,0])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 8)
@@ -555,7 +555,7 @@ EOF
   end
 
   def test_full_maskz_load
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([0,0,0,0])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
@@ -567,7 +567,7 @@ EOF
   end
 
   def test_mask_store
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,0,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
@@ -579,7 +579,7 @@ EOF
   end
 
   def test_full_mask_store
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([1,1,1,1])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
@@ -591,7 +591,7 @@ EOF
   end
 
   def test_empty_mask_store
-    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym ) {
+    push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([0,0,0,0])
       a = Real(:a, :dim => Dim())
       b = Real(:b, :vector_length => 4)
