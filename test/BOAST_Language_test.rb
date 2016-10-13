@@ -4,6 +4,7 @@ require 'BOAST'
 include BOAST
 require_relative 'Language/Expression'
 require_relative 'Language/Intrinsics'
+require_relative 'Language/Vectors'
 require_relative 'Language/Dimension'
 require_relative 'Language/Array'
 require_relative 'Language/For'

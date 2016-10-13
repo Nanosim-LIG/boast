@@ -79,7 +79,7 @@ module BOAST
         end
       }
       s = ""
-      s += "#{@source}(#{indexes_dup.join(", ")})"
+      s += "#{@source}(#{@source.vector? ? ":, " : "" }#{indexes_dup.join(", ")})"
       return s
     end
 

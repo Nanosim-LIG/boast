@@ -45,7 +45,7 @@ module BOAST
     # @param [#to_var] x
     # @return [Expression]
     def ===(x)
-      return Expression::new(Affectation,self,x)
+      return Affectation::new(self,x)
     end
 
     def !

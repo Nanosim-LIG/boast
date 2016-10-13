@@ -217,7 +217,11 @@ EOF
     def fill_decl_module_params
       push_env(:decl_module => true)
       @procedure.parameters.each { |param|
-        param_copy = param.copy
+        if param.dimension?
+          param_copy = param.copy(nil, :vector_length => 1)
+        else
+          param_copy = param.copy
+        end
         param_copy.constant = nil
         param_copy.direction = nil
         param_copy.reference = nil

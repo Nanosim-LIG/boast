@@ -236,6 +236,10 @@ module BOAST
       !!@reference
     end
 
+    def vector?
+      __vector?
+    end
+
     # Creates a new {Variable}
     # @param [#to_s] name
     # @param [DataType] type
@@ -448,6 +452,10 @@ module BOAST
       return !!( dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) )
     end
 
+    def __vector?
+      return !!( @type.methods.include?(:vector_length) and @type.vector_length > 1 )
+    end
+
     def decl_c_s(device = false)
       return decl_texture_s if texture?
       s = ""
@@ -531,11 +539,12 @@ module BOAST
       return Pragma::new("DIR", "ASSUME_ALIGNED", "#{@name}: #{a}")
     end
 
-    def alloc_fortran( dims = nil )
+    def alloc_fortran( dims )
+      dims.unshift( @type.vector_length ) if __vector?
       return FuncCall::new(:allocate, FuncCall(name, * dims ) )
     end
 
-    def alloc_c( dims = nil, align = get_address_size)
+    def alloc_c( dims, align = get_address_size)
       d = dims.collect { |d| d.to_s }.reverse.join(")*(")
       if align > (OS.bits/8) then
         # check alignment is a power of 2
@@ -562,15 +571,19 @@ module BOAST
       s += ", optional" if optional?
       s += ", allocatable" if allocate? and @allocate == :heap
       s += ", parameter" if constant?
-      if dimension? then
+      if dimension? or __vector? then
         s += ", dimension("
+        if __vector? then
+          s += "#{@type.vector_length}"
+          s += ", " if dimension?
+        end
         s += @dimension.collect { |d|
           if deferred_shape? or ( allocate? and @allocate == :heap )
             ":"
           else
             d.to_s
           end
-        }.join(", ")
+        }.join(", ") if dimension?
         s += ")"
       end
       s += " :: #{@name}"

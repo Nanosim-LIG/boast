@@ -186,23 +186,6 @@ module BOAST
 
   end
 
-  class Affectation < Operator
-
-    def Affectation.string(arg1, arg2, return_type)
-      if arg1.class == Variable and arg1.type.vector_length > 1 then
-        return "#{arg1} = #{Load(arg2, arg1)}"
-      elsif arg2.class == Variable and arg2.type.vector_length > 1 then
-        return "#{Store(arg1, arg2, :store_type => return_type)}"
-      end
-      return basic_usage(arg1, arg2)
-    end
-
-    def Affectation.basic_usage(arg1, arg2)
-      return "#{arg1} = #{arg2}"
-    end
-
-  end
-
   class Exponentiation < BasicBinaryOperator
 
     class << self
@@ -412,6 +395,11 @@ module BOAST
         elsif @return_type.type != @source.type
           return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
         end
+      elsif lang == FORTRAN and @return_type.type.vector_length > 1 then
+        if @source.kind_of?( Array ) then
+          raise OperatorError,  "Invalid array length!" unless @source.length == @return_type.type.vector_length
+          return "(/#{@source.join(", ")}/)"
+        end
       end
       return @return_type.copy("#{@source}", DISCARD_OPTIONS)
     end
@@ -430,6 +418,60 @@ module BOAST
     end
 
   end
+
+  # @!parse module Functors; functorize Affectation; end
+  class Affectation < Operator
+    extend Functor
+    include Intrinsics
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    attr_reader :target
+    attr_reader :source
+    attr_reader :options
+
+    def initialize(target, source, options = {})
+      @target = target
+      @source = source
+      @options = options
+    end
+
+    def type
+      return target.to_var.type
+    end
+
+    def to_var
+      tar = @target
+      tar = @target.to_var if @target.respond_to?(:to_var)
+      src = @source
+      src = @source.to_var if @source.respond_to?(:to_var)
+      if tar.class == Variable and tar.type.vector_length > 1 then
+        return @target.copy("#{@target} = #{Load(@source, @target, @options)}", DISCARD_OPTIONS)
+      elsif src.class == Variable and src.type.vector_length > 1 then
+        r_t, oper = transition(tar, src, Affectation)
+        opts = @options.clone
+        opts[:store_type] = r_t
+        return @target.copy("#{Store(@target, @source, opts)}", DISCARD_OPTIONS)
+      end
+      return tar.copy("#{tar ? tar : @target} = #{src ? src : @source}", DISCARD_OPTIONS)
+    end
+
+    def to_s
+      return to_var.to_s
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+  end
+
 
   # @!parse module Functors; functorize Load; end
   class Load < Operator
@@ -460,7 +502,7 @@ module BOAST
         if @source.kind_of?(Array) then
           return Set(@source, @return_type).to_var
         elsif @source.class == Variable or @source.respond_to?(:to_var) then
-          if @source.to_var.type == @return_type.type
+          if @source.to_var.type == @return_type.type then
             return @source.to_var
           elsif @source.to_var.type.vector_length == 1 then
             a2 = "#{@source}"
@@ -494,6 +536,16 @@ module BOAST
             return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
           else
             return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
+          end
+        end
+      elsif lang == FORTRAN then
+        if @source.kind_of?(Array) then
+          return Set(@source, @return_type).to_var
+        elsif @source.class == Variable or @source.respond_to?(:to_var) then
+          if @source.to_var.type == @return_type.type then
+            return @source.to_var
+          elsif @source.kind_of?(Index) and @return_type.type.vector_length > 1 then
+            return @return_type.copy("#{Slice::new(@source.source, [@source.indexes[0], @source.indexes[0] + @return_type.type.vector_length - 1], *@source.indexes[1..-1])}", DISCARD_OPTIONS)
           end
         end
       end
@@ -601,6 +653,9 @@ module BOAST
     end
 
     def to_s
+      if @store_type.type == @dest.type then
+        return "#{@dest} = #{@source}"
+      end
       if lang == C or lang == CL then
         dst = "#{@dest}"
         if dst[0] != "*" then
@@ -626,8 +681,12 @@ module BOAST
         p_type = type if get_architecture == X86 and type.kind_of?(Int)
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, (#{mask.value.type.decl})#{mask}, #{@source} )" if mask and not mask.full?
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
+      elsif lang == FORTRAN
+        if @store_type.type.vector_length > 1 and @dest.kind_of?(Index) then
+          return "#{Slice::new(@dest.source, [@dest.indexes[0], @dest.indexes[0] + @store_type.type.vector_length - 1], *@dest.indexes[1..-1])} = #{@source}"
+        end
       end
-      return Affectation.basic_usage(@dest, @source)
+      return "#{@dest} = #{@source}"
     end
 
     def pr

@@ -25,6 +25,10 @@ module BOAST
       @return_type = @options[:returns] if @options
     end
 
+    def type
+      return @return_type.type if @return_type
+    end
+
     def to_var
       if @return_type then
         if @return_type.kind_of?(Variable)
