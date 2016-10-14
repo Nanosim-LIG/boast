@@ -20,6 +20,7 @@ EOF
       push_env( :lang => FORTRAN ) {
         assert_subprocess_output( <<EOF, "", &block )
 real(kind=4), dimension(4) :: a
+!DIR$ ATTRIBUTES ALIGN: 16:: a
 EOF
       }
     }
@@ -52,7 +53,9 @@ EOF
       push_env( :lang => FORTRAN ) {
         assert_subprocess_output( <<EOF, "", &block )
 real(kind=4), dimension(4, n) :: a
+!DIR$ ATTRIBUTES ALIGN: 16:: a
 real(kind=4), dimension(4) :: b
+!DIR$ ATTRIBUTES ALIGN: 16:: b
 b = a(:, 3) + a(:, 4)
 a(:, 3) = b
 EOF
@@ -65,21 +68,24 @@ EOF
       n = Int :n
       a = Real :a, :dim => Dim( n )
       b = Real :b, :vector_length => 4
-      block = lambda { pr b === Load(a[3],b); pr b === a[3] }
+      block = lambda { pr b === Load(a[3],b); pr b === a[3]; pr b === a[n-3] }
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_loadu_ps( &a[3 - (1)] );
 b = _mm_loadu_ps( &a[3 - (1)] );
+b = _mm_loadu_ps( &a[n - (3) - (1)] );
 EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
 b = vldlq_f32( &a[3 - (1)] );
 b = vldlq_f32( &a[3 - (1)] );
+b = vldlq_f32( &a[n - (3) - (1)] );
 EOF
       }
       push_env( :lang => FORTRAN ) {
         assert_subprocess_output( <<EOF, "", &block )
 b = a(3:6)
 b = a(3:6)
+b = a(n - (3):n - (3) + 4 - (1))
 EOF
       }
     }
@@ -90,21 +96,24 @@ EOF
       n = Int :n
       a = Real :a, :dim => Dim( n )
       b = Real :b, :vector_length => 4
-      block = lambda { pr Store(a[3], b); pr a[3] === b }
+      block = lambda { pr Store(a[3], b); pr a[3] === b; pr a[n-3] === b; }
       assert_subprocess_output( <<EOF, "", &block )
 _mm_storeu_ps( (float * ) &a[3 - (1)], b );
 _mm_storeu_ps( (float * ) &a[3 - (1)], b );
+_mm_storeu_ps( (float * ) &a[n - (3) - (1)], b );
 EOF
       push_env( :architecture => ARM ) {
         assert_subprocess_output( <<EOF, "", &block )
 vstlq_f32( (float * ) &a[3 - (1)], b );
 vstlq_f32( (float * ) &a[3 - (1)], b );
+vstlq_f32( (float * ) &a[n - (3) - (1)], b );
 EOF
       }
       push_env( :lang => FORTRAN ) {
         assert_subprocess_output( <<EOF, "", &block )
 a(3:6) = b
 a(3:6) = b
+a(n - (3):n - (3) + 4 - (1)) = b
 EOF
       }
     }

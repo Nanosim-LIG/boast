@@ -180,9 +180,14 @@ module BOAST
     attr_reader :deferred_shape
     attr_reader :optional
     attr_accessor :reference
-    attr_accessor :alignment
+    attr_writer :alignment
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
+
+    def alignment
+      return @type.total_size if __vector? and lang == FORTRAN and not @alignment
+      return @alignment
+    end
 
     def constant?
       !!@constant
@@ -225,7 +230,7 @@ module BOAST
     end
 
     def align?
-      !!@alignment
+      !!alignment
     end
 
     def deferred_shape?
@@ -252,7 +257,7 @@ module BOAST
     # @option properties [Symbol] :allocate specify that the variable is to be allocated and where. Can only be *:heap* or *:stack* for now.
     # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
     # @option properties [Boolean] :texture for OpenCL and CUDA. In OpenCL also specifies that a sampler has to be generated to access the array variable.
-    # @option properties [Integer] :align specifies the alignment the variable will be declared/allocated with if allocated or is supposed to have if it is coming from another context.
+    # @option properties [Integer] :align specifies the alignment the variable will be declared/allocated with if allocated or is supposed to have if it is coming from another context (in bytes).
     # @option properties [Boolean] :replace_constant specifies that for scalar constants this variable should be replaced by its constant value. For constant arrays, the value of the array will be replaced if the index can be determined at evaluation.
     # @option properties [Boolean] :deferred_shape for Fortran interface generation mainly see Fortran documentation
     # @option properties [Boolean] :optional for Fortran interface generation mainly see Fortran documentation
@@ -594,7 +599,7 @@ module BOAST
       end
       s += finalize
       output.print s
-      if dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) then
+      if ( dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) ) or vector? then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
