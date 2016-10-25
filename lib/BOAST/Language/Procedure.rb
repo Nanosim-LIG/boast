@@ -21,6 +21,7 @@ module BOAST
     # @option properties [Array<Variables>] :constants list of constant variables that are used in the Procedure. (see parameter in Fortran).
     # @option properties [Array<#to_s>] :headers list of headers that need to be included in order to compile the Procedure
     # @option properties [Variable] :return a Variable that will be returned. Procedure becomes a function, return type is the same as the returned variable. The variable will be declared at the start of the procedure.
+    # @option properties [Procedure] :functions sub functions used by this Procedure (FORTRAN return type of functions are problematic)
     def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters
@@ -42,8 +43,8 @@ module BOAST
 
     def call(*parameters)
       prefix = ""
-      prefix += "call " if lang==FORTRAN
-      f = FuncCall::new(@name, *parameters)
+      prefix += "call " if lang==FORTRAN and @properties[:return].nil?
+      f = FuncCall::new(@name, *parameters, :returns => @properties[:return] )
       f.prefix = prefix
       return f
     end
@@ -85,6 +86,13 @@ module BOAST
     def to_s
       return decl_c_s if [C, CL, CUDA].include?( lang )
       return to_s_fortran if lang==FORTRAN
+    end
+
+    protected
+
+    def fortran_type
+      raise "No return type for procedure!" unless @properties[:return]
+      output.puts indent + "#{@properties[:return].type.decl} :: #{@name}"
     end
 
     private
@@ -209,6 +217,11 @@ module BOAST
         align = p.align
         BOAST::pr align if align
       }
+      if @properties[:functions] then
+        @properties[:functions].each { |f|
+          f.fortran_type
+        }
+      end
       if @properties[:return] then
         BOAST::decl @properties[:return]
       end
