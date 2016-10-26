@@ -27,28 +27,24 @@ module BOAST
         elsif slice.kind_of?(Range) then
           @first = slice.first
           @last = slice.last
-          @length = Expression::new(Substraction, last, first)
-          if slice.exclude_end? then
-            @last  = Expression::new(Substraction, @last, 1)
-          else
-            @length = @length + 1
-          end
+          @last = Expression::new(Substraction, @last, 1) if slice.exclude_end?
+          @length = Expression::new(Substraction, @last, @first)
+          @length = @length + 1
         elsif slice.kind_of?(Array) then
           @first = slice [0] if slice.length > 0
           @last = slice [1] if slice.length > 1
           @step = slice [2] if slice.length > 2
-          if @last then
-            @length = Expression::new(Substraction, last, first) + 1
-          end
+          @length = Expression::new(Substraction, @last, @first)
+          @length = @length / @step if @step
+          @length = @length + 1
         elsif slice.kind_of?(Symbol) then
           raise "Invalid Slice item: #{slice.inspect}!" if slice != :all
         else
           @first = slice
         end
-        @length = @length / @step if @length and @step
       end
 
-      def copy_slice!(s)
+      def copy_slice!(slice)
         @first = slice.first
         @last = slice.last
         @step = slice.step
@@ -60,13 +56,22 @@ module BOAST
         if all? then
           copy_slice!(s)
         else
+          @first = Expression::new(Substraction, @first, get_array_start)
+          @first = @first * s.step if s.step
           if s.all? then
-            @first = Expression::new(Addition, d.start, Expression::new(Substraction, @first, get_array_start) * @step )
+            @first = Expression::new(Addition, d.start, @first )
           else
-            @first = Expression::new(Addition, s.first, Expression::new(Substraction, @first, get_array_start) * @step )
+            @first = Expression::new(Addition, s.first, @first )
           end
           if not scalar? then
-            @last = @first + @length - 1
+            if s.step then
+              if @step then
+                @step = Expression::new(Multiplication, @step, s.step)
+              else
+                @step = s.step
+              end
+            end
+            @last = @first + (@length-1)*@step
           end
         end
         return self
@@ -149,11 +154,11 @@ module BOAST
         slice = true if a.kind_of?(Range) or a.kind_of?(Array) or a.kind_of?(Symbol) or a.nil?
       }
       new_args = []
-      slices.each { |s|
+      slices.each_with_index { |s, i|
         if not s.scalar?
           raise "Invalid slice!" if args.length == 0
           new_arg = SliceItem::new(args.shift)
-          new_arg.recurse!(s)
+          new_arg.recurse!(s, @source.dimension[i])
           new_args.push new_arg
         else
           new_args.push s
@@ -162,31 +167,29 @@ module BOAST
       if slice then
         return Slice::new(@source, *new_args)
       else
-        return Index::new(@source, *new_args)
+        return Index::new(@source, *(new_args.collect(&:first)))
       end
     end
 
     private
 
     def to_s_c
-      str = "#{@source}["
       dims = @source.dimension.reverse
-      slices = @slices.reverse
-      slices_to_c = []
-      slices_to_c = slices.each_with_index.collect { |slice, indx|
+      slices_to_c = @slices.reverse.each_with_index.collect { |slice, indx|
         if slice.all? then
-          slices_to_c.push(":")
+          ":"
         else
           start = Expression::new(Substraction, slice.first, dims[indx].start)
           s = "#{start}"
           if not slice.scalar? then
             s += ":#{slice.length}"
-            s += ":#{slice.step}" if slice.step
+#           s += ":#{slice.step}" if slice.step
+            raise "Slice don't support step in C!" if slice.step
           end
           s
         end
       }
-      return str + slices_to_c.join("][") + "]"
+      return "#{@source}[#{slices_to_c.join("][")}]"
     end
 
     def to_s_fortran
@@ -202,7 +205,7 @@ module BOAST
           s
         end
       }
-      return "#{source}(#{slices_to_fortran.join(",")})"
+      return "#{@source}(#{slices_to_fortran.join(", ")})"
     end
 
   end
