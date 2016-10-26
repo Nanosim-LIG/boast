@@ -169,25 +169,24 @@ module BOAST
     private
 
     def to_s_c
-      s = "#{@source}["
+      str = "#{@source}["
       dims = @source.dimension.reverse
       slices = @slices.reverse
       slices_to_c = []
-      slices.each_index { |indx|
-        slice = slices[indx]
-        raise "C does not support slices with step!" if slice.step
+      slices_to_c = slices.each_with_index.collect { |slice, indx|
         if slice.all? then
           slices_to_c.push(":")
         else
           start = Expression::new(Substraction, slice.first, dims[indx].start)
-          if slice.scalar? then
-            slices_to_c.push("#{start}")
-          else
-            slices_to_c.push("#{start}:#{slice.length}")
+          s = "#{start}"
+          if not slice.scalar? then
+            s += ":#{slice.length}"
+            s += ":#{slice.step}" if slice.step
           end
+          s
         end
       }
-      return s + slices_to_c.join("][") + "]"
+      return str + slices_to_c.join("][") + "]"
     end
 
     def to_s_fortran
