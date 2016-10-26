@@ -353,8 +353,16 @@ module BOAST
     end
 
     def [](*args)
-      return Index::new(self,*args)
-    end
+      slice = false
+      args.each { |a|
+        slice = true if a.kind_of?(Range) or a.kind_of?(Array) or a.kind_of?(Symbol) or a.nil?
+      }
+      if slice then
+        return Slice::new(self, *args)
+      else
+        return Index::new(self, *args)
+      end
+     end
  
     def boast_header(lang=C)
       return decl_texture_s if texture?
