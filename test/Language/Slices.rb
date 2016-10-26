@@ -62,6 +62,29 @@ EOF
     }
   end
 
+  def test_slice_multi_dim_var_index
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86, :use_vla => true ) {
+      n = Int :n
+      m = Int :m
+      i = Int :i
+      a = Real :a, :dim => [Dim(n), Dim(m), Dim()]
+      blocks = [ lambda { pr a.slice(5,i..i+3,:all) === 5 },
+                 lambda { pr a.slice(5,[i,i+3],nil) === 5 },
+                 lambda { pr a[5,i..i+3,:all] === 5 },
+                 lambda { pr a[5,[i,i+3],nil] === 5 } ]
+      blocks.each { |block|
+        assert_subprocess_output( <<EOF, "", &block )
+a[:][i - (1):i + 3 - (i) + 1][5 - (1)] = 5;
+EOF
+        push_env( :lang => FORTRAN ) {
+          assert_subprocess_output( <<EOF, "", &block )
+a(5, i:i + 3, :) = 5
+EOF
+        }
+      }
+    }
+  end
+
   def test_slice_multi_dim_sub_index
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86, :use_vla => true ) {
       n = Int :n
@@ -131,6 +154,22 @@ EOF
       push_env( :lang => FORTRAN ) {
         assert_subprocess_output( <<EOF, "", &block )
 a(2 + (3 - (1)) * (2)) = 5
+EOF
+      }
+    }
+  end
+
+  def test_slice_step_sub_index_var_index
+    push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86, :use_vla => true ) {
+      a = Real :a, :dim => Dim()
+      i = Int :i
+      block = lambda { pr a.slice([i,i+4,2])[3] === 5 }
+      assert_subprocess_output( <<EOF, "", &block )
+a[i + (3 - (1)) * (2) - (1)] = 5;
+EOF
+      push_env( :lang => FORTRAN ) {
+        assert_subprocess_output( <<EOF, "", &block )
+a(i + (3 - (1)) * (2)) = 5
 EOF
       }
     }
