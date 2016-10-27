@@ -352,6 +352,13 @@ module BOAST
       return Expression::new("++",self,nil)
     end
 
+    # Indexes a {Variable} with the :dimension (or :dim) property set
+    # @param [Array{#to_s, Range, [first, last, step], :all, nil}] args one entry for each {Dimension} of the {Variable}.
+    #   * Range: if an index is a Range, the result will be a {Slice}. The Range can be exclusive. The first and last item of the Range will be considered first and last index in the corresponding {Dimension}.
+    #   * [first, last, step]: if an index is an Array, the result will be a {Slice}. The first and last item of the array will be considered first and last index in the corresponding {Dimension}. If a step is given the range will be iterated by step.
+    #   * :all, nil: The whole dimension will be used for the slice. But indexing will start at #get_array_start instead of the original index.
+    #   * #to_s: If an index is none of the above it will be considered a scalar index. If all indexes are scalar an {Index} will be returned.
+    # @return [Slice, Index]
     def [](*args)
       slice = false
       args.each { |a|

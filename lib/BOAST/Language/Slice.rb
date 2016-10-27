@@ -148,6 +148,13 @@ module BOAST
       return var
     end
 
+    # Indexes a {Slice}
+    # @param [Array{#to_s, Range, [first, last, step], :all, nil}] args one entry for each {SliceItem} of the {Slice}.
+    #   * Range: if an index is a Range, the result will be a {Slice}. The Range can be exclusive. The first and last item of the Range will be considered first and last index in the corresponding {SliceItem}.
+    #   * [first, last, step]: if an index is an Array, the result will be a {Slice}. The first and last item of the array will be considered first and last index in the corresponding {SliceItem}. If a step is given the range will be iterated by step.
+    #   * :all, nil: The whole corresponding {SliceItem} will be used for the slice.
+    #   * #to_s: If an index is none of the above it will be considered a scalar index. If all indexes are scalar an {Index} will be returned.
+    # @return [Slice, Index]
     def [](*args)
       slice = false
       args.each { |a|
