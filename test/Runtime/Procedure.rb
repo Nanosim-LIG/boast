@@ -31,7 +31,7 @@ class TestProcedure < Minitest::Test
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
     c = Int( :c, :dir => :out )
-    p = Procedure("minimum", [a,b,c]) { pr c === Ternary( a < b, a, b) }
+    p = Procedure("minimum_1", [a,b,c]) { pr c === Ternary( a < b, a, b) }
     [FORTRAN, C].each { |l|
       set_lang(l)
       k = p.ckernel
@@ -44,7 +44,7 @@ class TestProcedure < Minitest::Test
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in, :reference => true )
     c = Int( :c, :dir => :out )
-    p = Procedure("minimum", [a,b,c]) { pr c === Ternary( a < b, a, b) }
+    p = Procedure("minimum_2", [a,b,c]) { pr c === Ternary( a < b, a, b) }
     [FORTRAN, C].each { |l|
       set_lang(l)
       k = p.ckernel
@@ -58,7 +58,7 @@ class TestProcedure < Minitest::Test
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )
     c = Int( :c )
-    p = Procedure("minimum", [a,b], :return => c) { pr c === Ternary( a < b, a, b) }
+    p = Procedure("minimum_3", [a,b], :return => c) { pr c === Ternary( a < b, a, b) }
     [FORTRAN, C].each { |l|
       set_lang(l)
       k = p.ckernel
@@ -72,7 +72,7 @@ class TestProcedure < Minitest::Test
     a = Int( :a, :dir => :inout, :dim => [Dim(n)] )
     b = Int( :b, :dir => :in )
     i = Int( :i )
-    p = Procedure("vector_inc", [n, a, b]) {
+    p = Procedure("vector_inc_1", [n, a, b]) {
       decl i
       pr For(i, 1, n) {
         pr a[i] === a[i] + b
@@ -99,7 +99,7 @@ class TestProcedure < Minitest::Test
       a = Int( :a, :dir => :inout, :dim => [Dim()] )
       b = Int( :b, :dir => :in )
       i = Int( :i )
-      p = Procedure("vector_inc", [a, b]) {
+      p = Procedure("vector_inc_2", [a, b]) {
         decl i
         pr i === get_global_id(0)
         pr a[i] === a[i] + b
@@ -126,7 +126,7 @@ class TestProcedure < Minitest::Test
       a = Int( :a, :dir => :inout, :dim => [Dim()] )
       b = Int( :b, :dir => :in )
       i = Int( :i )
-      p = Procedure("vector_inc", [a, b]) {
+      p = Procedure("vector_inc_3", [a, b]) {
         decl i
         pr i === get_global_id(0)
         pr a[i] === a[i] + b
