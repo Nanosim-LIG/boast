@@ -55,9 +55,9 @@ module BOAST
     end
 
     # Returns a {CKernel} with the Procedure as entry point.
-    def ckernel
+    def ckernel(* args)
       old_output = output
-      k = CKernel::new
+      k = CKernel::new(* args)
       k.procedure = self
       self.pr
       set_output( old_output )
