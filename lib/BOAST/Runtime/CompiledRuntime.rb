@@ -138,19 +138,14 @@ module BOAST
 
     def create_library_source
       f = File::open(library_source,"w+")
-      previous_lang = get_lang
-      previous_output = get_output
-      set_output(f)
-      set_lang(@lang)
+      push_env( :output => f, :lang => @lang ) {
+        fill_library_source
 
-      fill_library_source
-
-      if debug_source? then
-        f.rewind
-        puts f.read
-      end
-      set_output(previous_output)
-      set_lang(previous_lang)
+        if debug_source? then
+          f.rewind
+          puts f.read
+        end
+      }
       f.close
     end
 
@@ -215,30 +210,30 @@ EOF
     end
 
     def fill_decl_module_params
-      push_env(:decl_module => true)
-      @procedure.parameters.each { |param|
-        if param.dimension?
-          param_copy = param.copy(nil, :vector_length => 1)
-        else
-          param_copy = param.copy
+      push_env(:decl_module => true) {
+        @procedure.parameters.each { |param|
+          if param.dimension?
+            param_copy = param.copy(nil, :vector_length => 1)
+          else
+            param_copy = param.copy
+          end
+          param_copy.constant = nil
+          param_copy.direction = nil
+          param_copy.reference = nil
+          param_copy.decl
+        }
+        get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
+        get_output.puts "  VALUE _boast_stats = rb_hash_new();"
+        get_output.puts "  VALUE _boast_rb_ptr = Qnil;"
+        refs = false
+        @procedure.parameters.each_with_index do |param,i|
+          refs = true if param.scalar_output?
         end
-        param_copy.constant = nil
-        param_copy.direction = nil
-        param_copy.reference = nil
-        param_copy.decl
+        if refs then
+          get_output.puts "  VALUE _boast_refs = rb_hash_new();"
+          get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);"
+        end
       }
-      get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
-      get_output.puts "  VALUE _boast_stats = rb_hash_new();"
-      get_output.puts "  VALUE _boast_rb_ptr = Qnil;"
-      refs = false
-      @procedure.parameters.each_with_index do |param,i|
-        refs = true if param.scalar_output?
-      end
-      if refs then
-        get_output.puts "  VALUE _boast_refs = rb_hash_new();"
-        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);"
-      end
-      pop_env(:decl_module)
     end
 
     def copy_scalar_param_from_ruby( param, ruby_param )
@@ -271,16 +266,16 @@ EOF
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
-      push_env(:decl_module => true)
-      @procedure.parameters.each_index do |i|
-        param = @procedure.parameters[i]
-        if not param.dimension then
-          copy_scalar_param_from_ruby(param, argv[i])
-        else
-          copy_array_param_from_ruby(param, argv[i])
+      push_env(:decl_module => true) {
+        @procedure.parameters.each_index do |i|
+          param = @procedure.parameters[i]
+          if not param.dimension then
+            copy_scalar_param_from_ruby(param, argv[i])
+          else
+            copy_array_param_from_ruby(param, argv[i])
+          end
         end
-      end
-      pop_env(:decl_module)
+      }
     end
 
     def create_procedure_call
@@ -312,16 +307,16 @@ EOF
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
-      push_env(:decl_module => true)
-      @procedure.parameters.each_index do |i|
-        param = @procedure.parameters[i]
-        if not param.dimension then
-          copy_scalar_param_to_ruby(param, argv[i])
-        else
-          copy_array_param_to_ruby(param, argv[i])
+      push_env(:decl_module => true) {
+        @procedure.parameters.each_index do |i|
+          param = @procedure.parameters[i]
+          if not param.dimension then
+            copy_scalar_param_to_ruby(param, argv[i])
+          else
+            copy_array_param_to_ruby(param, argv[i])
+          end
         end
-      end
-      pop_env(:decl_module)
+      }
     end
 
     def store_results
@@ -375,16 +370,14 @@ EOF
 
     def create_module_file_source
       f = File::open(module_file_source, "w+")
-      push_env(:lang => C)
-      push_env(:output => f)
+      push_env(:output => f, :lang => C) {
+        fill_module_file_source
 
-      fill_module_file_source
-
-      if debug_source? then
-        f.rewind
-        puts f.read
-      end
-      pop_env(:lang, :output)
+        if debug_source? then
+          f.rewind
+          puts f.read
+        end
+      }
       f.close
     end
 
