@@ -413,6 +413,8 @@ module BOAST
           return align_c(a) if lang == C
           return align_fortran(a) if lang == FORTRAN
         end
+      elsif vector? then
+        return align_fortran(alignment) if lang == FORTRAN
       end
       return nil
     end
