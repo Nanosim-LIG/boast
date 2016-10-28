@@ -614,7 +614,7 @@ module BOAST
       end
       s += finalize
       output.print s
-      if ( dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) ) or vector? then
+      if ( dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) ) or ( vector? and not @direction ) then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
