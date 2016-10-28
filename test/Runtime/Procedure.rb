@@ -54,6 +54,21 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_procedure_vector
+    b = Real( :b, :dir => :in, :vector_length => 2 )
+    c = Real( :c, :dir => :out, :vector_length => 2, :dim => Dim(4) )
+    p = Procedure("vector_copy", [b,c]) { pr c[1] === b }
+    b_a = ANArray.float( 16, 2 ).random!
+    c_a = ANArray.float( 16, 2, 4 )
+    [FORTRAN, C].each { |l|
+      c_a.random!
+      set_lang(l)
+      k = p.ckernel( :includes => "immintrin.h")
+      r = k.run(b_a, c_a)
+      assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
+    }
+   end
+
   def test_function
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )

@@ -215,11 +215,7 @@ EOF
     def fill_decl_module_params
       push_env(:decl_module => true) {
         @procedure.parameters.each { |param|
-          if param.dimension?
-            param_copy = param.copy(nil, :vector_length => 1)
-          else
-            param_copy = param.copy
-          end
+          param_copy = param.copy
           param_copy.constant = nil
           param_copy.direction = nil
           param_copy.reference = nil
@@ -254,11 +250,23 @@ EOF
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
   if (TYPE(_boast_rb_ptr) == T_STRING) {
-    #{param} = (void *) RSTRING_PTR(_boast_rb_ptr);
+    #{
+  if param.dimension then
+    "#{param} = (void *)RSTRING_PTR(_boast_rb_ptr)"
+  else
+    (param === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => 1)).to_s
+  end
+    };
   } else if ( IsNArray(_boast_rb_ptr) ) {
     struct NARRAY *_boast_n_ary;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
-    #{param} = (void *) _boast_n_ary->ptr;
+    #{
+  if param.dimension then
+    "#{param} = (void *) _boast_n_ary->ptr"
+  else
+    (param === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => 1)).to_s
+  end
+    };
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }
@@ -272,7 +280,7 @@ EOF
       push_env(:decl_module => true) {
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
-          if not param.dimension then
+          if not param.dimension? and not param.vector? then
             copy_scalar_param_from_ruby(param, argv[i])
           else
             copy_array_param_from_ruby(param, argv[i])
