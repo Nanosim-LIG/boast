@@ -408,17 +408,17 @@ EOF
     def build(options={})
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
-      linker, ldshared, ldflags = setup_compilers(compiler_options)
-      @compiler_options = compiler_options
       @probes = []
-      if @compiler_options[:probes] then
-        @probes = @compiler_options[:probes]
-      elsif get_lang != CUDA
+      if compiler_options[:probes] then
+        @probes = compiler_options[:probes]
+      elsif get_lang != CUDA then
         @probes = [TimerProbe, PAPIProbe]
         @probes.push EnergyProbe if EnergyProbe
         @probes.push AffinityProbe unless OS.mac?
       end
       @probes = [MPPAProbe] if @architecture == MPPA
+      linker, ldshared, ldflags = setup_compilers(@probes, compiler_options)
+      @compiler_options = compiler_options
 
       @marker = Tempfile::new([@procedure.name,""])
 

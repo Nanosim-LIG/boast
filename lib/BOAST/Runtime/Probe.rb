@@ -8,6 +8,14 @@ module BOAST
 
     module_function
 
+    def ldflags
+      if OS.mac? then
+        ""
+      else
+        "-lrt"
+      end
+    end
+
     def header
       if OS.mac? then
         get_output.print <<EOF

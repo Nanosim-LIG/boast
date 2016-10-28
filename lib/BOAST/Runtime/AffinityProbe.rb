@@ -6,10 +6,11 @@ module BOAST
 
     module_function
 
+    def cflags
+      return "-D_GNU_SOURCE"
+    end
+
     def header
-      get_output.puts "#ifndef _GNU_SOURCE"
-      get_output.puts "#define _GNU_SOURCE"
-      get_output.puts "#endif"
       get_output.puts "#include <sched.h>"
     end
 

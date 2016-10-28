@@ -43,10 +43,13 @@ module BOAST
       end
     end
 
-    def setup_c_compiler(options, includes, narray_path, runner)
+    def setup_c_compiler(options, includes, narray_path, runner, probes)
       c_mppa_compiler = "k1-gcc"
       c_compiler = options[:CC]
       cflags = options[:CFLAGS]
+      probes.each { |p|
+        cflags += " #{p.cflags}" if p.respond_to?(:cflags)
+      }
       cflags += " -march=#{get_model}"
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
@@ -76,7 +79,7 @@ module BOAST
       end
     end
 
-    def setup_cxx_compiler(options, includes, runner)
+    def setup_cxx_compiler(options, includes, runner, probes)
       cxx_compiler = options[:CXX]
       cxxflags = options[:CXXFLAGS]
       cxxflags += " -fPIC #{includes}"
@@ -92,7 +95,7 @@ module BOAST
       end
     end
 
-    def setup_fortran_compiler(options, runner)
+    def setup_fortran_compiler(options, runner, probes)
       f_compiler = options[:FC]
       fcflags = options[:FCFLAGS]
       fcflags += " -march=#{get_model}"
@@ -110,7 +113,7 @@ module BOAST
       end
     end
 
-    def setup_cuda_compiler(options, runner)
+    def setup_cuda_compiler(options, runner, probes)
       cuda_compiler = options[:NVCC]
       cudaflags = options[:NVCCFLAGS]
       cudaflags += " --compiler-options '-fPIC','-D_FORCE_INLINES'"
@@ -121,7 +124,7 @@ module BOAST
       end
     end
 
-    def setup_linker_mppa(options, runner)
+    def setup_linker_mppa(options, runner, probes)
       objext = RbConfig::CONFIG["OBJEXT"]
       ldflags = options[:LDFLAGS]
       board = " -mboard=developer"
@@ -141,11 +144,13 @@ module BOAST
 
     end
 
-    def setup_linker(options)
+    def setup_linker(options, probes)
       ldflags = options[:LDFLAGS]
       ldflags += " -march=#{get_model}"
       ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
-      ldflags += " -lrt" if not OS.mac?
+      probes.each { |p|
+        ldflags += " #{p.ldflags}" if p.respond_to?(:ldflags)
+      }
       ldflags += " -lcudart" if @lang == CUDA
       ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if @architecture == MPPA
       ldflags += " -lmppamon -lmppabm -lm -lmppalock" if @architecture == MPPA
@@ -170,7 +175,7 @@ module BOAST
       return [linker, ldshared, ldflags]
     end
 
-    def setup_compilers(options = {})
+    def setup_compilers(probes, options = {})
       Rake::Task::clear
       verbose = options[:VERBOSE]
       verbose = get_verbose if not verbose
@@ -193,14 +198,14 @@ module BOAST
         end
       }
 
-      setup_c_compiler(options, includes, narray_path, runner)
-      setup_cxx_compiler(options, includes, runner)
-      setup_fortran_compiler(options, runner)
-      setup_cuda_compiler(options, runner)
+      setup_c_compiler(options, includes, narray_path, runner, probes)
+      setup_cxx_compiler(options, includes, runner, probes)
+      setup_fortran_compiler(options, runner, probes)
+      setup_cuda_compiler(options, runner, probes)
       
-      setup_linker_mppa(options, runner) if @architecture == MPPA
+      setup_linker_mppa(options, runner, probes) if @architecture == MPPA
 
-      return setup_linker(options)
+      return setup_linker(options, probes)
 
     end
 
