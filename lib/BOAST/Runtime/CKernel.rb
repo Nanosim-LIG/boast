@@ -23,6 +23,7 @@ module BOAST
     attr_accessor :architecture
     attr_accessor :kernels
     attr_accessor :cost_function
+    attr_accessor :includes
 
     # Creates a new CKernel object. BOAST output is redirected to the CKernel. If the chain_code state is set the current BOAST output, as returned by {BOAST.get_output}, is used.
     # @param [Hash] options contains named options
@@ -55,6 +56,8 @@ module BOAST
       else
         @architecture = get_architecture
       end
+      @includes = []
+      @includes = [options[:includes]].flatten if options[:includes]
 
       case @lang
       when CL

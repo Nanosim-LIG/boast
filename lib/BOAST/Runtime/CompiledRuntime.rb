@@ -157,6 +157,9 @@ module BOAST
 #include "narray.h"
 #endif
 EOF
+      @includes.each { |inc|
+        get_output.puts "#include \"#{inc}\""
+      }
     end
 
     def fill_module_preamble
