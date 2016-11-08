@@ -36,8 +36,9 @@ module BOAST
         else
           return Variable::new("#{self}", @return_type)
         end
+      else
+        return Variable::new("#{self}", get_default_type)
       end
-      return nil
     end
       
     def to_s
