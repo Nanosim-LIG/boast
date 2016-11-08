@@ -44,7 +44,7 @@ module BOAST
     def call(*parameters)
       prefix = ""
       prefix += "call " if lang==FORTRAN and @properties[:return].nil?
-      f = FuncCall::new(@name, *parameters, :returns => @properties[:return] )
+      f = FuncCall::new(@name, *parameters, :return => @properties[:return] )
       f.prefix = prefix
       return f
     end

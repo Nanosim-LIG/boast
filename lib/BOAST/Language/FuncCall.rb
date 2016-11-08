@@ -22,7 +22,7 @@ module BOAST
       else
         @args = args
       end
-      @return_type = @options[:returns] if @options
+      @return_type = @options[:return] ? @options[:return] : @options[:returns] if @options
     end
 
     def type

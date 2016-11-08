@@ -32,7 +32,7 @@ module BOAST
 
     def get_work_dim
       if lang == CL then
-        return FuncCall::new("get_work_dim", :returns => Int("wd", :signed => false))
+        return FuncCall::new("get_work_dim", :return => Int("wd", :signed => false))
       else
         raise "Unsupported language!"
       end
@@ -40,7 +40,7 @@ module BOAST
   
     def get_global_size(dim)
       if lang == CL then
-        return FuncCall::new("get_global_size", dim, :returns => Sizet)
+        return FuncCall::new("get_global_size", dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
@@ -52,7 +52,7 @@ module BOAST
 
     def get_global_id(dim)
       if lang == CL then
-        return FuncCall::new("get_global_id",dim, :returns => Sizet)
+        return FuncCall::new("get_global_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
@@ -64,7 +64,7 @@ module BOAST
 
     def get_local_size(dim)
       if lang == CL then
-        return FuncCall::new("get_local_size",dim, :returns => Sizet)
+        return FuncCall::new("get_local_size",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
@@ -76,7 +76,7 @@ module BOAST
 
     def get_local_id(dim)
       if lang == CL then
-        return FuncCall::new("get_local_id",dim, :returns => Sizet)
+        return FuncCall::new("get_local_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
@@ -88,7 +88,7 @@ module BOAST
   
     def get_num_groups(dim)
       if lang == CL then
-        return FuncCall::new("get_num_groups",dim, :returns => Sizet)
+        return FuncCall::new("get_num_groups",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
@@ -100,7 +100,7 @@ module BOAST
 
     def get_group_id(dim)
       if lang == CL then
-        return FuncCall::new("get_group_id",dim, :returns => Sizet)
+        return FuncCall::new("get_group_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" if not d
