@@ -20,6 +20,10 @@ module BOAST
       @operator = operator
       @operand1 = operand1
       @operand2 = operand2
+      if @operand1.nil? and @operand2.nil?
+        STDERR.puts "#{@operand1} #{@operand2}"
+        raise "Expression on no operand!"
+      end
     end
 
     def to_s_base(op1, op2, oper, return_type = nil)
@@ -59,8 +63,8 @@ module BOAST
         res_exp = to_s_base(op1, @operand2, @operator)
         return op1.copy(res_exp, :const => nil, :constant => nil, :direction => nil, :dir => nil, :align => nil)
       else
-        STDERR.puts "#{@operand1} #{@operand2}"
-        raise "Expression on no operand!"
+        res_exp = to_s_base(@operand1, @operand2, @operator)
+        return Variable::new(res_exp, get_default_type)
       end
     end
  

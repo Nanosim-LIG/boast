@@ -65,6 +65,28 @@ EOF
     end
   end
 
+  def test_pr_registered_double_funccall
+    a = Int :a
+    b = Int :b
+    c = Int :c
+    register_funccall(:min)
+    block = lambda { pr c === min(a, b) + min(b, a) }
+    begin
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
+c = min(a, b) + min(b, a)
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+c = min(a, b) + min(b, a);
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
   def test_pr_typed_registered_funccall
     a = Int :a, :vector_length => 4
     b = Int :b, :vector_length => 4

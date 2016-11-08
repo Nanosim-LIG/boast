@@ -55,6 +55,7 @@ module BOAST
     private_state_accessor :architecture
     private_state_accessor :model
     private_state_accessor :address_size
+    private_state_accessor :default_type
     private_state_accessor :default_int_size
     private_state_accessor :default_real_size
     private_state_accessor :default_align
@@ -83,6 +84,7 @@ module BOAST
   state_accessor :architecture
   state_accessor :model
   state_accessor :address_size
+  state_accessor :default_type
   state_accessor :default_int_size
   state_accessor :default_real_size
   state_accessor :default_align

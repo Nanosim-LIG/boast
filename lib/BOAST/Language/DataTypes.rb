@@ -259,6 +259,8 @@ module BOAST
 
   end
 
+  default_state_getter :default_type,          Int, '"const_get(#{envs})"'
+
   # @!parse module VarFunctors; var_functorize CStruct; end
   class CStruct < DataType
 
