@@ -292,6 +292,7 @@ module BOAST
       sizes.push( 32, 64 ) if vector_size > 64
       sizes.each { |size|
         instructions = [[:ADD, "add"],           [:SUB, "sub"], [:MUL, "mul"], [:DIV, "div"], [:POW, "pow"],
+                        [:SQRT, "sqrt"],
                         [:FMADD, "fmadd"],       [:FMSUB, "fmsub"],
                         [:FNMADD, "fnmadd"],     [:FNMSUB, "fnmsub"],
                         [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
