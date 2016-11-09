@@ -778,8 +778,7 @@ module BOAST
       @operand1 = a
       @operand2 = b
       @operand3 = c
-      @return_type = nil
-      @return_type = @operand3.to_var unless @return_type
+      @return_type = @operand3.to_var
     end
 
     def convert_operand(op)
@@ -849,8 +848,7 @@ module BOAST
       @operand1 = a
       @operand2 = b
       @operand3 = c
-      @return_type = nil
-      @return_type = @operand3.to_var unless @return_type
+      @return_type = @operand3.to_var
     end
 
     def convert_operand(op)
