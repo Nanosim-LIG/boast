@@ -502,10 +502,11 @@ module BOAST
         if @source.kind_of?(Array) then
           return Set(@source, @return_type).to_var
         elsif @source.class == Variable or @source.respond_to?(:to_var) then
-          if @source.to_var.type == @return_type.type then
-            return @source.to_var
-          elsif @source.to_var.type.vector_length == 1 then
-            a2 = "#{@source}"
+          src_var = source.to_var
+          if src_var.type == @return_type.type then
+            return src_var
+          elsif src_var.type.vector_length == 1 then
+            a2 = "#{src_var}"
             if a2[0] != "*" then
               a2 = "&" + a2
             else
@@ -523,7 +524,7 @@ module BOAST
               sym += "Z" if @zero
               sym += "_"
             end
-            if @source.alignment and @return_type.type.total_size and ( @source.alignment % @return_type.type.total_size ) == 0 then
+            if src_var.alignment and @return_type.type.total_size and ( src_var.alignment % @return_type.type.total_size ) == 0 then
               sym += "LOADA"
             else
               sym += "LOAD"
@@ -535,7 +536,7 @@ module BOAST
             end
             return @return_type.copy("#{instruction}( #{a2} )", DISCARD_OPTIONS)
           else
-            return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
+            return @return_type.copy("#{Operator.convert(src_var, @return_type.type)}", DISCARD_OPTIONS)
           end
         end
       elsif lang == FORTRAN then
