@@ -43,6 +43,52 @@ EOF
     }
   end
 
+  def test_sqrt
+    push_env( :default_real_size => 4, :lang => FORTRAN, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a
+      b = Real :b, :vector_length => 4
+      c = Real :c, :size => 8
+      block = lambda { pr Sqrt(b); pr Sqrt(a); pr Sqrt(c) }
+      assert_subprocess_output( <<EOF, "", &block )
+sqrt( b )
+sqrt( a )
+sqrt( c )
+EOF
+      set_lang( CUDA )
+      assert_subprocess_output( <<EOF, "", &block )
+sqrtf( b );
+sqrtf( a );
+sqrt( c );
+EOF
+      set_lang( CL )
+      assert_subprocess_output( <<EOF, "", &block )
+sqrt( b );
+sqrt( a );
+sqrt( c );
+EOF
+      set_lang( C )
+      assert_subprocess_output( <<EOF, "", &block )
+_mm_sqrt_ps( b );
+sqrtf( a );
+sqrt( c );
+EOF
+      push_env( :architecture => ARM ) {
+        assert_raises( IntrinsicsError, "Vector square root unsupported on ARM architecture!", &block )
+      }
+    }
+  end
+
+  def test_vec_sqrt
+    push_env( :default_real_size => 4, :lang => C, :model => :haswell, :architecture => X86 ) {
+      a = Real :a, :size => 8, :vector_length => 4
+      b = Real :b, :vector_length => 4
+      block = lambda { pr b === Sqrt(a) + Sqrt(b) }
+      assert_subprocess_output( <<EOF, "", &block )
+b = _mm256_cvtpd_ps( _mm256_add_pd( _mm256_sqrt_pd( a ), _mm256_cvtps_pd( _mm_sqrt_ps( b ) ) ) );
+EOF
+    }
+  end
+
   def test_add_knl
     push_env( :default_real_size => 8, :lang => C, :model => :knl, :architecture => X86 ) {
       a = Real :a, :vector_length => 8
