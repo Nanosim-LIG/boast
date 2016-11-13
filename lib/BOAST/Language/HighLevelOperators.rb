@@ -166,4 +166,7 @@ EOF
   generic_trigonometric_operator_generator( "acosh" )
   generic_trigonometric_operator_generator( "atanh" )
 
+  generic_trigonometric_operator_generator( "exp" )
+  generic_trigonometric_operator_generator( "log" )
+  generic_trigonometric_operator_generator( "log10" )
 end

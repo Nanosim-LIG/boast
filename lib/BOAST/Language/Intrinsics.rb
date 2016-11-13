@@ -292,11 +292,6 @@ module BOAST
       sizes.push( 32, 64 ) if vector_size > 64
       sizes.each { |size|
         instructions = [[:ADD, "add"],           [:SUB, "sub"], [:MUL, "mul"], [:DIV, "div"], [:POW, "pow"],
-                        [:SQRT, "sqrt"],
-                         [:SIN,   "sin"],   [:COS,   "cos"],   [:TAN,   "tan"],
-                         [:SINH,  "sinh"],  [:COSH,  "cosh"],  [:TANH,  "tanh"],
-                        [:ASIN,  "asin"],  [:ACOS,  "acos"],  [:ATAN,  "atan"],
-                        [:ASINH, "asinh"], [:ACOSH, "acosh"], [:ATANH, "atanh"],
                         [:FMADD, "fmadd"],       [:FMSUB, "fmsub"],
                         [:FNMADD, "fnmadd"],     [:FNMSUB, "fnmsub"],
                         [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
@@ -306,7 +301,12 @@ module BOAST
                         [:MASK_LOAD,   "mask_loadu"],  [:MASK_STORE,  "mask_storeu"],
                         [:MASK_LOADA,  "mask_load"],   [:MASK_STOREA, "mask_store"],
                         [:MASKZ_LOAD,  "maskz_loadu"],
-                        [:MASKZ_LOADA, "maskz_load"]]
+                        [:MASKZ_LOADA, "maskz_load"],
+                        [:SQRT, "sqrt"], [:EXP, "exp"], [:LOG, "log"], [:LOG10, "log10"],
+                         [:SIN,   "sin"],   [:COS,   "cos"],   [:TAN,   "tan"],
+                         [:SINH,  "sinh"],  [:COSH,  "cosh"],  [:TANH,  "tanh"],
+                        [:ASIN,  "asin"],  [:ACOS,  "acos"],  [:ATAN,  "atan"],
+                        [:ASINH, "asinh"], [:ACOSH, "acosh"], [:ATANH, "atanh"]]
         instructions.push( [:MASKLOAD, "maskload"], [:MASKSTORE, "maskstore"] ) if vector_size < 512
         instructions.push( [:ADDSUB, "addsub"] ) if vector_size < 512
         instructions.each { |cl, ins|
