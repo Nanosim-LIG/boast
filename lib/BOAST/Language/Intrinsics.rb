@@ -293,6 +293,10 @@ module BOAST
       sizes.each { |size|
         instructions = [[:ADD, "add"],           [:SUB, "sub"], [:MUL, "mul"], [:DIV, "div"], [:POW, "pow"],
                         [:SQRT, "sqrt"],
+                         [:SIN,   "sin"],   [:COS,   "cos"],   [:TAN,   "tan"],
+                         [:SINH,  "sinh"],  [:COSH,  "cosh"],  [:TANH,  "tanh"],
+                        [:ASIN,  "asin"],  [:ACOS,  "acos"],  [:ATAN,  "atan"],
+                        [:ASINH, "asinh"], [:ACOSH, "acosh"], [:ATANH, "atanh"],
                         [:FMADD, "fmadd"],       [:FMSUB, "fmsub"],
                         [:FNMADD, "fnmadd"],     [:FNMSUB, "fnmsub"],
                         [:FMADDSUB, "fmaddsub"], [:FMSUBADD, "fmsubadd"],
