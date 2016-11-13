@@ -25,6 +25,14 @@ module BOAST
       return Expression::new(Or, a, b)
     end
 
+    def Max(a, b)
+      return Expression::new(Max, a, b)
+    end
+
+    def Min(a, b)
+      return Expression::new(Min, a, b)
+    end
+
   end
 
   extend TopLevelExpressions

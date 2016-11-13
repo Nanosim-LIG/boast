@@ -302,6 +302,7 @@ module BOAST
                         [:MASK_LOADA,  "mask_load"],   [:MASK_STOREA, "mask_store"],
                         [:MASKZ_LOAD,  "maskz_loadu"],
                         [:MASKZ_LOADA, "maskz_load"],
+                        [:MAX, "max"], [:MIN, "min"],
                         [:SQRT, "sqrt"], [:EXP, "exp"], [:LOG, "log"], [:LOG10, "log10"],
                          [:SIN,   "sin"],   [:COS,   "cos"],   [:TAN,   "tan"],
                          [:SINH,  "sinh"],  [:COSH,  "cosh"],  [:TANH,  "tanh"],

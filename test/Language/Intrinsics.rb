@@ -43,6 +43,58 @@ EOF
     }
   end
 
+  def test_max
+    push_env( :default_real_size => 4, :lang => FORTRAN, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a
+      b = Real :b
+      block = lambda { pr a === Max(a, b); pr a === Min(a, 1.0) }
+      assert_subprocess_output( <<EOF, "", &block )
+a = max( a, b )
+a = min( a, 1.0 )
+EOF
+      [ C, CL, CUDA ].each { |l|
+        set_lang( l )
+        assert_subprocess_output( <<EOF, "", &block )
+a = max( a, b );
+a = min( a, 1.0f );
+EOF
+      }
+    }
+  end
+
+  def test_max_vect
+    push_env( :default_real_size => 4, :lang => FORTRAN, :model => :nehalem, :architecture => X86 ) {
+      a = Real :a, :vector_length => 4
+      b = Real :b, :vector_length => 4
+      block = lambda { pr a === Max(a, b); pr a === Min(a, Set(1.0, a)); pr a === Min(a, 1.0) }
+      assert_subprocess_output( <<EOF, "", &block )
+a = max( a, b )
+a = min( a, 1.0 )
+a = min( a, 1.0 )
+EOF
+      set_lang( C )
+      assert_subprocess_output( <<EOF, "", &block )
+a = _mm_max_ps( a, b );
+a = _mm_min_ps( a, _mm_set1_ps( 1.0f ) );
+a = _mm_min_ps( a, _mm_set1_ps( 1.0f ) );
+EOF
+      set_lang( CL )
+      assert_subprocess_output( <<EOF, "", &block )
+a = max( a, b );
+a = min( a, (float4)( 1.0f ) );
+a = min( a, 1.0f );
+EOF
+      [ CUDA ].each { |l|
+        set_lang( l )
+        assert_subprocess_output( <<EOF, "", &block )
+a = max( a, b );
+a = min( a, 1.0f );
+a = min( a, 1.0f );
+EOF
+      }
+    }
+  end
+
   def test_sqrt
     push_env( :default_real_size => 4, :lang => FORTRAN, :model => :nehalem, :architecture => X86 ) {
       a = Real :a
@@ -456,11 +508,11 @@ EOF
       b = Real :b, :vector_length => 4
       block = lambda { pr b === Set(1.0, b) }
       assert_subprocess_output( <<EOF, "", &block )
-b = _mm_set1_ps( 1.0 );
+b = _mm_set1_ps( 1.0f );
 EOF
       push_env( :architecture => ARM ) {
       assert_subprocess_output( <<EOF, "", &block )
-b = vdupq_n_f32( 1.0 );
+b = vdupq_n_f32( 1.0f );
 EOF
       }
     }
@@ -475,7 +527,7 @@ b = _mm_setzero_ps( );
 EOF
       push_env( :architecture => ARM ) {
       assert_subprocess_output( <<EOF, "", &block )
-b = vdupq_n_f32( 0.0 );
+b = vdupq_n_f32( 0.0f );
 EOF
       }
     }
@@ -486,11 +538,11 @@ EOF
       b = Real :b, :vector_length => 4
       block = lambda { pr b === Set([1.0, 2.0, 3.0, 4.0], b) }
       assert_subprocess_output( <<EOF, "", &block )
-b = _mm_setr_ps( 1.0, 2.0, 3.0, 4.0 );
+b = _mm_setr_ps( 1.0f, 2.0f, 3.0f, 4.0f );
 EOF
       push_env( :architecture => ARM ) {
       assert_subprocess_output( <<EOF, "", &block )
-b = vsetq_lane_f32( 4.0, vsetq_lane_f32( 3.0, vsetq_lane_f32( 2.0, vsetq_lane_f32( 1.0, vdupq_n_f32( 0 ), 0 ), 1 ), 2 ), 3 );
+b = vsetq_lane_f32( 4.0f, vsetq_lane_f32( 3.0f, vsetq_lane_f32( 2.0f, vsetq_lane_f32( 1.0f, vdupq_n_f32( 0 ), 0 ), 1 ), 2 ), 3 );
 EOF
       }
     }
@@ -501,11 +553,11 @@ EOF
       b = Real :b, :vector_length => 4
       block = lambda { pr b === Set([1.0, 1.0, 1.0, 1.0], b) }
       assert_subprocess_output( <<EOF, "", &block )
-b = _mm_set1_ps( 1.0 );
+b = _mm_set1_ps( 1.0f );
 EOF
       push_env( :architecture => ARM ) {
       assert_subprocess_output( <<EOF, "", &block )
-b = vdupq_n_f32( 1.0 );
+b = vdupq_n_f32( 1.0f );
 EOF
       }
     }
@@ -520,7 +572,7 @@ b = _mm_setzero_ps( );
 EOF
       push_env( :architecture => ARM ) {
       assert_subprocess_output( <<EOF, "", &block )
-b = vdupq_n_f32( 0.0 );
+b = vdupq_n_f32( 0.0f );
 EOF
       }
     }

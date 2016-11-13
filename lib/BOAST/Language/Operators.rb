@@ -15,6 +15,11 @@ module BOAST
 
     def Operator.convert(arg, type)
       return "#{arg}" if get_vector_name(arg.type) == get_vector_name(type) or lang == CUDA
+
+      if arg.type.vector_length == 1 and type.vector_length > 1 then
+        return "#{Set::new( arg, Variable::new(:dummy, type.class, type.to_hash) )}"
+      end
+
       return "convert_#{type.decl}( #{arg} )" if lang == CL
 
       path = get_conversion_path(type, arg.type)
@@ -287,6 +292,38 @@ module BOAST
 
   end
 
+  class Min < BasicBinaryOperator
+
+    class << self
+
+      def intr_symbol
+        return :MIN
+      end
+
+      def basic_usage(arg1, arg2)
+        return "min( #{arg1}, #{arg2} )"
+      end
+
+    end
+
+  end
+
+  class Max < BasicBinaryOperator
+
+    class << self
+
+      def intr_symbol
+        return :MAX
+      end
+
+      def basic_usage(arg1, arg2)
+        return "max( #{arg1}, #{arg2} )"
+      end
+
+    end
+
+  end
+
   class Mask
     extend Functor
 
@@ -371,18 +408,32 @@ module BOAST
           begin
             instruction = intrinsics(:SET, @return_type.type)
             raise IntrinsicsError unless instruction
-            return @return_type.copy("#{instruction}( #{@source.join(", ")} )",  DISCARD_OPTIONS)
+            eff_srcs = @source.collect { |src|
+              eff_src = nil
+              eff_src = src.to_var if src.respond_to?(:to_var)
+              eff_src = src unless eff_src
+              eff_src
+            }
+            return @return_type.copy("#{instruction}( #{eff_srcs.join(", ")} )",  DISCARD_OPTIONS)
           rescue IntrinsicsError
             instruction = intrinsics(:SET_LANE, @return_type.type)
             raise IntrinsicsError, "Missing instruction for SET_LANE on #{get_architecture_name}!" unless instruction
             s = Set(0, @return_type).to_s
             @source.each_with_index { |v,i|
-              s = "#{instruction}( #{v}, #{s}, #{i} )"
+              eff_src = nil
+              eff_src = v.to_var if v.respond_to?(:to_var)
+              eff_src = v unless eff_src
+              s = "#{instruction}( #{eff_src}, #{s}, #{i} )"
             }
             return @return_type.copy(s, DISCARD_OPTIONS)
           end
         elsif @source.class != Variable or @source.type.vector_length == 1 then
-          return @return_type.copy("(#{@return_type.type.decl})( #{@source} )", DISCARD_OPTIONS) if lang == CL
+          eff_src = nil
+          eff_src = @source.to_var if @source.respond_to?(:to_var)
+          eff_src = @source unless eff_src
+          if lang == CL then
+            return @return_type.copy("(#{@return_type.type.decl})( #{eff_src} )", DISCARD_OPTIONS) if lang == CL
+          end
           if (@source.is_a?(Numeric) and @source == 0) or (@source.class == Variable and @source.constant == 0) then
             begin
               instruction = intrinsics(:SETZERO, @return_type.type)
@@ -391,7 +442,7 @@ module BOAST
             end
           end
           instruction = intrinsics(:SET1, @return_type.type)
-          return @return_type.copy("#{instruction}( #{@source} )", DISCARD_OPTIONS)
+          return @return_type.copy("#{instruction}( #{eff_src} )", DISCARD_OPTIONS)
         elsif @return_type.type != @source.type
           return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
         end
@@ -401,7 +452,10 @@ module BOAST
           return "(/#{@source.join(", ")}/)"
         end
       end
-      return @return_type.copy("#{@source}", DISCARD_OPTIONS)
+      eff_src = nil
+      eff_src = @source.to_var if @source.respond_to?(:to_var)
+      eff_src = @source unless eff_src
+      return @return_type.copy("#{eff_src}", DISCARD_OPTIONS)
     end
 
     def to_s
