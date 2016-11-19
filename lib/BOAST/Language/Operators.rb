@@ -957,6 +957,81 @@ module BOAST
 
   end
 
+  class Modulo < Operator
+    extend Functor
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+    include TypeTransition
+
+    attr_reader :operand1
+    attr_reader :operand2
+    attr_reader :return_type
+
+    def initialize(x,y)
+      @operand1 = x
+      @operand2 = y
+      op1, op2 = op_to_var
+      @return_type, dummy = transition(op1, op2, Modulo)
+    end
+
+    def to_s
+      return to_s_fortran if lang == FORTRAN
+      return to_s_c if [C, CL, CUDA].include?( lang )
+    end
+
+    def pr
+      s=""
+      s += indent
+      s += to_s
+      s += ";" if [C, CL, CUDA].include?( lang )
+      output.puts s
+      return self
+    end
+
+    def to_var
+      if @return_type then
+        return @return_type.copy( to_s, DISCARD_OPTIONS )
+      else
+        return Variable::new( to_s, get_default_type )
+      end
+    end
+
+    private
+
+    def to_s_fortran
+      op1, op2 = op_to_var
+      if @return_type and @return_type.type.kind_of?(Real) and ( not op1.type.kind_of?(Real) or not op2.type.kind_of?(Real) ) then
+        return "modulo(real(#{op1}, #{@return_type.type.size}), #{op2})" if not op1.type.kind_of?(Real)
+        return "modulo(#{op1}, real(#{op2}, #{@return_type.type.size}))"
+      else
+        return "modulo(#{op1}, #{op2})"
+      end
+    end
+
+    def to_s_c
+      op1, op2 = op_to_var
+      if @return_type and @return_type.type.kind_of?(Real) then
+        if @return_type.type.size <= 4 then
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmodf(#{op1}, #{op2}) + #{op2} : fmodf(#{op1}, #{op2}));"
+        else
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmod(#{op1}, #{op2}) + #{op2} : fmod(#{op1}, #{op2}))"
+        end
+      else
+        return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+      end
+    end
+
+    def op_to_var
+      op1 = @operand1.respond_to?(:to_var) ? @operand1.to_var : @operand1
+      op1 = @operand1 unless op1
+      op2 = @operand2.respond_to?(:to_var) ? @operand2.to_var : @operand2
+      op2 = @operand2 unless op2
+      return [op1, op2]
+    end
+
+  end
+
   # @!parse module Functors; functorize Ternary; end
   class Ternary
     extend Functor
