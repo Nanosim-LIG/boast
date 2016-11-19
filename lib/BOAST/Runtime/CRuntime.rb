@@ -9,6 +9,7 @@ module BOAST
     def fill_library_header
       get_output.puts "#include <stdlib.h>"
       get_output.puts "#include <inttypes.h>"
+      get_output.puts "#include <math.h>"
       @includes.each { |inc|
         get_output.puts "#include \"#{inc}\""
       }
