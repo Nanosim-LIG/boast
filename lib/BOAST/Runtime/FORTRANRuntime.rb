@@ -7,7 +7,7 @@ module BOAST
     private
 
     def method_name
-      return @procedure.name + "_"
+      return  "#{@procedure.name}_"
     end
 
     def line_limited_source
