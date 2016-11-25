@@ -292,6 +292,31 @@ module BOAST
 
   end
 
+  class Modulo < BasicBinaryOperator
+    extend Functor
+    include Arithmetic
+    include Inspectable
+    include PrivateStateAccessor
+
+    class << self
+
+      def symbol
+        return "%"
+      end
+
+      def intr_symbol
+        return :MOD
+      end
+  
+      def basic_usage(arg1, arg2)
+        return "modulo( (#{arg1}), (#{arg2}) )" if lang == FORTRAN
+        return "(#{arg1}) % (#{arg2})" 
+      end
+  
+    end
+
+  end
+
   class Min < BasicBinaryOperator
 
     class << self

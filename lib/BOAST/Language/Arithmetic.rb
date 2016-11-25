@@ -100,6 +100,10 @@ module BOAST
       return Expression::new(Division,self,x)
     end
  
+    def %(x)
+      return Expression::new(Modulo,self,x)
+    end
+
     def -@
       return Expression::new(Minus,nil,self)
     end
