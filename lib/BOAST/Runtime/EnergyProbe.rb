@@ -183,7 +183,11 @@ EOF
       if ENV['LIBRARY_PATH'] then
         path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libredfst.so')}
       end
-      path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libredfst\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      begin
+        path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libredfst\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      rescue
+        path += `/sbin/ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libredfst\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      end
       return path != []
     end
   end
@@ -227,7 +231,11 @@ EOF
       if ENV['LIBRARY_PATH'] then
         path += ENV['LIBRARY_PATH'].split(':').inject([]){|mem, x| []!=mem ? mem : Dir.glob(x+'/libeml.so')}
       end
-      path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libeml\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      begin
+        path += `ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libeml\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      rescue
+        path += `/sbin/ldconfig -p`.gsub("\t","").split("\n").find_all { |e| e.match(/libeml\.so/) }.collect { |e| e.split(" => ")[1] } if path == []
+      end
       return path != []
     end
   end
