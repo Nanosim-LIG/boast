@@ -446,15 +446,17 @@ module BOAST
         INTRINSICS[arch][:CVT].each { |dest, origs|
           origs.each { |orig, intrinsic|
             supported = true
-            if arch == X86
+            if arch == X86 then
               supported = false
-              INSTRUCTIONS[intrinsic.to_s].each { |cpuid|
-                if cpuid.kind_of?( Array ) then
-                  supported = true if (cpuid - MODELS[get_model.to_s]).empty?
-                else
-                  supported = true if MODELS[get_model.to_s].include?( cpuid )
-                end
-              }
+              if MODELS[get_model.to_s] then
+                INSTRUCTIONS[intrinsic.to_s].each { |cpuid|
+                  if cpuid.kind_of?( Array ) then
+                    supported = true if (cpuid - MODELS[get_model.to_s]).empty?
+                  else
+                    supported = true if MODELS[get_model.to_s].include?( cpuid )
+                  end
+                }
+              end
             end
             cvt_dgraph.add_edge(orig, dest) if supported
           }
