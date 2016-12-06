@@ -151,6 +151,54 @@ EOF
     end
   end
 
+  def test_for_unroll_param_true
+    i = Int("i")
+    a = Int("a", :dim => Dim(3))
+    f = For(i, 1, 3) { pr a[i] === i }
+    block1 = lambda { pr f.unroll(true) }
+    block2 = lambda { pr f.unroll(true).unroll(true) }
+    [block1, block2].each { |block|
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
+a(1) = 1
+a(2) = 2
+a(3) = 3
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+a[1 - (1)] = 1;
+a[2 - (1)] = 2;
+a[3 - (1)] = 3;
+EOF
+      }
+    }
+  end
+
+  def test_for_unroll_param_false
+    i = Int("i")
+    a = Int("a", :dim => Dim(3))
+    f = For(i, 1, 3) { pr a[i] === i }
+    block1 = lambda { pr f.unroll(false) }
+    block2 = lambda { pr f.unroll(true).unroll(false) }
+    [block1, block2].each { |block|
+      set_lang(FORTRAN)
+      assert_subprocess_output( <<EOF, "", &block )
+do i = 1, 3, 1
+  a(i) = i
+end do
+EOF
+      [C, CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+for (i = 1; i <= 3; i += 1) {
+  a[i - (1)] = i;
+}
+EOF
+      }
+    }
+  end
+
   def test_for_unroll
     i = Int("i")
     a = Int("a", :dim => Dim(3))

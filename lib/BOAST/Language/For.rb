@@ -91,12 +91,17 @@ module BOAST
       return s
     end
 
-    # Creates a copy of this For construct with the unroll option set and returns it
+    # Creates a copy of this For construct with the unroll option set and returns it if it is different from the current unroll flag.
     # @return [For]
-    def unroll
-      opts = @options.clone
-      opts[:unroll] = true
-      return For::new(@iterator, @first, @last, opts, &block)
+    # @param [Boolean] flag specifying if the For should be unrolled or not
+    def unroll( flag = true )
+      if flag ^ @unroll then
+        opts = @options.clone
+        opts[:unroll] = flag
+        return For::new(@iterator, @first, @last, opts, &block)
+      else
+        return self
+      end
     end
 
     def pr_unroll(*args, &block)
