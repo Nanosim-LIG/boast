@@ -452,15 +452,15 @@ EOF
       return self
     end
 
-    def dump_binary
-      f = File::open(library_object,"wb")
+    def dump_binary(path = nil)
+      f = path ? File::open(path,"wb") : File::open(library_object,"wb")
       @binary.rewind
       f.write( @binary.read )
       f.close
     end
 
-    def dump_source
-      f = File::open(library_source,"wb")
+    def dump_source(path = nil)
+      f = path ? File::open(path,"wb") : File::open(library_source,"wb")
       @source.rewind
       f.write( @source.read )
       f.close
