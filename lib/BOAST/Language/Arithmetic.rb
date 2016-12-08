@@ -89,7 +89,7 @@ module BOAST
     end
 
     def -(x)
-      return Expression::new(Substraction,self,x)
+      return Expression::new(Subtraction,self,x)
     end
  
     def *(x)

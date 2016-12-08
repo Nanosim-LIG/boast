@@ -252,7 +252,7 @@ module BOAST
 
   end
 
-  class Substraction < BasicBinaryOperator
+  class Subtraction < BasicBinaryOperator
 
     class << self
 

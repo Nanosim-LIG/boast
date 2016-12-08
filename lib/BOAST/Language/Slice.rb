@@ -27,14 +27,14 @@ module BOAST
         elsif slice.kind_of?(Range) then
           @first = slice.first
           @last = slice.last
-          @last = Expression::new(Substraction, @last, 1) if slice.exclude_end?
-          @length = Expression::new(Substraction, @last, @first)
+          @last = Expression::new(Subtraction, @last, 1) if slice.exclude_end?
+          @length = Expression::new(Subtraction, @last, @first)
           @length = @length + 1
         elsif slice.kind_of?(Array) then
           @first = slice [0] if slice.length > 0
           @last = slice [1] if slice.length > 1
           @step = slice [2] if slice.length > 2
-          @length = Expression::new(Substraction, @last, @first)
+          @length = Expression::new(Subtraction, @last, @first)
           @length = @length / @step if @step
           @length = @length + 1
         elsif slice.kind_of?(Symbol) then
@@ -56,7 +56,7 @@ module BOAST
         if all? then
           copy_slice!(s)
         else
-          @first = Expression::new(Substraction, @first, get_array_start)
+          @first = Expression::new(Subtraction, @first, get_array_start)
           @first = @first * s.step if s.step
           if s.all? then
             @first = Expression::new(Addition, d.start, @first )
@@ -186,7 +186,7 @@ module BOAST
         if slice.all? then
           ":"
         else
-          start = Expression::new(Substraction, slice.first, dims[indx].start)
+          start = Expression::new(Subtraction, slice.first, dims[indx].start)
           s = "#{start}"
           if not slice.scalar? then
             s += ":#{slice.length}"

@@ -26,7 +26,7 @@ module BOAST
           begin
             @size = v2-v1+1
           rescue
-            @size = Expression::new(Substraction, v2, v1) + 1
+            @size = Expression::new(Subtraction, v2, v1) + 1
           end
         else
           @size = v1
