@@ -112,6 +112,13 @@ module BOAST
       f.close
     end
 
+    def save_module
+      f = File::open(module_file_path, "rb")
+      @module_binary = StringIO::new
+      @module_binary.write( f.read )
+      f.close
+    end
+
     def create_targets( linker, ldshared, ldflags, kernel_files)
       file target => target_depends do
         #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
@@ -443,6 +450,8 @@ EOF
 
       save_binary
 
+      save_module
+
       load_module
 
       cleanup(kernel_files) unless keep_temp
@@ -464,6 +473,19 @@ EOF
       @source.rewind
       f.write( @source.read )
       f.close
+    end
+
+    def dump_module(path = nil)
+      f = path ? File::open(path,"wb") : File::open(module_file_path,"wb")
+      @module_binary.rewind
+      f.write( @module_binary.read )
+      f.close
+    end
+
+    def reload_module
+      raise "Missing binary library data!" unless @module_binary
+      $LOADED_FEATURES.delete(module_file_path)
+      require module_file_path
     end
 
   end
