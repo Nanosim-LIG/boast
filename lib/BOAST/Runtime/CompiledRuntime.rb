@@ -440,6 +440,8 @@ EOF
 
       @marker = Tempfile::new([@procedure.name,""])
 
+      extend MAQAO if @compiler_options[:MAQAO_PASS]
+
       kernel_files = get_sub_kernels
 
       create_sources

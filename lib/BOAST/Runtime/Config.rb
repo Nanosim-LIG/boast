@@ -19,6 +19,8 @@ module BOAST
     :CLDEVICETYPE => nil,
     :MAQAO => 'maqao',
     :MAQAO_FLAGS => '',
+    :MAQAO_PATH => '',
+    :MAQAO_PASS => false,
     :OPENMP => false,
     :probes => nil
   }
