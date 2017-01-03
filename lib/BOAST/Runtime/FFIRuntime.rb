@@ -25,6 +25,13 @@ module BOAST
       create_library_source
     end
 
+    def save_module
+      f = File::open(library_path, "rb")
+      @module_binary = StringIO::new
+      @module_binary.write( f.read )
+      f.close
+    end
+
     def create_ffi_module
       s =<<EOF
       require 'ffi'
