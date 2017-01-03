@@ -148,7 +148,7 @@ module BOAST
       push_env( :output => f, :lang => @lang ) {
         fill_library_source
 
-        if debug_source? then
+        if debug_source? or debug_kernel_source? then
           f.rewind
           puts f.read
         end
