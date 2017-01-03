@@ -10,6 +10,14 @@ module BOAST
       return load_ref_files( path, suffix, :out )
     end
 
+    def dump_ref_inputs(values, path = ".", suffix = ".in" )
+      return dump_ref_files(values, path, suffix, :in )
+    end
+
+    def dump_ref_outputs(values, path = ".", suffix = ".out" )
+      return dump_ref_files(values, path, suffix, :out )
+    end
+
     def compare_ref(ref_outputs, outputs, epsilon = nil)
       res = {}
       @procedure.parameters.each_with_index { |param, indx|
@@ -94,6 +102,21 @@ module BOAST
       return type
     end
 
+    def write_param(param, value, directory, suffix, intent)
+      if intent == :out and ( param.direction == :in or param.constant ) then
+        return nil
+      end
+      f = File::new( directory + "/" + "#{param.name+suffix}", "wb" )
+      if param.dimension then
+        f.write value.to_s
+      else
+        type = get_scalar_type(param)
+        f.write [value].pack(type)
+      end
+      f.close
+      return nil
+    end
+
     def read_param(param, directory, suffix, intent)
       if intent == :out and ( param.direction == :in or param.constant ) then
         return nil
@@ -132,7 +155,28 @@ module BOAST
       return res
     end
 
-    def load_ref_files(  path, suffix, intent )
+    def write_gpu_dim(value, directory)
+      global_work_size = value[:global_work_size]
+      block_number = value[:block_number]
+      local_work_size = value[:local_work_size]
+      local_work_size = value[:block_size] unless local_work_size
+      (local_work_size.length..2).each{ |i| local_work_size[i] = 1 }
+      if global_work_size and not block_number then
+        block_number = []
+        (global_work_size.length..2).each{ |i| global_work_size[i] = 1 }
+        local_work_size.each_index { |i|
+          block_number[i] = global_work_size[i] / local_work_size[i]
+        }
+      end
+      (block_number.length..2).each{ |i| block_number[i] = 1 }
+
+      File::open( directory + "/problem_size", "w") { |f|
+        f.write "<#{local_work_size.join(",")}><#{block_number.join(",")}>"
+      }
+      return nil
+    end
+
+    def load_ref_files( path, suffix, intent )
       proc_path = path + "/#{@procedure.name}/"
       res_h = {}
       begin
@@ -152,6 +196,23 @@ module BOAST
         res_h[d] =  res
       }
       return res_h
+    end
+
+    def dump_ref_files( values, path, suffix, intent )
+      proc_path = path + "/#{@procedure.name}/"
+      Dir.mkdir( proc_path ) unless File.exists?( proc_path )
+      values.each { |key, vals|
+        case_path = proc_path + "#{key}/"
+        Dir.mkdir( case_path ) unless File.exists?( case_path )
+        d = Pathname.new( case_path )
+        @procedure.parameters.each_with_index { |param, i|
+          write_param( param, vals[i], d.to_s, suffix, intent )
+        }
+        if @lang == CUDA or @lang == CL then
+          write_gpu_dim( vals.last, d.to_s )
+        end
+      }
+      return nil
     end
 
   end
