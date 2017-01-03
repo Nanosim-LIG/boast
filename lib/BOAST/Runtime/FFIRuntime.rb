@@ -3,6 +3,22 @@ module BOAST
   # @private
   module FFIRuntime
 
+    def build( options = {} )
+      if options[:library_path] then
+        eval <<EOF
+    def library_path
+      return "#{options[:library_path]}"
+    end
+EOF
+        @marker = Tempfile::new([@procedure.name,""])
+        create_ffi_module
+        eval "self.extend(#{module_name})"
+        return self
+      else
+        super
+      end
+    end
+
     private
 
     def target
