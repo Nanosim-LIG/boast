@@ -190,55 +190,55 @@ module BOAST
     end
 
     def constant?
-      !!@constant
+      @constant
     end
 
     def allocate?
-      !!@allocate
+      @allocate
     end
 
     def texture?
-      !!@texture
+      @texture
     end
 
     def local?
-      !!@local
+      @local
     end
 
     def restrict?
-      !!@restrict
+      @restrict
     end
 
     def replace_constant?
-      !!@replace_constant
+      @replace_constant
     end
 
     def force_replace_constant?
-      !!@force_replace_constant
+      @force_replace_constant
     end
 
     def dimension?
-      !!@dimension
+      @dimension
     end
 
     def scalar_output?
-      !!@scalar_output
+      @scalar_output
     end
 
     def optional?
-      !!@optional
+      @optional
     end
 
     def align?
-      !!alignment
+      alignment
     end
 
     def deferred_shape?
-      !!@deferred_shape
+      @deferred_shape
     end
 
     def reference?
-      !!@reference
+      @reference
     end
 
     def vector?
@@ -435,47 +435,47 @@ module BOAST
     private
 
     def __const?
-      return !!( constant? or @direction == :in )
+      return ( constant? or @direction == :in )
     end
 
     def __global?
-      return !!( lang == CL and @direction and dimension? and not (@properties[:register] or @properties[:private] or local?) )
+      return ( lang == CL and @direction and dimension? and not (@properties[:register] or @properties[:private] or local?) )
     end
 
     def __local?
-      return !!( lang == CL and local? )
+      return ( lang == CL and local? )
     end
 
     def __shared?(device = false)
-      return !!( lang == CUDA and local? and not device )
+      return ( lang == CUDA and local? and not device )
     end
 
     def __vla_array?
-      return !!( use_vla? and dimension? and not decl_module? )
+      return ( use_vla? and dimension? and not decl_module? )
     end
 
     def __pointer_array?(device = false)
-      return !!( dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) )
+      return ( dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) )
     end
 
     def __pointer?(device = false)
-      return !!( ( not dimension? and ( @direction == :out or @direction == :inout or @reference ) ) or __pointer_array?(device) )
+      return ( ( not dimension? and ( @direction == :out or @direction == :inout or @reference ) ) or __pointer_array?(device) )
     end
 
     def __restrict?
-      return !!( restrict? and not decl_module? )
+      return ( restrict? and not decl_module? )
     end
 
     def __dimension?(device = false)
-      return !!( dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) )
+      return ( dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) )
     end
 
     def __align?
-      return !!( dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) )
+      return ( dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) )
     end
 
     def __vector?
-      return !!( @type.methods.include?(:vector_length) and @type.vector_length > 1 )
+      return ( @type.vector? and @type.vector_length > 1 )
     end
 
     def decl_c_s(device = false)

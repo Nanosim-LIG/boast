@@ -9,6 +9,10 @@ module BOAST
       child.extend( VarFunctor)
     end
 
+    def vector?
+      return @vector_length
+    end
+
   end
 
   # @!parse module VarFunctors; var_functorize Sizet; end

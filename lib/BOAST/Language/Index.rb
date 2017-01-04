@@ -37,7 +37,7 @@ module BOAST
     end
 
     def to_s
-      if get_replace_constants then
+      if get_replace_constants and @source.constant? then
         begin
           const = @source.constant
           indxs = @indexes.reverse
@@ -73,9 +73,9 @@ module BOAST
       indexes_dup = []
       @source.dimension.each_with_index { |d,i|
         if d.size.nil? and get_array_start != 1 then
-           indexes_dup.push( @indexes[i] - d.start + 1 )
+           indexes_dup.push( (@indexes[i] - d.start + 1).to_s )
         else
-           indexes_dup.push( @indexes[i] )
+           indexes_dup.push( (@indexes[i]).to_s )
         end
       }
       s = ""
