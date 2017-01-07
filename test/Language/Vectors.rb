@@ -12,7 +12,7 @@ class Vectors < Minitest::Test
       assert_subprocess_output( <<EOF, "", &block )
 __m128 a;
 EOF
-      push_env( :architecture => ARM ) {
+      push_env( :architecture => ARM, :model => :ARMv7 ) {
         assert_subprocess_output( <<EOF, "", &block )
 float32x4_t a;
 EOF
@@ -42,7 +42,7 @@ __m128 b;
 b = _mm_add_ps( a[3 - (1)], a[4 - (1)] );
 a[3 - (1)] = b;
 EOF
-      push_env( :architecture => ARM ) {
+      push_env( :architecture => ARM, :model => :ARMv7 ) {
         assert_subprocess_output( <<EOF, "", &block )
 float32x4_t * a;
 float32x4_t b;
@@ -74,11 +74,11 @@ b = _mm_loadu_ps( &a[3 - (1)] );
 b = _mm_loadu_ps( &a[3 - (1)] );
 b = _mm_loadu_ps( &a[n - (3) - (1)] );
 EOF
-      push_env( :architecture => ARM ) {
+      push_env( :architecture => ARM, :model => :ARMv7 ) {
         assert_subprocess_output( <<EOF, "", &block )
-b = vldlq_f32( &a[3 - (1)] );
-b = vldlq_f32( &a[3 - (1)] );
-b = vldlq_f32( &a[n - (3) - (1)] );
+b = vld1q_f32( &a[3 - (1)] );
+b = vld1q_f32( &a[3 - (1)] );
+b = vld1q_f32( &a[n - (3) - (1)] );
 EOF
       }
       push_env( :lang => FORTRAN ) {
@@ -102,11 +102,11 @@ _mm_storeu_ps( (float * ) &a[3 - (1)], b );
 _mm_storeu_ps( (float * ) &a[3 - (1)], b );
 _mm_storeu_ps( (float * ) &a[n - (3) - (1)], b );
 EOF
-      push_env( :architecture => ARM ) {
+      push_env( :architecture => ARM, :model => :ARMv7 ) {
         assert_subprocess_output( <<EOF, "", &block )
-vstlq_f32( (float * ) &a[3 - (1)], b );
-vstlq_f32( (float * ) &a[3 - (1)], b );
-vstlq_f32( (float * ) &a[n - (3) - (1)], b );
+vst1q_f32( (float * ) &a[3 - (1)], b );
+vst1q_f32( (float * ) &a[3 - (1)], b );
+vst1q_f32( (float * ) &a[n - (3) - (1)], b );
 EOF
       }
       push_env( :lang => FORTRAN ) {

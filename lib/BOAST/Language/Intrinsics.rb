@@ -22,8 +22,10 @@ module BOAST
 
   MODELS = { "native" => native_flags }
   MODELS.update(X86architectures)
+  MODELS.update(ARMarchitectures)
   INSTRUCTIONS = {}
-  INSTRUCTIONS.update(X86CPUID_by_name)
+  INSTRUCTIONS[X86] = X86CPUID_by_name
+  INSTRUCTIONS[ARM] = ARMCPUID_by_name
 
   class IntrinsicsError < Error
   end
@@ -39,21 +41,24 @@ module BOAST
     CONVERSIONS = Hash::new { |h, k| h[k] = Hash::new { |h2, k2| h2[k2] = {} } }
 
     def check_coverage
-      ins = []
-      INTRINSICS[X86].each { |i,v|
-        if i == :CVT then
-          v.each { |type1, h|
-            h.each { |type2, instr|
+      instrs = [X86, ARM].collect { |ar|
+        ins = []
+        INTRINSICS[ar].each { |i,v|
+          if i == :CVT then
+            v.each { |type1, h|
+              h.each { |type2, instr|
+                ins.push instr.to_s
+              }
+            }
+          else
+            v.each { |type, instr|
               ins.push instr.to_s
             }
-          }
-        else
-          v.each { |type, instr|
-            ins.push instr.to_s
-          }
-        end
+          end
+        }
+        ins - INSTRUCTIONS[ar].keys
       }
-      return ins - INSTRUCTIONS.keys
+      return instrs
     end
 
     module_function :check_coverage
@@ -65,9 +70,8 @@ module BOAST
         instruction = INTRINSICS[get_architecture][intr_symbol][type]
       end
       raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_architecture_name}!" unless instruction
-      return instruction if get_architecture == ARM
       supported = false
-      INSTRUCTIONS[instruction.to_s].each { |cpuid|
+      INSTRUCTIONS[get_architecture][instruction.to_s].each { |cpuid|
         if cpuid.kind_of?( Array ) then
           supported = true if (cpuid - MODELS[get_model.to_s]).empty?
         else
@@ -77,7 +81,7 @@ module BOAST
 #      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
       if not supported then
         required = ""
-        INSTRUCTIONS[instruction.to_s].each { |cpuid|
+        INSTRUCTIONS[get_architecture][instruction.to_s].each { |cpuid|
           required += " or " if required != ""
           if cpuid.kind_of?( Array ) then
             required += "( #{cpuid.join(" and ")} )"
@@ -376,8 +380,8 @@ module BOAST
           type = type_name_ARM( :int, size, sign )
           instructions = [[:ADD, "add"], [:SUB, "sub"]]
           instructions.push( [:MUL, "mul"], [:FMADD, "mla"], [:FNMADD, "mls"] ) if size < 64
-          instructions.push( [:LOAD, "ldl"], [:LOADA, "ldl"] )
-          instructions.push( [:STORE, "stl"], [:STOREA, "stl"] )
+          instructions.push( [:LOAD, "ld1"], [:LOADA, "ld1"] )
+          instructions.push( [:STORE, "st1"], [:STOREA, "st1"] )
           instructions.each { |cl, ins|
             INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_#{type}".to_sym
           }
@@ -394,8 +398,8 @@ module BOAST
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],
          [:FMADD, "mla"], [:FNMADD, "mls"],
-         [:LOAD, "ldl"], [:LOADA, "ldl"],
-         [:STORE, "stl"], [:STOREA, "stl"]].each { |cl, ins|
+         [:LOAD, "ld1"], [:LOADA, "ld1"],
+         [:STORE, "st1"], [:STOREA, "st1"]].each { |cl, ins|
           INTRINSICS[ARM][cl][vtype] = "v#{ins}#{q}_#{type}".to_sym
         }
         [[:SET1, "dup"]].each { |cl, ins|
@@ -445,18 +449,15 @@ module BOAST
         cvt_dgraph = RGL::DirectedAdjacencyGraph::new
         INTRINSICS[arch][:CVT].each { |dest, origs|
           origs.each { |orig, intrinsic|
-            supported = true
-            if arch == X86 then
-              supported = false
-              if MODELS[get_model.to_s] then
-                INSTRUCTIONS[intrinsic.to_s].each { |cpuid|
-                  if cpuid.kind_of?( Array ) then
-                    supported = true if (cpuid - MODELS[get_model.to_s]).empty?
-                  else
-                    supported = true if MODELS[get_model.to_s].include?( cpuid )
-                  end
-                }
-              end
+            supported = false
+            if MODELS[get_model.to_s] then
+              INSTRUCTIONS[arch][intrinsic.to_s].each { |cpuid|
+                if cpuid.kind_of?( Array ) then
+                  supported = true if (cpuid - MODELS[get_model.to_s]).empty?
+                else
+                  supported = true if MODELS[get_model.to_s].include?( cpuid )
+                end
+              }
             end
             cvt_dgraph.add_edge(orig, dest) if supported
           }
