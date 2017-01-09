@@ -2,6 +2,9 @@
 \usepackage[T1]{fontenc}
 \usepackage{url}
 \usepackage{color}
+\usepackage{xspace}
+
+\def\lua{\textsc{Lua}\xspace}
 
 \begin{document}
 \devnum{[5.11]}
@@ -44,6 +47,39 @@
   \item General presentation of MAQAO
   \item Purpose, capabilities, usage
 \end{itemize}
+
+MAQAO, the Modular Assembly Quality Analyzer and Optimizer, is a performance analysis and processing 
+tool working at the level of compiled, binary code. It was initially developed at the University of 
+Versailles in France, and has been partially developed at Inria in Bordeaux as well since around 
+2010. While primarily focused on Intel processors (x86-64, xeon phi, and even Itanium), it was 
+ported on the ARM architecture as part of Mont-Blanc~2 task D5.3 work, and delivered as 
+Deliverable~D5.4. The MAQAO tool presents itself as an extensible framework for binary code 
+processing. It is a made of a C-language low-level core set of libraries and a high-level set of 
+wrappers making the framework scriptable in the language \lua using the embedded interpretor. 
+
+The core libraries of MAQAO enable the fundamental operations to disassemble a binary file, modify 
+its assembly instructions (operation designated as 'patching'), and re-assemble the modified binary. 
+Possible instruction modifications include moving/inserting/suppressing code blocks, inserting 
+function calls, or operations designated as 'instrumentation' where some sets of instructions are 
+both moved and modified such as a function call is made every time such instructions are called 
+before executing the instrumented instructions themselves. Core services also include foundational 
+capabilities such as building call graphs and control flow graphs from the disassembled binary 
+functions.
+
+A set of \lua-to-C wrapper routines implement the transition between the C~core and the Lua 
+services. These routines enable to manipulate relevant assembly objects such as binary files, 
+functions, basic instruction blocks, individual instructions, instruction operands, loops and 
+labels. 
+
+On top of those transitional routines, special-purpose processing modules can be implemented in Lua 
+to perform high level operations such as analysis, tracing and hinting. In particular, tracing 
+involves instrumenting every memory reference in the studied kernel with calls to the memory access 
+accounting routine in the MAQAO Trace Library (MTL) which monitor every memory address referenced 
+within the kernel routine during an execution, and generate a compressed trace of the memory 
+references. The trace can then be further processed to output memory access patterns as human 
+readable algebraic expressions.
+
+
 
 \section{Integration}
   \todo{integration}
