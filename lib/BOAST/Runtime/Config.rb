@@ -21,6 +21,7 @@ module BOAST
     :MAQAO_FLAGS => '',
     :MAQAO_PATH => '',
     :MAQAO_PASS => false,
+    :MAQAO_SCRIPT => '',
     :OPENMP => false,
     :probes => nil
   }

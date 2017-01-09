@@ -61,8 +61,13 @@ module BOAST
           cflags += " #{openmp_cflags}"
       end
 
+      cflags_no_fpic = cflags.gsub("-fPIC","")
+
       rule ".#{objext}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
+        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
+        c_call_string = "#{c_compiler} #{cflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, c_call_string)
       end
 
@@ -89,8 +94,13 @@ module BOAST
           cxxflags += " #{openmp_cxxflags}"
       end
 
+      cxxflags_no_fpic = cxxflags.gsub("-fPIC","")
+
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cpp' do |t|
         cxx_call_string = "#{cxx_compiler} #{cxxflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, cxx_call_string)
+        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
+        cxx_call_string = "#{cxx_compiler} #{cxxflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, cxx_call_string)
       end
     end
@@ -107,8 +117,13 @@ module BOAST
           fcflags += " #{openmp_fcflags}"
       end
 
+      fcflags_no_fpic = fcflags.gsub("-fPIC","")
+
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.f90' do |t|
         f_call_string = "#{f_compiler} #{fcflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, f_call_string)
+        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
+        f_call_string = "#{f_compiler} #{fcflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, f_call_string)
       end
     end

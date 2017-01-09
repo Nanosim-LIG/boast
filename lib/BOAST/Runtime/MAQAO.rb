@@ -36,10 +36,13 @@ module BOAST
 
     def create_targets( linker, ldshared, ldflags, kernel_files)
       file target => target_depends do
-        sh "MAQAO_SA_PATH=#{@compiler_options[:MAQAO_PATH]} #{@compiler_options[:MAQAO_PATH]}/bin/maqao #{@compiler_options[:MAQAO_PATH]}/simd_analyzer.lua --yaml --dd #{target_depends[1]}"
-        #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
         sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
-        sh "#{@compiler_options[:MAQAO_PATH]}/bin/maqao memory -i -bin=#{target} -f=#{@procedure.name} -init=Init_#{module_name} -tp=/tmp -m=unicore -dbg=1"
+        no_fpic_obj = target_depends[1].gsub(/\.o$/, "_no_fpic.o")
+        maqao_script = @compiler_options[:MAQAO_SCRIPT]
+        if maqao_script == '' then
+          maqao_script = "#{@compiler_options[:MAQAO_PATH]}/scripts/maqao_from_boast.sh"
+        end
+        sh "#{maqao_script} #{@compiler_options[:MAQAO_PATH]} #{library_source} #{@procedure.name} Init_#{base_name} #{target} #{no_fpic_obj}"
       end
       Rake::Task[target].invoke
     end
