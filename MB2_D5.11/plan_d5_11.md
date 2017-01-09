@@ -25,14 +25,16 @@ Integration
 Implementation
 ==============
 
-### Data Exchange
+Data Exchange
+-------------
 
 - Requirements
 - YAML structured data
 - BOAST --> MAQAO
 - MAQAO --> BOAST
 
-### Kernel generation
+Kernel generation
+-----------------
 
 - Requirements
   - Executable kernel
@@ -40,7 +42,8 @@ Implementation
   - Dwarf debug info
 - Kernel wrapper
 
-### Kernel instrumentation
+Kernel instrumentation
+----------------------
 
 - Principle
   - Memory access asm instruction rewriting
@@ -50,14 +53,16 @@ Implementation
 - Lua high-level instrumentation implementation
 - MAQAO tracing library
 
-### Kernel analysis framework
+Kernel analysis framework
+-------------------------
 
 - Principle
 - C low-level framework
 - Lua high-level framework
 - SIMD analyzer example
 
-### Testcases examples
+Testcases examples
+==================
 
 - Basic vector addition kernel
 - Mont-Blanc 2 Application BigDFT kernel
