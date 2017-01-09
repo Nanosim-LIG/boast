@@ -263,10 +263,18 @@ module BOAST
     # @option properties [Boolean] :optional for Fortran interface generation mainly see Fortran documentation
     def initialize(name, type, properties={})
       @name = name.to_s
-      @direction = properties[:direction] ? properties[:direction] : properties[:dir]
-      @constant = properties[:constant] ? properties[:constant]  : properties[:const]
-      @dimension = properties[:dimension] ? properties[:dimension] : properties[:dim]
-      @local = properties[:local] ? properties[:local] : properties[:shared]
+      @direction = properties[:direction]
+      @direction = properties[:dir] unless @direction
+
+      @constant = properties[:constant]
+      @constant = properties[:const] unless @constant
+
+      @dimension = properties[:dimension]
+      @dimension = properties[:dim] unless @dimension
+
+      @local = properties[:local]
+      @local = properties[:shared] unless @local
+
       @texture = properties[:texture]
       @allocate = properties[:allocate]
       @restrict = properties[:restrict]
@@ -275,24 +283,23 @@ module BOAST
       @optional = properties[:optional]
       @reference = properties[:reference]
       @force_replace_constant = false
-      if not properties[:replace_constant].nil? then
-        @replace_constant = properties[:replace_constant]
-      else
-        @replace_constant = true
-      end
+      @replace_constant = properties[:replace_constant]
+
       if @texture and lang == CL then
         @sampler = Variable::new("sampler_#{name}", CustomType,:type_name => "sampler_t" ,:replace_constant => false, :constant => "CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST")
       else
         @sampler = nil
       end
+
+      @scalar_output = false
+      if @dimension then
+        @dimension = [@dimension].flatten
+      else
+        @scalar_output = true if @direction == :out or @direction == :inout
+      end
+
       @type = type::new(properties)
       @properties = properties
-      if (@direction == :out or @direction == :inout) and not dimension? then
-        @scalar_output = true
-      else
-        @scalar_output = false
-      end
-      @dimension = [@dimension].flatten if dimension?
     end
 
     def copy(name=nil,properties={})
