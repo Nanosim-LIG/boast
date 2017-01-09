@@ -1,128 +1,120 @@
 \documentclass[11pt, a4paper, twoside]{montblanc2}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{color}
 
 \begin{document}
-\devnum{[x.x]}
-\title{[Deliverable Title]}
-\version{[x.x]}
-\deadline{[x]}
-\level{[See DoW]}
-\nature{[See DoW]}
-\authors{Name (PARTNER)}
-\contributors{Name (PARTNER), Name (PARTNER), Name (PARTNER)}
-\reviewers{Name (PARTNER), Name (PARTNER), }
-\keywords{[Please list at least three words]}
+\devnum{[5.11]}
+\title{[MAQAO in BOAST]}
+\version{[0.1]}
+\deadline{[2017/01/16]}
+\level{[PU]}
+\nature{[O]}
+\authors{Olivier Aumage (Inria) and Brice Videau (CNRS)}
+\contributors{} % {Name (PARTNER), Name (PARTNER), Name (PARTNER)}
+\reviewers{} % {Name (PARTNER), Name (PARTNER), }
+\keywords{[analysis, autotuning, performance]}
 
 \maketitle
 
 \begin{changelog}
-\change{0.1}{Initial version of the Mont-blanc \LaTeX template}
-\change{0.2}{Fixed font colors and headers}
-\change{0.3}{Added new \LaTeX commands for commonly used keywords}
+\change{0.1}{Initial version of D5.11}
 \end{changelog}
 
 \frontmatter
 
 \begin{executive}
-This document describes how to use the \LaTeX template for Mont-Blanc deliverables.
+  \todo{executive summary}
 \end{executive}
 
 \section{Introduction}
-Writing deliverables is a tedious task that can easily become a nightmare if you word processor 
-starts messing stuff around. Fortunately, almighty Donald Knuth invented \LaTeX to simplify our life 
-when reporting to the European Commission. What Dr. Knuth could not figure out was the format our 
-belove commissioners like deliverables to be submitted, so he provided the means for us to define 
-\LaTeX templates to specify the format of the documents we need to produce. This document presents 
-the main features of the Mont-Blanc \LaTeX template for deliverables.
+\todo{intro}
 
-The template here presented is far from being complete, so do not hesitate to contact the author to 
-request whatever you might need.
+\section{Context}
+\todo{context}
 
-\section{Using the Mont-Blanc \LaTeX Template}
-To use the Mont-Blanc \LaTeX template you need to use the \texttt{montblanc2} document class. This 
-is done by setting the document header as follows:
-\begin{verbatim}
-\documentclass[11pt, a4paper, twoside]{montblanc2}
-\end{verbatim}
-
-\subsection{Front Page Commands}
-The Mont-Blanc \LaTeX template produces a fancy front-page with the project logo, deliverable 
-number, version, and name, as well as a document information table. Although many breakthroughs have 
-been done in the field of Artificial Intelligence, we have incorporated none of theses in this 
-\LaTeX template, so you will need to specify all this information in the top of the document. This 
-is done as follows:
+\subsection{BOAST}
 \begin{itemize}
-\item \verb|\devnum{}|: deliverable number.
-\item \verb|\title{}|: deliverable title.
-\item \verb|\version{}|: deliverable version number.
-\item \verb|\deadline{}|: month number (\eg M6) when the deliverable is due.
-\item \verb|\level{}|: dissemination level for the deliverable.
-\item \verb|\nature{}|: type of deliverable (\eg Report).
-\item \verb|\authors{}|: name of the author. 
-\item \verb|\contributors{}|: name of the folks contributing to the deliverable.
-\item \verb|\reviewers{}|: names of our beloved reviewers.
-\item \verb|\keywords{}|: keywords for the deliverable.
+  \item General presentation of BOAST
+  \item Purpose, capabilities, usage
 \end{itemize}
 
-After setting all these parameters, the front page is produced with the command
-\begin{verbatim}
-\maketitle
-\end{verbatim}
-
-\subsection{Front Matter Commands}
-Deliverables typically have some stuff before the actual meat, namely: change log, table of 
-contents, and executive summary. Each of this section can be appended to the document using the 
-corresponding environments.
-
-The Change Log environment also defines a specific command (\verb|\change{}{}|) to add changes to 
-the document. The Change Log is added to the deliverable as follows:
-\begin{verbatim}
-\begin{chagelog}
-\change{version number}{description of change}
-\change{version number}{description of change}
-. . .
-\end{changelog}
-\end{verbatim}
-
-
-The table of contents is created by including the \verb|\frontmatter| command. Finally, the 
-executive summary is included using the \texttt{executive} environment as follows:
-\begin{verbatim}
-\begin{executive}
-Text for the executive summary
-\end{executive}
-\end{verbatim}
-
-\subsection{Miscellaneous Commands for the Body}
-Besides the standard \LaTeX commands, some commodity commands are provided by this template:
-
-\subsubsection{Safe Abbreviations}
-Some commonly used abbreviations can easily cause trouble on \LaTeX, so we have included safe 
-versions of this abbreviations:
+\subsection{MAQAO}
 \begin{itemize}
-\item \verb|\eg|: \eg
-\item \verb|\ie|: \ie
-\item \verb|\vs|: \vs
-\item \verb|\etc|: \etc
-\item \verb|\etal|: \etal
-\item \verb|\MB|: \MB
-\item \verb|\IO|: \IO
-\item \verb|GFW|: \GFW
+  \item General presentation of MAQAO
+  \item Purpose, capabilities, usage
 \end{itemize}
 
-\subsubsection{Annotations}
-Quite often we need to include some annotations for others to read during the preparation of a 
-deliverable. The following commands have been added to simplify adding such annotations:
+\section{Integration}
+  \todo{integration}
+
+  \subsection{Big Picture}
+  \subsection{Usage}
+
+\section{Implementation}
+  \todo{implementation}
+
+\subsection{Data Exchange}
+
 \begin{itemize}
-\item \verb|\todo{}| is used to indicate that some text is missing and somebody has to add it. This 
-command produces text as follows: \todo{This is a TODO example}.
-\item \verb|\fixme{}| is used to indicate that some part is wrong and needs to be corrected. This 
-command produces text as follows: \fixme{This is a FIXME example}.
+  \item Requirements
+  \item YAML structured data
+  \item BOAST --> MAQAO
+  \item MAQAO --> BOAST
 \end{itemize}
 
-\section{Reporting Bugs and Wishes}
-If you find any bug and\slash or feature that is missing, please report it to 
-\texttt{guadalupe.moreno@bsc.es} or \texttt{petar.radojkovic@bsc.es}. We cannot guarantee that the bug\slash feature will get fixed 
-immediately, but at least we will know about it.
+\subsection{Kernel generation}
+
+\begin{itemize}
+  \item Requirements
+    \begin{itemize}
+      \item Executable kernel
+      \item No position-independent binary
+      \item Dwarf debug info
+    \end{itemize}
+  \item Kernel wrapper
+\end{itemize}
+
+\subsection{Kernel instrumentation}
+
+\begin{itemize}
+  \item Principle
+    \begin{itemize}
+      \item Memory access asm instruction rewriting
+    \end{itemize}
+  \item Requirements
+    \begin{itemize}
+      \item System V ABI + ARM ABI compliance
+    \end{itemize}
+  \item ASM patching implementation
+  \item Lua high-level instrumentation implementation
+  \item MAQAO tracing library
+\end{itemize}
+
+\subsection{Kernel analysis framework}
+
+\begin{itemize}
+  \item Principle
+  \item C low-level framework
+  \item Lua high-level framework
+  \item SIMD analyzer example
+\end{itemize}
+
+\section{Testcases examples}
+  \todo{implementation}
+
+  \subsection{Vector Addition}
+\begin{itemize}
+  \item Basic vector addition kernel
+\end{itemize}
+
+  \subsection{BigDFT Filter}
+\begin{itemize}
+  \item Mont-Blanc 2 Application BigDFT kernel
+\end{itemize}
+
+\section{Conclusion and Future Work}
+\todo{conclusion}
 
 \end{document}
 
