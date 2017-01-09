@@ -167,7 +167,7 @@ module BOAST
       raise "'#{env}' is not a valid value for ARCH or ARCHITECTURE!"
     end
     return architecture if architecture
-    return ARM if YAML::load( OS.report )["host_cpu"].match("arm")
+    return ARM if YAML::load( OS.report )["host_cpu"].match(/arm|aarch64/)
     return X86
   end
 
