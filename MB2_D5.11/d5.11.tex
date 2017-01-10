@@ -4,7 +4,10 @@
 \usepackage{color}
 \usepackage{xspace}
 
+\def\cmake{\textsc{CMake}\xspace}
 \def\lua{\textsc{Lua}\xspace}
+\def\dd{\textsc{DwarfDump}\xspace}
+\def\elfutils{\textsc{ElfUtils}\xspace}
 
 \begin{document}
 \devnum{[5.11]}
@@ -48,6 +51,7 @@
   \item Purpose, capabilities, usage
 \end{itemize}
 
+\subsubsection{Presentation}
 MAQAO, the Modular Assembly Quality Analyzer and Optimizer, is a performance analysis and processing 
 tool working at the level of compiled, binary code. It was initially developed at the University of 
 Versailles in France, and has been partially developed at Inria in Bordeaux as well since around 
@@ -79,7 +83,53 @@ within the kernel routine during an execution, and generate a compressed trace o
 references. The trace can then be further processed to output memory access patterns as human 
 readable algebraic expressions.
 
+\subsubsection{Usage}
 
+The MAQAO framework version developed in Bordeaux is very much targeted at an experimented audience, 
+and, as a note of warning, it may lack the user friendliness commonly found in mature academic and 
+commercial programming tools. It is aimed at expert users desirous to dig further into the binary 
+kernel code produced by their compiler, and build their own, custom analysis strategies.
+This section presents MAQAO from a functional point-of-view, and specify usage for the most common
+operations.
+
+\paragraph{Requirements and Installation}
+
+MAQAO's C language core mandatorily requires \cmake version~2.8.8 or above, a C compiling toolchain 
+and Make. The \lua layers directly make use of the embedded \lua distribution. Moreover, MAQAO 
+analysis scripts may leverage the command-line tool \dd to process debugging informations and 
+symbols in compiled objects files when available, while \dd itself relies on the availability of an 
+\elfutils distribution. Supported binary objects and executables to be processed by MAQAO must 
+follow the ELF format specification and System V general ABI specification, and be generated for the 
+ARM architecture, while optional debugging information must follow the DWARF-2 format. Support for 
+ARM's Thumb instruction sets is limited to disassembly only.
+
+Building MAQAO involves running \cmake followed by the \verb|make| command after untaring the 
+distribution or checking it out from the development repository:
+
+\begin{verbatim}
+$ tar zxf maqao.tar.gz
+$ cd MAQAO
+$ mkdir build
+$ cd build
+$ cmake -DARCHS=arm -DSTRIP=false ..
+$ make
+\end{verbatim}
+
+No install step is required. MAQAO's executable is produced in \verb|MAQAO/bin| and MAQAO's 
+libraries are placed in the \verb|MAQAO/lib| directory. MAQAO's \verb|/bin| and \verb|/lib|
+directories should be added to \verb|PATH| and \verb|LD_LIBRARY_PATH| environment variables 
+respectively. Environment variable \verb|MAQAO| should be set to MAQAO's top directory for 
+convenience, and is assumed to be set accordingly in the remainder of the document.
+
+\paragraph{Disassemble}
+
+\paragraph{Instrument}
+
+\paragraph{Trace}
+
+\paragraph{Analyze}
+
+\paragraph{Extend and customize}
 
 \section{Integration}
   \todo{integration}
