@@ -3,11 +3,32 @@
 \usepackage{url}
 \usepackage{color}
 \usepackage{xspace}
+\usepackage{listings}
+\usepackage{graphics}
 
 \def\cmake{\textsc{CMake}\xspace}
 \def\lua{\textsc{Lua}\xspace}
 \def\dd{\textsc{DwarfDump}\xspace}
 \def\elfutils{\textsc{ElfUtils}\xspace}
+
+\urlstyle{sf}
+
+\definecolor{bluelst}{rgb}{0.4,0.8,1.0}
+\definecolor{greenlst}{rgb}{0.25,0.50,0}
+
+\lstset{language=C,
+  basicstyle=\small\sffamily,
+  frame=single,
+  rulecolor=\color{bluelst},
+  commentstyle=\color{greenlst}\textit,
+  keywordstyle=\bfseries,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  tabsize=4
+}
+
 
 \begin{document}
 \devnum{[5.11]}
@@ -301,13 +322,165 @@ Then, following the identification information, the successive values captured
 by the instrumentation are represented by as a pseudo source-code with loops and
 expressions. The expressions describe the memory addresses that have been
 accessed, and depend on the surrounding loop counters and loop bounds, as
-detected by the NLR algorithm. Expressions can however, only depend linearly on
-the loop counters, and loop bounds only depend linearly on enclosing loops'
-counters. The memory addresses referenced by an expression forms an union of
-polytopes. Thus, the method captures the memory working-set as well as a
-schedule for the memory accesses.
+detected by the NLR algorithm. The portion of trace above corresponds to the
+\texttt{b} array reference in the basic loop nest below extracted from routine
+\texttt{s111} of the TSVC benchmark
+suite~\cite{maleki:vectorization:pact:2011,callahan:tsvc:sc:1988}. Array
+elements are 32-bit single precision floating point values. Thus, the
+\texttt{8*i1} expression in the trace expresses a 2-element stride array
+traversal corresponding to the innermost loop \texttt{i} index step value in the
+source code. The \texttt{i0} is not referenced in the expression, meaning the
+outer loop is a repetition loop.
+
+\begin{lstlisting}
+/* TSVC s111 kernel */
+for (int nl = 0; nl < 2*ntimes; nl++) {
+	for (int i = 1; i < LEN; i += 2) {
+		a[i] = a[i - 1] + b[i];
+	}
+}
+\end{lstlisting}
+
+Trace expressions can, however, only depend linearly on the loop counters, and
+loop bounds only depend linearly on enclosing loops' counters. The memory
+addresses referenced by an expression forms an union of polytopes. Thus, the
+method captures the memory working-set as well as a schedule for the memory
+accesses.
 
 \paragraph{Analyze}
+
+MAQAO's SIMD analyzer is a MAQAO module built on top of the \lua API to analyze
+simdization potential in compiled kernel binaries, as well as possible issues
+hindering vectorization. The SIMD analyzer module can be applied to a kernel
+using the following command:
+
+\begin{verbatim}
+export MAQAO_SA_PATH=$MAQAO/sa_analysis
+maqao ${MAQAO_SA_PATH}/simd_analyzer.lua --dd <BINARY>:<FUNCTION>
+\end{verbatim}
+
+Flag \texttt{--dd} is optional, it assumes \dd is available on the system. When
+enabled, the SIMD analyzer uses \dd to translate binary addresses into source
+locations, provided the binary was compiled with debugging information included
+(typically enabled by specifying the '-g' flag at compile time to the compiler).
+
+% s1116
+\begin{figure}[h]
+  \centering
+\includegraphics[width=1\textwidth]{fs116_l47}
+\caption{Control flow graph for TSVC s116}\label{fig:cfgs116}
+\end{figure}
+
+The listing below is extracted from kernel \texttt{s116} in the TSVC benchmark
+suite. Note that since the innermost index loop runs five by five steps, there is no
+intra-iteration dependencies for the innermost loop.
+\begin{lstlisting}
+/* TSVC s116 kernel */
+for (int nl = 0; nl < ntimes*10; nl++) {
+        for (int i = 0; i < LEN - 5; i += 5) {
+                a[i] = a[i + 1] * a[i];
+                a[i + 1] = a[i + 2] * a[i + 1];
+                a[i + 2] = a[i + 3] * a[i + 2];
+                a[i + 3] = a[i + 4] * a[i + 3];
+                a[i + 4] = a[i + 5] * a[i + 4];
+        }
+        [...]
+}
+\end{lstlisting}
+
+Running the simd module on the kernel produce the following output as well as
+the instruction level control flow graph in \texttt{.dot} format (see
+Fig.~\ref{fig:cfgs116}). The output indicates the routine being analyzed, the
+source language of the routine as indicated in the binary DWARF debugging
+information, and the loops detected in the function assembler code. For each
+loop entries, the MAQAO assigned loop id and the corresponding source code line
+are mentioned. Note that the number of loops found in the binary code may differ
+from the number of loops in the source file, due to possible code
+transformations and optimizations by the compiler, such as loop unrolling,
+splitting or even inlining. 
+
+\begin{small}
+\begin{verbatim}
+analysing: s116
+language: C
+----------
+# Loop entries
+# loop 47: tsvc.c:1211
+# loop 48: tsvc.c:1209
+\end{verbatim}
+\end{small}
+
+The module then list a disassembled text for the detected loops, indicating for
+each assembler instruction line the corresponding source code file and line, the
+corresponding loop number and nesting, the instruction address and the
+disassembled instruction. Loop nest paths are ordered from outermost on the left
+to innermost on the right. For instance, \verb|l.48:47| for address
+\texttt{0xcd64} indicates that the instruction is both part of loop 47 and 48
+in terms of MAQAO loop ids, and loop 47 is nested in loop 48. SIMD potential is
+explored for the innermost loops of the function.
+
+\begin{small}
+\begin{verbatim}
+- raw instruction listing -
+  o tsvc.c:1211 l.48:47 0xcd64: vldr	s15, [r3, #-20] ;
+  o tsvc.c:1211 l.48:47 0xcd68: vldr	s14, [r3, #-16] ;
+  o tsvc.c:1211 l.48:47 0xcd6c: vmul.f32	s15, s15, s14;
+  o tsvc.c:1211 l.48:47 0xcd70: vstr	s15, [r3, #-20] ;
+  o tsvc.c:1212 l.48:47 0xcd74: vldr	s15, [r3, #-12] ;
+  o tsvc.c:1212 l.48:47 0xcd78: vmul.f32	s14, s14, s15;
+  o tsvc.c:1212 l.48:47 0xcd7c: vstr	s14, [r3, #-16] ;
+  o tsvc.c:1213 l.48:47 0xcd80: vldr	s14, [r3, #-8] ;
+  o tsvc.c:1213 l.48:47 0xcd84: vmul.f32	s15, s15, s14;
+  o tsvc.c:1213 l.48:47 0xcd88: vstr	s15, [r3, #-12] ;
+  o tsvc.c:1214 l.48:47 0xcd8c: vldr	s15, [r3, #-4] ;
+  o tsvc.c:1214 l.48:47 0xcd90: vmul.f32	s14, s14, s15;
+  o tsvc.c:1214 l.48:47 0xcd94: vstr	s14, [r3, #-8] ;
+  o tsvc.c:1215 l.48:47 0xcd98: vldr	s14, [r3, #0] ;
+  o tsvc.c:1215 l.48:47 0xcd9c: vmul.f32	s15, s15, s14;
+  o tsvc.c:1215 l.48:47 0xcda0: vstr	s15, [r3, #-4] ;
+  o tsvc.c:1215 l.48:47 0xcda4: add	r3, r3, #20 ;
+  o tsvc.c:1210 l.48:47 0xcda8: cmp	r3, r4;
+  o tsvc.c:1210 l.48:47 0xcdac: bne	cd64 <s116+54>;
+  o tsvc.c:1217 l.48    0xcdb0: movw	r3, #27808 ;
+    [...]
+  o tsvc.c:1209 l.48    0xce04: b	cd64 <s116+54>;
+----------
+\end{verbatim}
+\end{small}
+
+Possible issues preventing proper simdization include inter-instruction
+dependencies, appearing as dependence cycles. Dependences found in the loop nest
+assemble instructions are displayed in the function's associated control flow
+graph (see Fig.~\ref{fig:cfgs116}). Edges in Red corresponds to memory index computation
+dependences (instruction paths leading to the generation of an address used in a
+memory reference), while black edges corresponds to data computation dependencies. 
+The control flow graph confirms that no dependence cycle would prevent
+simdization in this \texttt{s116} loop 47.
+
+\begin{small}
+\begin{verbatim}
+- circuits analysis - checking whether data dependences are compatible with vectorization
+  . l.47 has no dependence cycle
+      > loop is vectorizable
+\end{verbatim}
+\end{small}
+
+However the five element memory access strides for each stream are large, and do not immediately
+match the preferred vector length of the underlying architecture.
+
+\begin{small}
+\begin{verbatim}
+- memory stride analysis - checking whether data strides are compatible with vectorization
+  . l.47 has references with large or negative index strides
+      > memory load(s) with large/negative stride
+        . 20 bytes
+          . tsvc.c:1211 l.48:47 0xcd64: vldr	s15, [r3, #-20] ;
+          [...]
+      > memory store(s) with large/negative stride
+        . 20 bytes
+          . tsvc.c:1211 l.48:47 0xcd70: vstr	s15, [r3, #-20] ;
+\end{verbatim}
+\end{small}
 
 \paragraph{Extend and customize}
 
