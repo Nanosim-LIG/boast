@@ -151,7 +151,7 @@ patterns at run-time. The Memory module itself calls the Madras module under the
 hood to perform the low-level assembly manipulation involved.
 
 \begin{verbatim}
-$ maqao memory -i -bin=<BINARY> -f=<FUNCTION_NAME> -m=unicore -tp=/tmp
+$ maqao memory -i -bin=<BINARY> -f=<FUNCTION_NAME> -m=unicore -tp==<TEMP_DIR>
 \end{verbatim}
 
 Argument \verb|-i| requests instrumenting. Argument \verb|-bin| specifies the
@@ -247,6 +247,66 @@ instruction \verb|vldr s14, [r1]|;
 
 \paragraph{Trace}
 
+Executing the resulting instrumented kernel produces a trace file containing a 
+compressed representation of the target addresses of the memory accesses 
+instruction encountered during execution. For each instruction instrumented, the 
+flow of addresses captured is compressed on-the-fly using a lossless
+algorithm name \emph{Nested Loop Recognition} (NLR), designed by Ketterlin and 
+Clauss~\cite{ketterlin:nlr:cgo:2008}. The trace is stored using a compact text 
+file format, not meant to be read as is by the programmer, as shown below.
+
+\begin{footnotesize}
+\begin{verbatim}
+D 1 E 10 R 1 I 1 K 0 V  L P 39 L P 259 0 T 1 P 1262052 0 8 0 N N N I 2 K 0 V  L 
+P 39 L P 259 0 T 1 P 3439840 0 8 0 N N N I 3 K 0 V  L P 39 L P 259 0 T 1 P 
+3439852 0 8 0 N N N I 4 K 0 V  L P 39 T 1 P 3199305884 0 N N I 5 K 0 V  L P 39 T 
+1 P 3199305888 0 N N I 6 K 0 V  L P 39 T 1 P 3199305892 0 N N I 7 K 0 V  L P 39 
+T 1 P 3199305896 0 N N I 8 K 0 V  L P 39 L P 259 0 T 1 P 1262052 0 8 0 N N N I 9 
+K 0 V  L P 39 L P 259 0 T 1 P 3439840 0 8 0 N N N I 10 K 0 V  L P 39 L P 259 0 T 
+1 P 3439852 0 8 0 N N N 
+\end{verbatim}
+\end{footnotesize}
+
+This intermediate format can however be processed by MAQAO's Memory module to 
+produce a human-readable version of the NLR trace. The command below produces
+the human-readable form of the trace from the compact trace and from the companion
+\lua meta-data file generated during the instrumentation step.
+ 
+\begin{verbatim}
+$ maqao memory -d -t=<COMPACT_TRACE> -meta=<META_LUA_FILE> -tp=<TEMP_DIR>
+\end{verbatim}
+
+ This human-readable version shows, for each instrumented instruction, the
+ corresponding thread id, the id of the loop containing the instruction as
+ assigned by MAQAO, and the 'instrumented instruction' id also incrementally
+ assigned by MAQAO. Multiple instances may exist when multiple threads invoke
+ the instruction.
+
+\begin{footnotesize}
+\begin{verbatim}
+Info: ################################################################################
+Info: ## Volume for tid = 0 loopid = 21 iid = 0
+Info: ################################################################################
+Info: Instance 0
+Info: ###############
+for i0 = 0 to 39
+  for i1 = 0 to 259
+    val 0x1341e4 + 8*i1
+
+ [...]
+\end{verbatim}
+\end{footnotesize}
+
+Then, following the identification information, the successive values captured
+by the instrumentation are represented by as a pseudo source-code with loops and
+expressions. The expressions describe the memory addresses that have been
+accessed, and depend on the surrounding loop counters and loop bounds, as
+detected by the NLR algorithm. Expressions can however, only depend linearly on
+the loop counters, and loop bounds only depend linearly on enclosing loops'
+counters. The memory addresses referenced by an expression forms an union of
+polytopes. Thus, the method captures the memory working-set as well as a
+schedule for the memory accesses.
+
 \paragraph{Analyze}
 
 \paragraph{Extend and customize}
@@ -321,6 +381,9 @@ instruction \verb|vldr s14, [r1]|;
 
 \section{Conclusion and Future Work}
 \todo{conclusion}
+
+\bibliographystyle{plain}
+\bibliography{d5.11}
 
 \end{document}
 
