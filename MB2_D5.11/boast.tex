@@ -1,0 +1,18 @@
+\subsubsection{Presentation}
+
+BOAST is an automatic performance tuning framework aiming at meta-programming and optimizing computing kernels.
+BOAST has been extensively described in the Mont-Blanc 2 deliverable 5.5~\cite{tichadou15} and thus will only be briefly described here.
+For a more in-depth presentation reader should refer to the afore mentioned document.
+
+The primary goal of BOAST is to bring performance portability to critical part of high performance computing applications.
+Those \emph{computing kernels} are well-defined part of an application that are compute or memory intensive and represent a consequent part of the computing time.
+Their inputs are usually limited in complexity and thus those kernels are a prime target for optimization.
+
+Unfortunately, the variety of platforms an HPC code can encounter keeps growing and a lot of time is spent optimizing computing kernels for new architectures.
+BOAST attempts to solve this problem by offering the kernel developer several tools:
+\begin{itemize}
+  \item an Embedded Domain Specific language to describe computing kernels and their possible optimizations,
+  \item a code generation engine that can output the kernel in several languages used in the HPC community: C, FORTRAN, CUDA and OpenCL,
+  \item a runtime to select the versions to test, build them, execute them and test their performance and accuracy.
+\end{itemize}
+
