@@ -370,7 +370,7 @@ locations, provided the binary was compiled with debugging information included
 \begin{figure}[h]
   \centering
 \includegraphics[width=1\textwidth]{fs116_l47}
-\caption{Control flow graph for TSVC s116}\label{fig:cfgs116}
+\caption{Control flow graph for TSVC s116.}\label{fig:cfgs116}
 \end{figure}
 
 The listing below is extracted from kernel \texttt{s116} in the TSVC benchmark
@@ -486,10 +486,32 @@ match the preferred vector length of the underlying architecture.
 
 \paragraph{Extend and customize}
 
+The MAQAO framework is designed as a foundation to build custom binary analysis strategies using the 
+building blocks provided by the core services together with the \lua layer. Custom MAQAO analysis 
+scripts are written in \lua. They can be executed by specifying the script filename as the first 
+argument of the MAQAO executable, while the remaining arguments can be used by the script itself for 
+its own purpose. The SIMD analyzer script is meant to serve has an example on how to write custom 
+MAQAO scripts, and how to access and manipulate objects such as binary files, function, loops or 
+assembly instructions, for instance, from within \lua scripts.
+
 \section{Integration}
   \todo{integration}
 
   \subsection{Big Picture}
+\begin{figure}[h]
+  \centering
+\includegraphics[width=0.8\textwidth]{bigpicture}
+\caption{Big-picture of the BOAST-MAQAO interaction flow.}\label{fig:bigpict}
+\end{figure}
+
+Figure~\ref{fig:bigpict} shows the big picture of the interaction flow between BOAST and MAQAO. A 
+BOAST meta-kernel source file written in the Ruby language is submitted to BOAST. BOAST internals 
+are organized as a series of rules or pass, following a scheme similar to a Makefile, to generate 
+source files, build them and execute them for performance evaluation and autotuning. MAQAO is 
+integrated in this scheme as a specific pass that may be enabled or disabled on demand. It is called 
+once the YAML annotated source file in C or Fortran has been generated and compiled as an autonomous 
+executable, to work on the resulting binary.
+
   \subsection{Usage}
 
 \section{Implementation}
