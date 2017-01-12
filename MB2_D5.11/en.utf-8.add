@@ -31,3 +31,8 @@ nl
 ntimes
 simd
 inlining
+FCFLAGS
+CFLAGS
+GFortran
+MontBlanc-2
+MagicFilter1D
