@@ -512,9 +512,11 @@ MAQAO scripts, and how to access and manipulate objects such as binary files, fu
 assembly instructions, for instance, from within \lua scripts.
 
 \section{Integration}
-  \todo{integration}
 
-  \subsection{Big Picture}
+This section presents the MAQAO in BOAST integration from an organizational and usage point of view. 
+Implementation details will be further discussed in the next section.
+
+\subsection{Big Picture}
 \begin{figure}[h]
   \centering
 \includegraphics[width=0.8\textwidth]{bigpicture}
@@ -529,7 +531,61 @@ integrated in this scheme as a specific pass that may be enabled or disabled on 
 once the YAML annotated source file in C or Fortran has been generated and compiled as an autonomous 
 executable, to work on the resulting binary.
 
-  \subsection{Usage}
+\subsection{Usage}
+
+Since BOAST integrates a dedicated build pass for MAQAO, using BOAST and MAQAO together requires 
+enabling this specific pass by positioning the environment variable \verb|MAQAO_PASS| to TRUE as 
+well as defining the variable \verb|MAQAO_PATH| to MAQAO installation directory. Then, either 
+\verb|MAQAO_WRAP_TMPL_F| and/or \verb|MAQAO_WRAP_TMPL_C| to specify a template wrapper source, used 
+to call the kernel routine and enable building an executable from the generated kernel. The wrapper 
+template should provide memory allocation and data initialization inside an \verb|@@INIT@@| 
+function, together with a call from that \verb|@@INIT@@| function to the \verb|@@KERNEL@@| kernel 
+function. The \verb|@@INIT@@| and \verb|@@KERNEL@@| placeholders in the template are then 
+substituted with the proper function names by BOAST at run-time, since such functions names are 
+generated dynamically. An example, minimalistic wrapper file in C is given below for calling a 
+MagicFilter1D kernel routine from MontBlanc-2 application BigDFT.
+
+\lstset{style=C}
+\begin{lstlisting}
+#include <stdlib.h>
+#include <stdint.h>
+
+void @@KERNEL@@(uint32_t, uint32_t,
+                uint32_t, uint32_t,
+                double *, double *);
+
+void @@INIT@@(void) {
+  uint32_t n = 32;
+  uint32_t ndat = 32*32;
+  uint32_t nx = 32;
+  uint32_t ny = 32;
+  double *x = calloc(nx*ndat,sizeof(double));
+  double *y = calloc(ny*ndat,sizeof(double));
+  @@KERNEL@@(n,ndat,nx,ny, x, y);
+  free(y);
+  free(x);
+}
+
+int main() {
+  @@INIT@@();
+  return 0;
+}
+\end{lstlisting}
+
+An example \verb|boast_maqao.sh| shell script is shipped within the MAQAO tree in directory 
+\verb|/scripts| to help set the required environment variables before the call to BOAST. Regarding 
+the compilation flags, \texttt{CFLAGS} and/or \texttt{FCFLAGS} should specify compiling for ARM 
+architecture and NEON floating point unit, and enable debugging informations encoded compliant with 
+DWARF-2 format, other debugging information format may not be recognized or decoded properly. With 
+well known compilers GNU GCC and GFortran, the corresponding flags should be
+\verb|-marm -mfpu=neon -gdwarf-2|.
+
+The MAQAO tree also ships with a \verb|maqao_from_boast.sh| script, also located in 
+\verb|MAQAO/scripts|, which is called by default when BOAST reaches the MAQAO pass during the build 
+process. This script serves both as a default MAQAO analysis sequence for when cooperating with 
+BOAST, and as an example about how to get relevant data from BOAST about the kernel being studied. 
+An alternate \verb|maqao_from_boast.sh| script can be used instead by pointing the 
+\verb|MAQAO_SCRIPT| environment variable to it.
 
 \section{Implementation}
   \todo{implementation}
@@ -554,6 +610,11 @@ executable, to work on the resulting binary.
     \end{itemize}
   \item Kernel wrapper
 \end{itemize}
+
+MAQAO requires the resulting kernel binary to be an executable, since binary patching and 
+instrumentation is not supported at this time for position independent codes on the ARM 
+architecture, such as in shared objects. Yet, by default, BOAST generates binaries from the source 
+meta-kernel as shared objects, and loads them directly inside BOAST's own Ruby process. 
 
 \subsection{Kernel instrumentation}
 
