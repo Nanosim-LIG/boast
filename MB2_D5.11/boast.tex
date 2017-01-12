@@ -16,3 +16,83 @@ BOAST attempts to solve this problem by offering the kernel developer several to
   \item a runtime to select the versions to test, build them, execute them and test their performance and accuracy.
 \end{itemize}
 
+
+\subsubsection{Usage}
+
+The usage of BOAST will be illustrated using the following listing.
+This example shows how to load BOAST, change it's environment, define a simple vector addition kernel, execute it using different languages and check the accuracy of the obtained results.
+
+\lstset{style=BOAST}
+\begin{lstlisting}
+require 'BOAST'
+include BOAST
+
+set_array_start(0)
+set_default_real_size(4)
+
+def vector_add
+  n = Int( "n", :dir => :in)
+  a = Real("a", :dir => :in,  :dim => [ Dim(n) ] )
+  b = Real("b", :dir => :in,  :dim => [ Dim(n) ] )
+  c = Real("c", :dir => :out, :dim => [ Dim(n) ] )
+  p = Procedure("vector_add", [n,a,b,c]) {
+    decl i = Int("i")
+    expr = c[i] === a[i] + b[i]
+    if (get_lang == CL or get_lang == CUDA) then
+      pr i === get_global_id(0)
+      pr expr
+    else
+      pr For(i,0,n-1) {
+        pr expr
+      }
+    end
+  }
+  return p.ckernel
+end
+
+n = 1024*1024
+a = NArray.sfloat(n).random
+b = NArray.sfloat(n).random
+c = NArray.sfloat(n)
+
+epsilon = 10e-15
+
+c_ref = a + b
+
+[FORTRAN, C, CL, CUDA].each { |l|
+  set_lang( l )
+  puts "#{get_lang_name}:"
+  k = vector_add
+  puts k.print
+  c.random!
+  k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
+  diff = (c_ref - c).abs
+  diff.each { |elem|
+    raise "Warning: residue too big: #{elem}" if elem > epsilon
+  }
+}
+puts "Success!"
+\end{lstlisting}
+
+\paragraph{Loading BOAST} is done on lines 1 and 2.
+It loads the BOAST framework in its environmental configuration.
+This configuration can be changed through configuration files or environment variables.
+Here, this configuration is changed on lines 4 and 5 to set the default real variable size to 4 bytes and the first index of arrays to 0 (C like arrays).
+
+\paragraph{Kernel definition} is done on lines 7 to 25.
+The definition is enclosed in a procedure that will be called in different context yielding different kernel versions.
+First the parameters of the kernel are defined on lines 8 to 11, and stored in ruby variables.
+Those parameters have a direction (similar to FORTRAN intent) and the \emph{Real} parameters have a dimension meaning they are arrays, in this case of length \emph{n}.
+The \emph{Procedure} is declared on line 12 by giving its name and parameter list.
+It is associated a block of code that spans from line 12 to 23 and constitute its body.
+A local integer variable \emph{i} is defined on line 12 and declared using the keyword \emph{decl}.
+On line 14, an affectation expression is saved for later use in the ruby variable \emph{expr}.
+This expression computes one element of the result array.
+The difference between a ruby affectaion (using the \emph{=} operator) and a BOAST affectation (using the \emph{===} operator) has to be noted.
+On lines 15 to 22 we can see some BOAST meta-programming.
+Here, based on the BOAST \emph{lang} state, the code will select either a GPU or CPU implementation.
+The GPU implementation obtains an index of element to process (line 16) and stores it into the \emph{i} variable.
+This is printed using the \emph{pr} keyword, meaning that this line is to appear in the generated source.
+The expression we saved earlier is then printed (line 17).
+The CPU implementation prints a for loop that will process all the elements of the arrays.
+We can see here an example, though far-fetched, of code factoring.
