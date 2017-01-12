@@ -16,7 +16,8 @@
 \definecolor{bluelst}{rgb}{0.4,0.8,1.0}
 \definecolor{greenlst}{rgb}{0.25,0.50,0}
 
-\lstset{language=C,
+\lstdefinestyle{C}{
+  language=C,
   basicstyle=\small\sffamily,
   frame=single,
   rulecolor=\color{bluelst},
@@ -29,6 +30,20 @@
   tabsize=4
 }
 
+\lstdefinestyle{BOAST}{
+  language=Ruby,
+  basicstyle=\small\sffamily,
+  frame=single,
+  rulecolor=\color{bluelst},
+  commentstyle=\color{greenlst}\textit,
+  keywordstyle=\bfseries,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  tabsize=2
+  morekeywords={BOAST, pr, decl, opn, close}
+}
 
 \begin{document}
 \devnum{[5.11]}
@@ -334,6 +349,7 @@ traversal corresponding to the innermost loop \texttt{i} index step value in the
 source code. The \texttt{i0} is not referenced in the expression, meaning the
 outer loop is a repetition loop.
 
+\lstset{style=C}
 \begin{lstlisting}
 /* TSVC s111 kernel */
 for (int nl = 0; nl < 2*ntimes; nl++) {
@@ -376,6 +392,7 @@ locations, provided the binary was compiled with debugging information included
 The listing below is extracted from kernel \texttt{s116} in the TSVC benchmark
 suite. Note that since the innermost index loop runs five by five steps, there is no
 intra-iteration dependencies for the innermost loop.
+\lstset{style=C}
 \begin{lstlisting}
 /* TSVC s116 kernel */
 for (int nl = 0; nl < ntimes*10; nl++) {
