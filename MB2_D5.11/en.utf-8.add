@@ -36,3 +36,6 @@ CFLAGS
 GFortran
 MontBlanc-2
 MagicFilter1D
+BOAST's
+pragma
+OpenMP
