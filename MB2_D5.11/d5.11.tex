@@ -645,14 +645,15 @@ segmentation, constraints and invariants, and with the ARM-specific addenda to
 the ABI. Sections, sections' naming have to follow conventions, such as the 
 \verb|.madras| section added by MAQAO's MADRAS module to contain moved and new 
 code blocks as to be accompanied with a \verb|.madras.plt| Procedure Linkage 
-Table to hold indirection entries towards external routines. Such procedure 
-branching entries branch to an indirect address relocation entry computed from 
-the program counter and some constants. The relocation entry is updated at 
-run-time by the dynamic linker \verb|ld.so|. It initially points a dynamic 
-linker routine to load the corresponding symbol's object on the first call to 
-the routine. After the first call, the relocation entry is updated with the 
-actual corresponding routine, such that the PLT entry instruction sequence now 
-branches directly into the right code. Consequently, the PLT entries
+Table to hold indirection entries towards external routines, and more generally 
+to dynamic symbols. Such procedure branching entries branch to an indirect 
+address relocation entry computed from the program counter and some constants. 
+The relocation entry is updated at run-time by the dynamic linker \verb|ld.so|. 
+It initially points a dynamic linker routine to load the corresponding symbol's 
+object on the first call to the routine. After the first call, the relocation 
+entry is updated with the actual corresponding routine, such that the PLT entry 
+instruction sequence now branches directly into the right code. Consequently, 
+the PLT entries
 are assumed to follow a specific layout and sequence of instructions to build 
 the actual target jump address for the entry, taking into account the 
 constraints of the architecture in expressing assembly instruction constants. 
@@ -779,11 +780,51 @@ instruction \verb|vldr s14, [r1]|;
 
 \subsection{Kernel analysis framework}
 
+%\begin{itemize}
+%  \item Principle
+%  \item C low-level framework
+%  \item Lua high-level framework
+%  \item SIMD analyzer example
+%\end{itemize}
+
+The MAQAO Framework is organized as a C-language low-level set of core services. 
+Since coordinating these services together in a custom C analysis code would be 
+cumbersome, a higher level \lua language layer is built on top of this core set 
+of C services, to make the whole framework scriptable.
+
+The low level C services include the following libraries:
 \begin{itemize}
-  \item Principle
-  \item C low-level framework
-  \item Lua high-level framework
-  \item SIMD analyzer example
+  \item \texttt{libmdisass} provides access to disassembling services and binary 
+    structure discovery (symbol boundaries, branch tables, etc.)
+
+  \item \texttt{libmpatch}  provides access to binary modification operations 
+    such as instrumentation, block moves an new code generation. In particular, 
+    it coordinates the process of applying a set of transformation operations on 
+    some loaded ELF binary, by calling \texttt{libmtroll} services as needed.
+
+  \item \texttt{libmtroll} provides access very low level services for ELF 
+    structure parsing, modification and re-generation services. In this respect, 
+    it is in charge for actions such as ELF section decoding, symbol tables 
+    processing, as well as performing low level update operations as the result 
+    of binary such as symbol insertions, section reordering/renumbering, and 
+    memory offset updates.
+
+  \item \texttt{libmaqao} provides means to access the servicing libraries 
+    above, and embeds a \lua interpretor so as to be able to execute high-level 
+    scripts written in the \lua language. The main advantage of \lua, beyond its 
+    straightforward, minimalistic syntax is to offer a reasonably compact 
+    interpretor, small enough to be distributed together with MAQAO. The 
+    \texttt{libmaqao} library also implements all the bindings needed to make 
+    the low level C services usable from \lua scripts. For that, it implements a 
+    set of object interfaces for each common assembly element such as 
+    instructions , basic instruction blocks, loops and functions. It also 
+    provides management object such as the project (basically representing a 
+    MAQAO session) and assembler files, and some objects to manipulate common 
+    assembly parameters such as instruction operands (register~/ memory~/ 
+    immediate value, etc.), labels or bit vectors. It also comes with a 
+    comprehensive set of generic data structure implementations (graphs, tree, 
+    etc.) that can readily be used in user \lua scripts.
+
 \end{itemize}
 
 \section{Testcases examples}

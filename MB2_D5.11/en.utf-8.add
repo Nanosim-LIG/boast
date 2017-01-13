@@ -39,3 +39,7 @@ MagicFilter1D
 BOAST's
 pragma
 OpenMP
+libmdisass
+libmtroll
+libmpatch
+libmaqao
