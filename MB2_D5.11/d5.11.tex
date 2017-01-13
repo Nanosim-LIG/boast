@@ -222,7 +222,7 @@ The assembly fragment below show part of the \verb|@_patchmov_@| block inserted
 by Madras. This block residing in the newly created \texttt{.madras.code} ELF 
 section in the executable file is immediately preceded by another newly created 
 section named \texttt{.madras.plt} containing the corresponding Procedure 
-Linkage Table (PLT) containing the relocation entries for the indirect jumps to 
+Linkage Table (PLT) containing the procedure entries for the indirect jumps into 
 the MAQAO Trace Library routines.
 
 \begin{footnotesize}
@@ -715,6 +715,49 @@ mechanisms.
   \item Lua high-level instrumentation implementation
   \item MAQAO tracing library
 \end{itemize}
+
+Kernel instrumentation at the binary code level is realized by patching the 
+compiled instructions, that is, by move code blocks and inserting calls to 
+external probe functions. The resulting patched binary must still be a valid 
+executable file, for the operating system's dynamic loader \verb|ld.so| to be 
+able to load and launch it properly. For that, it must be compliant both with 
+the generic UNIX System~V application binary interface (ABI), which specifies 
+requirements such as the binary file layout (ELF format), sectioning, 
+segmentation, constraints and invariants, and with the ARM-specific addenda to 
+the ABI. Sections, sections' naming have to follow conventions, such as the 
+\verb|.madras| section added by MAQAO's MADRAS module to contain moved and new 
+code blocks as to be accompanied with a \verb|.madras.plt| Procedure Linkage 
+Table to hold indirection entries towards external routines. Such procedure 
+branching entries branch to an indirect address relocation entry computed from 
+the program counter and some constants. The relocation entry is updated at 
+run-time by the dynamic linker \verb|ld.so|. It initially points a dynamic 
+linker routine to load the corresponding symbol's object on the first call to 
+the routine. After the first call, the relocation entry is updated with the 
+actual corresponding routine, such that the PLT entry instruction sequence now 
+branches directly into the right code. Consequently, the PLT entries
+are assumed to follow a specific layout and sequence of instructions to build 
+the actual target jump address for the entry, taking into account the 
+constraints of the architecture in expressing assembly instruction constants. 
+The example below shows an excerpt of such PLT entries computing relocation 
+entry addresses from the \verb|$PC| register and suitable constants, using 
+\verb|$IP| (the instruction pointer) as an intermediate accumulator.
+
+\begin{footnotesize}
+\begin{verbatim}
+   > Disassembly of section .madras.plt:
+   >
+   > 0055a044 <.madras.plt>:
+      # entry 1:
+   >   55a044: e3a0ca08 mov     ip, #32768      ; 0x8
+   >   55a048: e59cc440 ldr     ip, [ip, #1088] ; 0x4
+   >   55a04c: e5bcf038 ldr     pc, [ip, #56]!  ; 0x3
+      # entry 2:
+   >   55a050: e3a0ca08 mov     ip, #32768      ; 0x8
+   >   55a054: e59cc440 ldr     ip, [ip, #1088] ; 0x4
+   >   55a058: e5bcf03c ldr     pc, [ip, #60]!  ; 0x3
+      [...]
+\end{verbatim}
+\end{footnotesize}
 
 \subsection{Kernel analysis framework}
 
