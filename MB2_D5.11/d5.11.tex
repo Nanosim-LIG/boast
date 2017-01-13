@@ -617,26 +617,8 @@ first loop below, the YAML block appears before the OpenMP pragma. The YAML anno
 informations such as the code element identification (e.g. loop number), and relevant element 
 parameters (iterations, bounds, steps, directions, etc. in the case of loops).
 
-\begin{lstlisting}[language={[90]Fortran}]
-! ---
-! For9:
-!   :iterator: i2
-!   :first: 0
-!   :last: ndat - (1)
-!   :step: 1
-!   :operator: <=
-!$omp do 
-  do i2 = 0, ndat - (1), 1
-! ---
-! For10:
-!   :iterator: i1
-!   :first: 0
-!   :last: ! ' -(-8) - (1)'
-!   :step: 1
-!   :operator: <=
-    do i1 = 0,  -(-8) - (1), 1
-      tt0 = 0.0_wp
-\end{lstlisting}
+% moved to an external file to work-around an issue with VIM LaTeX mode.
+\input{f90_loop.tex}
 
 In return, MAQAO's simd analyzer module can output YAML-formatted information
 as well. The output indicates information such as the DWARF-side
@@ -692,11 +674,31 @@ cycles, complex branching.
 %  \item Kernel wrapper
 %\end{itemize}
 
-MAQAO requires the resulting kernel binary to be an executable, since binary
-patching and instrumentation is not supported at this time for position
-independent codes on the ARM architecture, such as in shared objects. Yet, by
-default, BOAST generates binaries from the source meta-kernel as shared
-objects, and loads them directly inside BOAST's own Ruby process. 
+Our MAQAO port on ARM requires the resulting kernel binary to be an executable.
+Binary patching and instrumentation is not supported at this time for position
+independent codes on the ARM architecture, such as code generated for shared
+objects. Yet, by default, BOAST generates binaries from the source meta-kernel
+as shared objects, and loads them directly inside BOAST's own Ruby process.
+Thus, BOAST has been modified to generate "non position-independent" object
+files as well, and link them with a specialized wrapper to produce and
+executable code.
+
+The wrapper is specialized from a generic template supplied by
+the programmer to initialize the data environment and launch the kernel
+routine. The template wrapper is assumed to provide a routine named
+\verb|@@INIT@@|, and either a function \texttt{main} (for C language) or a
+program body (for Fortran language). The \texttt{main} function or program body
+must call \verb|@@INIT@@|, which itself must call an external routine named
+\verb|@@KERNEL@@|. The \verb|@@INIT@@| and \verb|@@KERNEL@@| placeholders in the 
+template are then
+substituted with the dynamically generated names by BOAST, before building the
+executable. Each new kernel instance gets its own unique routine name (which is 
+necessary for loading multiple instances of the kernel in the Ruby process 
+without name collision), which implies going through this specialization 
+process. Future versions of BOAST may instead support generating the whole 
+wrapper, and communicate parameters from the main BOAST process to externally 
+launched kernel executable using some Ruby serialization/de-serialization 
+mechanisms.
 
 \subsection{Kernel instrumentation}
 
