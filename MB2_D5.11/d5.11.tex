@@ -827,6 +827,68 @@ The low level C services include the following libraries:
 
 \end{itemize}
 
+As detailed in the MAQAO usage section above, passing a user-written \lua script 
+as the first argument to the MAQAO command loads and executes this script using 
+the embedded \lua interpretor with access to all MAQAO's own \lua objects and 
+routines, which programmers may use to tailor their own custom binary analysis 
+scripts. The simd analyzer script set, available in MAQAO's \verb|sa_analysis/| 
+directory serves as an example on how to write such custom analysis strategies.
+
+After importing its own custom sub-modules, the simd analyzer sets a MAQAO 
+project up for the session and initializes it by loading the kernel binary 
+passed as argument inside the project. It also optionally builds a call graph 
+(as a \verb|.dot| file) of the binary, for the programmer to get an synthetic 
+view of the program flow in terms of function calls. If \dd is available on the 
+system, the script also attempts to load and decode debugging informations from 
+the binary, and builds a mapping of assembly instruction addresses to source 
+code locations.
+
+Once these preliminary steps are completed, the scripts explores the targeted 
+function for loops, basic instruction blocks and individual instructions to 
+discover loop nesting paths for each instruction. If debugging informations are 
+available and if the source code is still accessible on the filesystem, the loop 
+neighborhood is explored the source code file to discover possible YAML-format 
+comment annotations, in C or in Fortran language, according to language 
+identification found in the DWARF debugging information for the routine. In case 
+some YAML enriched comment is found, it is decoded on the fly. Post-processed 
+trace file may also optionally be loaded if available, in which case dynamic 
+memory reference dependencies and access patterns are loaded and analyzed to 
+discover possible execution-related simdization hindrance or reduced efficiency.
+
+Inter-instruction register dependences are discovered from the disassembled 
+instructions, while distinguishing whether such dependence edges are carried 
+through a register or an index. The resulting dependence graph is explored to 
+discover dependence cycles that may prevent simdization (false positives are 
+possible, however, since MAQAO's detected cycles may be the result of the 
+compiler register allocation algorithm, while the initial source code algorithm 
+may or may not exhibit the dependence cycle as well). A specific attention is 
+applied to dependence cycles on floating point instruction registers, which are 
+more likely to be data access pattern-related, and thus may be caused by source 
+level inter-iteration dependences. The weight of the dependence cycle is 
+computed from the sum of the dependence distances in the cycle. It is used to 
+detect whether some iterations may be performed in parallel using simdization, 
+or the instruction dependence flow is incompatible due to an unit-weighted cycle 
+(each loop iteration depends on the result of the iteration immediately 
+preceding it) or unknown dependences in the cycle. A special case is 
+distinguished for reductions where a unit-weighted cycle is found, and all
+instructions in the cycle are identically named (e.g. a sequence of additions, 
+for instance, accumulating some iteration results in the same register). In that 
+case, simdization may be considered using some parallel tree-based reduction 
+scheme.
+
+Register-level circuits also are analyzed to infer inter-iteration access 
+strides from the binary instruction layout and constant register increments 
+found in the code. This information is reported to the use when access strides 
+look to large to accommodate simdization, suggesting that the corresponding data 
+structure is to sparse, to irregular, or not accessed through its innermost, 
+contiguous dimension (as would for instance be the case for column-major 
+multi-dimensioned array being accessed as a row-major array, or conversely). 
+Likewise, a negative stride would suggest to consider loop reversal on the 
+source side, if applicable. Finally, a control flow graph (also as a \verb|.dot| 
+file) is generated to display the memory reference computation flows and data 
+computation flows, to give a visual insight of the control flow dependence edges 
+found by MAQAO in the binary kernel.
+
 \section{Testcases examples}
   \todo{implementation}
 
