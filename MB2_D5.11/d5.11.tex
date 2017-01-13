@@ -638,23 +638,65 @@ parameters (iterations, bounds, steps, directions, etc. in the case of loops).
       tt0 = 0.0_wp
 \end{lstlisting}
 
+In return, MAQAO's simd analyzer module can output YAML-formatted information
+as well. The output indicates information such as the DWARF-side
+identifications, the actual symbol name of the function, which may differ from
+its DWARF counterpart, due, for instance, to mangling such as the appended
+trailing underscore for Fortran symbols, as can be seen below.
+
+\begin{verbatim}
+---
+d_sym8_md_p_10_ld_u1_v1_1_t_t_t_:
+  maqao_dwarf_file: /tmp/d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170108_29558_1ujhbcj.f90
+  maqao_dwarf_func: d_sym8_md_p_10_ld_u1_v1_1_t_t_t
+  maqao_symbol: d_sym8_md_p_10_ld_u1_v1_1_t_t_t_
+  maqao_dwarf_language: fortran
+  maqao_loop_index:
+    '1': For7
+    '0': For3
+    '3': For5
+    '2': For3
+    '4': For0
+  maqao_dwarf_data: true
+[...]
+\end{verbatim}
+
+The \verb|loop_index| entry matches MAQAO's loop numbering with BOAST loop
+numbering. The \verb|dwarf_data| boolean entry indicates whether the DWARF
+debugging informations were properly found and decoded. Loops entries, below, detail
+findings and possible simd-oriented issues regarding the binary code produced.
+They list potential issues such as memory access strides, data dependency
+cycles, complex branching.
+
+\begin{verbatim}
+[...]
+  For0:
+    maqao_loop_id: '4'
+    maqao_sa_innermost: true
+    maqao_sa_nb_paths: 4
+    maqao_sa_large_store_stride: false
+    maqao_sa_large_load_stride: false
+    maqao_sa_dependence_cycle: bad_cycle
+[...]
+\end{verbatim}
 
 \subsection{Kernel generation}
 
-\begin{itemize}
-  \item Requirements
-    \begin{itemize}
-      \item Executable kernel
-      \item No position-independent binary
-      \item Dwarf debug info
-    \end{itemize}
-  \item Kernel wrapper
-\end{itemize}
+%\begin{itemize}
+%  \item Requirements
+%    \begin{itemize}
+%      \item Executable kernel
+%      \item No position-independent binary
+%      \item Dwarf debug info
+%    \end{itemize}
+%  \item Kernel wrapper
+%\end{itemize}
 
-MAQAO requires the resulting kernel binary to be an executable, since binary patching and 
-instrumentation is not supported at this time for position independent codes on the ARM 
-architecture, such as in shared objects. Yet, by default, BOAST generates binaries from the source 
-meta-kernel as shared objects, and loads them directly inside BOAST's own Ruby process. 
+MAQAO requires the resulting kernel binary to be an executable, since binary
+patching and instrumentation is not supported at this time for position
+independent codes on the ARM architecture, such as in shared objects. Yet, by
+default, BOAST generates binaries from the source meta-kernel as shared
+objects, and loads them directly inside BOAST's own Ruby process. 
 
 \subsection{Kernel instrumentation}
 
