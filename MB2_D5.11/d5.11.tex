@@ -1359,7 +1359,27 @@ behaviour of the produced assembly code.
 
 
 \section{Conclusion and Future Works}\label{sec:conclusion}
-\todo{conclusion}
+
+This document presented the purpose, process and realization of the integration 
+of the MAQAO binary code quality analysis framework together with BOAST, a 
+computing kernel generator and optimizer based on an abstract, 
+meta-representation of kernel procedures. The report discussed the 
+complementarity of the two frameworks, detailed there respective characteristics 
+and usage, and proposed a general organization for a combined MAQAO-in-BOAST 
+composite framework. After presenting design choices and implementations details 
+such as the data channel using specially formatted source code comments, or the 
+expected binary format and constraints, examples of use where given on a 
+micro-kernel and a kernel from the BigDFT application.
+
+On going works is now dedicated to make both environment able to cooperate in a 
+more automatized manner and to enrich the scope of MAQAO analyses on ARM 
+architectures with the context of BOAST in mind. In particular, exploring data 
+layout issues and hinting, on which compilers have little control, would allow 
+to return more relevant feedback to BOAST and improve the overall optimization 
+process. Since BOAST has the ability to annotate not only loops but any abstract 
+syntactical tree (AST) element, MAQAO would then have the opportunity to 
+guide its own data layout analysis, and also to confront findings with accurate 
+information right from the source code generator.
 
 \bibliographystyle{plain}
 \bibliography{d5.11}
