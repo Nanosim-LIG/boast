@@ -47,3 +47,6 @@ filesystem
 nanosimulation
 ab-initio
 CEA
+OpenCL
+CUDA
+simdizable

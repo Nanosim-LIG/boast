@@ -167,8 +167,8 @@ Possible instruction modifications include moving/inserting/suppressing code blo
 function calls, or operations designated as 'instrumentation' where some sets of instructions are 
 both moved and modified such as a function call is made every time such instructions are called 
 before executing the instrumented instructions themselves. Core services also include foundational 
-capabilities such as building call graphs and control flow graphs from the disassembled binary 
-functions.
+capabilities such as building call graphs, control flow graphs and instruction 
+level dependence graphs from the disassembled binary functions.
 
 A set of \lua-to-C wrapper routines implement the transition between the C~core and the Lua 
 services. These routines enable to manipulate relevant assembly objects such as binary files, 
@@ -362,11 +362,11 @@ enabled, the SIMD analyzer uses \dd to translate binary addresses into source
 locations, provided the binary was compiled with debugging information included
 (typically enabled by specifying the '-g' flag at compile time to the compiler).
 
-% s1116
+% s116
 \begin{figure}[h]
   \centering
 \includegraphics[width=1\textwidth]{fs116_l47}
-\caption{Control flow graph for TSVC s116.}\label{fig:cfgs116}
+\caption{Dependence graph for TSVC s116.}\label{fig:dgs116}
 \end{figure}
 
 The listing below is extracted from kernel \texttt{s116} in the TSVC benchmark
@@ -386,10 +386,17 @@ for (int nl = 0; nl < ntimes*10; nl++) {
         [...]
 }
 \end{lstlisting}
+% s116
+\begin{figure}[p]
+  \centering
+\includegraphics[width=0.70\textwidth]{cfg_s116}
+\caption{Control flow graph for TSVC s116.}\label{fig:cfgs116}
+\end{figure}
 
 Running the simd module on the kernel produce the following output as well as
-the instruction level control flow graph in \texttt{.dot} format (see
-Fig.~\ref{fig:cfgs116}). The output indicates the routine being analyzed, the
+the instruction level dependence graph in \texttt{.dot} format (see
+Fig.~\ref{fig:dgs116}) and the control flow graph (see Fig.~\ref{fig:cfgs116}). 
+The output indicates the routine being analyzed, the
 source language of the routine as indicated in the binary DWARF debugging
 information, and the loops detected in the function assembler code. For each
 loop entries, the MAQAO assigned loop id and the corresponding source code line
@@ -447,14 +454,14 @@ explored for the innermost loops of the function.
 \end{verbatim}
 \end{small}
 
-Possible issues preventing proper simdization include inter-instruction
-dependencies, appearing as dependence cycles. Dependences found in the loop nest
-assemble instructions are displayed in the function's associated control flow
-graph (see Fig.~\ref{fig:cfgs116}). Edges in Red corresponds to memory index computation
-dependences (instruction paths leading to the generation of an address used in a
-memory reference), while black edges corresponds to data computation dependencies. 
-The control flow graph confirms that no dependence cycle would prevent
-simdization in this \texttt{s116} loop 47.
+Possible issues preventing proper simdization include inter-instruction 
+dependencies, appearing as dependence cycles. Dependences found in the loop nest 
+assemble instructions are displayed in the function's associated dependence 
+graph (see Fig.~\ref{fig:dgs116}). Edges in Red corresponds to memory index 
+computation dependences (instruction paths leading to the generation of an 
+address used in a memory reference), while black edges corresponds to data 
+computation dependencies. The dependence graph confirms that no dependence cycle 
+would prevent simdization in this \texttt{s116} loop 47.
 
 \begin{small}
 \begin{verbatim}
@@ -946,18 +953,192 @@ structure is to sparse, to irregular, or not accessed through its innermost,
 contiguous dimension (as would for instance be the case for column-major 
 multi-dimensioned array being accessed as a row-major array, or conversely). 
 Likewise, a negative stride would suggest to consider loop reversal on the 
-source side, if applicable. Finally, a control flow graph (also as a \verb|.dot| 
+source side, if applicable. Finally, a dependence graph (also as a \verb|.dot| 
 file) is generated to display the memory reference computation flows and data 
-computation flows, to give a visual insight of the control flow dependence edges 
-found by MAQAO in the binary kernel.
+computation flows, to give a visual insight of the data dependence edges found 
+by MAQAO in the binary kernel. It is accompanied with a control flow graph 
+showing the connected components found in the function, which helps to localize 
+loops within the structure of the function. The shading increases according to 
+the nesting level of the connected component.
 
 \section{Testcases examples}\label{sec:examples}
-  \todo{implementation}
+
+This section presents some tests cases using the MAQAO-in-BOAST framework. We 
+first use a very basic vector addition kernel to get an overview of the multiple 
+files, graphs and output being generated from the initial meta kernel. The 
+second example is a kernel extracted from 
+BigDFT~\cite{genovese:bigdft:jcp:2008}, an ab-initio nanosimulation code written 
+at CEA and part of Project Mont-Blanc~2's target applications.
 
   \subsection{Vector Addition}
-\begin{itemize}
-  \item Basic vector addition kernel
-\end{itemize}
+
+  The core part of the \ruby script making the \verb|vector_add| meta kernel is 
+  shown below. It uses BOAST calls to build an abstract representation of the 
+  kernel. This abstract representation is then used to instantiate kernel 
+  versions as needed. The routine below can be used for generating both C and 
+  Fortran instantiations. It can also generate accelerator-enabled CUDA or 
+  OpenCL routines, which is out of scope for the present document however.
+  
+\begin{lstlisting}[style=BOAST]
+def vector_add
+  n = Int("n",:dir => :in)
+  a = Real("a",:dir => :in, :dim => [ Dim(n)] )
+  b = Real("b",:dir => :in, :dim => [ Dim(n)] )
+  c = Real("c",:dir => :out, :dim => [ Dim(n)] )
+  p = Procedure("vector_add", [n,a,b,c]) {
+    decl i = Int("i")
+    expr = c[i] === a[i] + b[i]
+    if (get_lang == CL or get_lang == CUDA) then
+      pr i === get_global_id(0)
+      pr expr
+    else
+      pr For(i,0,n-1) {
+        pr expr
+      }
+    end
+  }
+  return p.ckernel
+end
+\end{lstlisting}
+
+One possible instantiation is the C-language listing below. It is deliberately 
+simplistic for the purpose of exemplification. Yet, one can see both the 
+function and the loop following the C syntax. The loop is preceded by a C-style 
+block of comments containing a YAML data block, as explained in the 
+implementation section above. 
+
+\begin{lstlisting}[language=C]
+void vector_add(const int32_t n, const float * a, const float * b, float * c){
+  int32_t i;
+/* --- */
+/* For0: */
+/*   :iterator: i */
+/*   :first: 0 */
+/*   :last: n - (1) */
+/*   :step: 1 */
+/*   :operator: <= */
+  for (i = 0; i <= n - (1); i += 1) {
+    c[i] = a[i] + b[i];
+  }
+}
+\end{lstlisting}
+
+BOAST's building passes then generate binaries form the C-source kernel, both as 
+a shared object that can be loaded within the BOAST \ruby process, and as an 
+executable, on which the MAQAO pass is called, if enabled, which is the case by 
+default if BOAST using the shipped \verb|boast_maqao.sh| shell script.
+
+MAQAO first outputs general details about the executable and routine to be 
+processed, as a sanity check to verify that the binary file can be loaded and 
+parsed successfully.
+
+\begin{verbatim}
+analysing: vector_add
+/tmp/vector_add20170114_15910_1mq6zxr.c:5
+language: C
+---
+maqao_dwarf_language: c
+maqao_dwarf_file: /tmp/vector_add20170114_15910_1mq6zxr.c
+maqao_dwarf_func: vector_add
+maqao_dwarf_data: true
+maqao_symbol: vector_add
+\end{verbatim}
+
+\begin{figure}[h]
+  \centering
+\includegraphics[width=0.8\textwidth]{c_no_fpic}
+\caption{Function control flow graph for the generated vector addition kernel, the loop (numbered 0) is in the connected component~2.}\label{fig:cfg_vec_add}
+\end{figure}
+
+The control flow graph of the kernel function is generated 
+(see~\ref{fig:cfg_vec_add}), showing all the connected components found in the 
+assembly code. The disassembled section of the binary corresponding to the loop 
+is listed for reference.
+
+\begin{verbatim}
+# Loop entries
+- raw instruction listing -
+  o l.0 0x28: ldr       r3, [fp, #-8] ;
+  o l.0 0x2c: lsl       r3, r3, #2 ;
+  o l.0 0x30: ldr       r2, [fp, #-28] ;
+  o l.0 0x34: add       r3, r2, r3;
+  o l.0 0x38: ldr       r2, [fp, #-8] ;
+  o l.0 0x3c: lsl       r2, r2, #2 ;
+  o l.0 0x40: ldr       r1, [fp, #-20] ;
+  o l.0 0x44: add       r2, r1, r2;
+  o l.0 0x48: vldr      s14, [r2, #0] ;
+  o l.0 0x4c: ldr       r2, [fp, #-8] ;
+  o l.0 0x50: lsl       r2, r2, #2 ;
+  o l.0 0x54: ldr       r1, [fp, #-24] ;
+  o l.0 0x58: add       r2, r1, r2;
+  o l.0 0x5c: vldr      s15, [r2, #0] ;
+  o l.0 0x60: vadd.f32  s15, s14, s15;
+  o l.0 0x64: vstr      s15, [r3, #0] ;
+  o l.0 0x68: ldr       r3, [fp, #-8] ;
+  o l.0 0x6c: add       r3, r3, #1 ;
+  o l.0 0x70: str       r3, [fp, #-8] ;
+  o l.0 0x74: ldr       r3, [fp, #-16] ;
+  o l.0 0x78: sub       r2, r3, #1 ;
+  o l.0 0x7c: ldr       r3, [fp, #-8] ;
+  o l.0 0x80: cmp       r2, r3;
+  o l.0 0x84: bge       28 <vector_add+28>;
+----------
+\end{verbatim}
+
+In the case of this basic loop, the code does not exhibit any inter-iteration 
+dependence cycle as expected. The data dependence graph is consistent with this 
+observation (see Fig.~\ref{fig:dg_vec_add}).
+
+\begin{verbatim}
+- circuits analysis - checking whether data dependences are compatible with 
+  vectorization
+  . l.0 has no dependence cycle
+      > loop is vectorizable
+\end{verbatim}
+
+Moreover, no suboptimal access strides have been detected, both regarding load 
+and store instructions, and the loop exhibit a single, straightforward path. The 
+loop is therefore trivially simdizable.
+
+\begin{verbatim}
+---
+vector_add:
+  '0':
+    maqao_sa_large_load_stride: false
+    maqao_sa_innermost: true
+    maqao_sa_dependence_cycle: none
+    maqao_sa_nb_paths: 1
+    maqao_loop_id: '0'
+    maqao_sa_large_store_stride: false
+    [...]
+\end{verbatim}
+
+Instrumenting and tracing memory accesses in the routine confirms that three 
+instructions respectively access three 2-MB arrays in an unidimensional pattern 
+with a stride of 4-bytes (the size of C~\texttt{float} elements), as shown in 
+the processed trace extract below.
+
+\begin{verbatim}
+## Volume for tid = 0 loopid = 0 iid = 4
+for i0 = 0 to 2097151
+  val 0xb6666008 + 4*i0
+
+## Volume for tid = 0 loopid = 0 iid = 7
+for i0 = 0 to 2097151
+  val 0xb5e65008 + 4*i0
+
+## Volume for tid = 0 loopid = 0 iid = 8
+for i0 = 0 to 2097151
+  val 0xb5664008 + 4*i0
+\end{verbatim}
+
+\begin{figure}[h]
+  \centering
+\includegraphics[width=1\textwidth]{fvector_add_l0}
+\caption{Dependence graph for the loop 0.}\label{fig:dg_vec_add}
+\end{figure}
+
+
 
   \subsection{BigDFT Filter}
 \begin{itemize}
