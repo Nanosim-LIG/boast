@@ -1139,12 +1139,224 @@ for i0 = 0 to 2097151
 \caption{Dependence graph for the loop 0.}\label{fig:dg_vec_add}
 \end{figure}
 
-
-
   \subsection{BigDFT Filter}
-\begin{itemize}
-  \item Mont-Blanc 2 Application BigDFT kernel
-\end{itemize}
+
+  BigDFT is a nanosimulation application designed at CEA to simulate the 
+  properties of materials at the atomic level. It is one of the applications to 
+  be explored in the context of the Mont-Blanc~2 project.
+  It is based on the Density Functional Theory (DFT) and uses a wavelet basis 
+  set. As such, it heavily relies on convolution filtering kernels. A family of 
+  such kernels have been ported onto BOAST as meta-kernels. We therefore applied 
+  the MAQAO-in-BOAST framework to the \texttt{MagicFilter1d} members of that 
+  family. The common piece of BOAST meta-kernel common to this family of kernels 
+  is shown below for references, though most of the actual meta-code is defined 
+  in sub-modules.
+
+\begin{lstlisting}[style=BOAST]
+def MagicFilter1d(filter, optims=GenericOptimization::new)
+  conv_operation = GenericConvolutionOperator1d::new(filter, :ld => true, :narr => true, :a_x => true,:a_y=>true, :a => true)
+  conv_operation.optimize(optims) if optims
+
+  p, subops = conv_operation.procedure
+
+  kernel = BOAST::CKernel::new
+
+  print_header
+
+  subops.each_value { |op|
+    BOAST::pr op
+    puts "chosen:"+ op.name
+  }
+  BOAST::pr p
+
+  kernel.procedure = p
+  kernel.cost_function = lambda { |*args| conv_operation.cost(*args) }
+  return kernel
+end
+\end{lstlisting}
+
+A part of one instance of this meta kernel is shown in Fortran below. It has 
+been shortened for editing purpose. However, it clearly shows the benefit of 
+using BOAST, since working on such kernels ``by hand'' would be tricky and error 
+prone. This listing is YAML annotated on loop structures, in anticipation for 
+MAQAO processing. The careful reader may have noticed that the \texttt{For3} 
+annotation does not precede a loop statement. This signifies that the 
+corresponding loop has been unrolled and inlined. Thus, no loop statement is 
+needed on this ``virtual'' loop for this kernel instance.
+
+\input{mf1d_f90.tex}
+\begin{figure}[p]
+  \centering
+\includegraphics[width=0.90\textwidth]{cfg_bigd_kernel_crop}
+\caption{Control flow graph for one instance of MagicFilter1d meta 
+kernel.}\label{fig:cfgmf1d}
+\end{figure}
+
+Once the MAQAO pass is reached in the building process, the binary analysis 
+starts. Five loops are found in the generated binary as can be shown in the 
+identification output below. A cropped version of the huge control graph is also 
+shown on Figure~\ref{fig:cfgmf1d}.
+
+\begin{verbatim}
+analysing: d_sym8_md_p_10_ld_u1_v1_1_t_t_t_
+/tmp/d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:1
+language: Fortran95
+---
+maqao_dwarf_language: fortran
+maqao_dwarf_file: /tmp/d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90
+maqao_dwarf_func: d_sym8_md_p_10_ld_u1_v1_1_t_t_t
+maqao_dwarf_data: true
+maqao_symbol: d_sym8_md_p_10_ld_u1_v1_1_t_t_t_
+
+----------
+# Loop entries
+# loop 0: d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:78
+# yaml annotations found:
+# - generator's loop id: For2
+# - loop iterator: i1
+# - loop step: 1
+# - loop operator: <=
+# loop 1: d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:211
+# yaml annotations found:
+# - generator's loop id: For6
+# - loop iterator: i1
+# - loop step: 1
+# - loop operator: <=
+# loop 2: d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:145
+# yaml annotations found:
+# - generator's loop id: For4
+# - loop iterator: i1
+# - loop step: 1
+# - loop operator: <=
+# loop 3: d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:79
+# yaml annotations found:
+# - generator's loop id: For2
+# - loop iterator: i1
+# - loop step: 1
+# - loop operator: <=
+# loop 4: d_sym8_md_p_10_ld_u1_v1_1_t_t_t20170114_19966_r5332h.f90:58
+# yaml annotations found:
+# - generator's loop id: For0
+# - loop iterator: l
+# - loop step: 1
+# - loop operator: <=
+\end{verbatim}
+
+We will not detail all the loops here. However, Loop 4 (MAQAO ID) corresponding 
+to BOAST's generated Loop \verb|For0| is especially interesting. The loop is 
+shown below followed by the corresponding unoptimized (for illustration purpose) 
+assembly code output by MAQAO. While the source code of the loop is extremely 
+short, the resulting binary is long and complex instead.
+
+\input{mf1d_For0_f90.tex}
+
+\begin{footnotesize}
+\begin{verbatim}
+  o d_sym8.f90:58 l.4   0x90:	ldr	r3, [fp, #-48] ;
+  o d_sym8.f90:58 l.4   0x94:	add	sl, r3, #15 ;
+  o d_sym8.f90:58 l.4   0x98:	ldr	r3, [fp, #-208] ;
+  o d_sym8.f90:58 l.4   0x9c:	ldr	r8, [r3, #0] ;
+  o d_sym8.f90:58 l.4   0xa0:	ldr	sb, [fp, #-48] ;
+  o d_sym8.f90:58 l.4   0xa4:	mov	r3, sb;
+  o d_sym8.f90:58 l.4   0xa8:	cmp	r8, #0 ;
+  o d_sym8.f90:58 l.4   0xac:	blt	d4 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+d4>;
+  o d_sym8.f90:58 l.4   0xb0:	cmp	r3, #0 ;
+  o d_sym8.f90:58 l.4   0xb4:	blt	cc <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+cc>;
+  o d_sym8.f90:58 l.4   0xb8:	mov	r1, r8;
+  o d_sym8.f90:58 l.4   0xbc:	mov	r0, r3;
+  o d_sym8.f90:58 l.4   0xc0:	bl	0 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_>;
+  o d_sym8.f90:58 l.4   0xc4:	mov	r3, r0;
+  o d_sym8.f90:58 l.4   0xc8:	b	108 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+108>;
+  o d_sym8.f90:58 l.4   0xcc:	add	r3, r3, #1 ;
+  o d_sym8.f90:58 l.4   0xd0:	b	f4 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+f4>;
+  o d_sym8.f90:58 l.4   0xd4:	cmp	r3, #0 ;
+  o d_sym8.f90:58 l.4   0xd8:	bgt	f0 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+f0>;
+  o d_sym8.f90:58 l.4   0xdc:	mov	r1, r8;
+  o d_sym8.f90:58 l.4   0xe0:	mov	r0, r3;
+  o d_sym8.f90:58 l.4   0xe4:	bl	0 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_>;
+  o d_sym8.f90:58 l.4   0xe8:	mov	r3, r0;
+  o d_sym8.f90:58 l.4   0xec:	b	108 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+108>;
+  o d_sym8.f90:58 l.4   0xf0:	sub	r3, r3, #1 ;
+  o d_sym8.f90:58 l.4   0xf4:	mov	r1, r8;
+  o d_sym8.f90:58 l.4   0xf8:	mov	r0, r3;
+  o d_sym8.f90:58 l.4   0xfc:	bl	0 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_>;
+  o d_sym8.f90:58 l.4   0x100:	mov	r3, r0;
+  o d_sym8.f90:58 l.4   0x104:	sub	r3, r3, #1 ;
+  o d_sym8.f90:58 l.4   0x108:	mul	r3, r8, r3;
+  o d_sym8.f90:58 l.4   0x10c:	rsb	r2, r3, sb;
+  o d_sym8.f90:58 l.4   0x110:	lsl	r3, sl, #2 ;
+  o d_sym8.f90:58 l.4   0x114:	sub	r1, fp, #36 ;
+  o d_sym8.f90:58 l.4   0x118:	add	r3, r1, r3;
+  o d_sym8.f90:58 l.4   0x11c:	str	r2, [r3, #-160] ;
+  o d_sym8.f90:57 l.4   0x120:	ldr	r3, [fp, #-48] ;
+  o d_sym8.f90:57 l.4   0x124:	cmp	r3, #14 ;
+  o d_sym8.f90:57 l.4   0x128:	moveq	r3, #1 ;
+  o d_sym8.f90:57 l.4   0x12c:	movne	r3, #0 ;
+  o d_sym8.f90:57 l.4   0x130:	ldr	r2, [fp, #-48] ;
+  o d_sym8.f90:57 l.4   0x134:	add	r2, r2, #1 ;
+  o d_sym8.f90:57 l.4   0x138:	str	r2, [fp, #-48] ;
+  o d_sym8.f90:57 l.4   0x13c:	cmp	r3, #0 ;
+  o d_sym8.f90:57 l.4   0x140:	bne	148 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+148>;
+  o d_sym8.f90:57 l.4   0x144:	b	90 <d_sym8_md_p_10_ld_u1_v1_1_t_t_t_+90>;
+
+\end{verbatim}
+\end{footnotesize}
+
+This, while the three other loops (MAQAO ID Loop 0 is not innermost) are readily 
+simdizable, Loop~4 instead exhibits issues in terms both of code path complexity 
+(4 different execution paths founds in the loop), and suboptimal strides.
+
+\begin{verbatim}
+- circuits analysis - checking whether data dependences are compatible with vectorization
+  . l.1 has no dependence cycle
+      > loop is vectorizable
+  . l.2 has no dependence cycle
+      > loop is vectorizable
+  . l.3 has no dependence cycle
+      > loop is vectorizable
+  . l.4 has no dependence cycle
+      > loop is vectorizable
+- memory stride analysis - checking whether data strides are compatible with vectorization
+  . l.4 has references with large or negative index strides
+- control flow analysis
+  . l.4 has 4 different execution paths
+      > complex control flow hinders vectorization. Use versioning, loop splitting or masks
+\end{verbatim}
+
+The output of the memory reference instrumentation trace, however, shows that 
+actual behaviour of this loop at run-time in terms of memory access pattern is 
+smoother than inferred from the structure of the assembly instructions flow alone.
+
+\begin{small}
+\begin{verbatim}
+Info: ## Volume for tid = 0 loopid = 4 iid = 475
+Info: Instance 0
+for i0 = 0 to 29
+  val 0xbea47318 + 4*i0
+Info: ## Volume for tid = 0 loopid = 4 iid = 476
+Info: Instance 0
+for i0 = 0 to 29
+  val 0xbea473ac
+  [...]
+Info: ## Volume for tid = 0 loopid = 4 iid = 480
+Info: Instance 0
+for i0 = 0 to 29
+  val 0xbea4730c
+Info: ## Volume for tid = 0 loopid = 4 iid = 481
+Info: Instance 0
+for i0 = 0 to 29
+  val 0x9ca0
+Info: ## Volume for tid = 0 loopid = 4 iid = 482
+Info: Instance 0
+for i0 = 0 to 29
+  val 0xbea473ac
+\end{verbatim}
+\end{small}
+
+The static analysis view and the dynamic view extracted from memory access 
+collection trace are therefore complementary in exploring the actual quality and 
+behaviour of the produced assembly code.
+
 
 \section{Conclusion and Future Works}\label{sec:conclusion}
 \todo{conclusion}
