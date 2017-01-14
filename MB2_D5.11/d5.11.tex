@@ -1011,7 +1011,7 @@ implementation section above.
 void vector_add(const int32_t n, const float * a, const float * b, float * c){
   int32_t i;
 /* --- */
-/* For0: */
+/* For1: */
 /*   :iterator: i */
 /*   :first: 0 */
 /*   :last: n - (1) */
@@ -1036,12 +1036,6 @@ parsed successfully.
 analysing: vector_add
 /tmp/vector_add20170114_15910_1mq6zxr.c:5
 language: C
----
-maqao_dwarf_language: c
-maqao_dwarf_file: /tmp/vector_add20170114_15910_1mq6zxr.c
-maqao_dwarf_func: vector_add
-maqao_dwarf_data: true
-maqao_symbol: vector_add
 \end{verbatim}
 
 \begin{figure}[h]
@@ -1103,14 +1097,21 @@ loop is therefore trivially simdizable.
 \begin{verbatim}
 ---
 vector_add:
-  '0':
-    maqao_sa_large_load_stride: false
+  maqao_loop_index:
+    '0': For1
+  maqao_dwarf_data: true
+  maqao_dwarf_language: c
+  maqao_dwarf_file: /tmp/vector_add20170114_18346_w2tofy.c
+  maqao_dwarf_func: vector_add
+  For1:
     maqao_sa_innermost: true
-    maqao_sa_dependence_cycle: none
     maqao_sa_nb_paths: 1
-    maqao_loop_id: '0'
     maqao_sa_large_store_stride: false
-    [...]
+    maqao_sa_large_load_stride: false
+    yaml: For1
+    maqao_loop_id: '0'
+    maqao_sa_dependence_cycle: none
+[...]
 \end{verbatim}
 
 Instrumenting and tracing memory accesses in the routine confirms that three 
