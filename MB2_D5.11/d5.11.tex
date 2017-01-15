@@ -515,20 +515,20 @@ Implementation details will be further discussed in the next section.
 \end{figure}
 
 Figure~\ref{fig:bigpict} shows the big picture of the interaction flow between BOAST and MAQAO. A 
-BOAST meta-kernel source file written in the Ruby language is submitted to BOAST. BOAST internals 
-are organized as a series of rules or pass, following a scheme similar to a Makefile, to generate 
+BOAST meta-kernel source file written in the \ruby language is submitted to BOAST. BOAST internals 
+are organized as a series of rules or passes, following a scheme similar to a Makefile, to generate 
 source files, build them and execute them for performance evaluation and autotuning. MAQAO is 
-integrated in this scheme as a specific pass that may be enabled or disabled on demand. It is called 
+integrated in this scheme as a specific pass, that may be enabled or disabled on demand. It is called 
 once the YAML annotated source file in C or Fortran has been generated and compiled as an autonomous 
 executable, to work on the resulting binary.
 
 \subsection{Usage}
 
 Since BOAST integrates a dedicated build pass for MAQAO, using BOAST and MAQAO together requires 
-enabling this specific pass by positioning the environment variable \verb|MAQAO_PASS| to TRUE as 
-well as defining the variable \verb|MAQAO_PATH| to MAQAO installation directory. Then, either 
-\verb|MAQAO_WRAP_TMPL_F| and/or \verb|MAQAO_WRAP_TMPL_C| to specify a template wrapper source, used 
-to call the kernel routine and enable building an executable from the generated kernel. The wrapper 
+enabling this specific pass by positioning the environment variable \verb|MAQAO_PASS| to \texttt{TRUE}, as 
+well as defining the variable \verb|MAQAO_PATH| to the MAQAO installation directory. Then, either 
+\verb|MAQAO_WRAP_TMPL_F| and/or \verb|MAQAO_WRAP_TMPL_C| must be defined to specify a template wrapper source file, used 
+to call the kernel routine, and necessary for building an autonomous executable from the generated kernel. The wrapper 
 template should provide memory allocation and data initialization inside an \verb|@@INIT@@| 
 function, together with a call from that \verb|@@INIT@@| function to the \verb|@@KERNEL@@| kernel 
 function. The \verb|@@INIT@@| and \verb|@@KERNEL@@| placeholders in the template are then 
@@ -563,11 +563,11 @@ int main() {
 }
 \end{lstlisting}
 
-An example \verb|boast_maqao.sh| shell script is shipped within the MAQAO tree in directory 
-\verb|/scripts| to help set the required environment variables before the call to BOAST. Regarding 
+An example \verb|boast_maqao.sh| shell script is shipped within the MAQAO tree, in directory 
+\verb|/scripts|, to help set the required environment variables before the call to BOAST. Regarding 
 the compilation flags, \texttt{CFLAGS} and/or \texttt{FCFLAGS} should specify compiling for ARM 
-architecture and NEON floating point unit, and enable debugging informations encoded compliant with 
-DWARF-2 format, other debugging information format may not be recognized or decoded properly. With 
+architecture and NEON floating point unit, and enable debugging informations encoded in compliance with 
+the DWARF-2 format; other debugging information formats may not be recognized or decoded properly. With 
 well known compilers GNU GCC and GFortran, the corresponding flags should be
 \verb|-marm -mfpu=neon -gdwarf-2|.
 
@@ -575,7 +575,7 @@ The MAQAO tree also ships with a \verb|maqao_from_boast.sh| script, also located
 \verb|MAQAO/scripts|, which is called by default when BOAST reaches the MAQAO pass during the build 
 process. This script serves both as a default MAQAO analysis sequence for when cooperating with 
 BOAST, and as an example about how to get relevant data from BOAST about the kernel being studied. 
-An alternate \verb|maqao_from_boast.sh| script can be used instead by pointing the 
+An alternate \verb|maqao_from_boast.sh| script can be used instead, by pointing the 
 \verb|MAQAO_SCRIPT| environment variable to it.
 
 \section{Implementation}\label{sec:implementation}
