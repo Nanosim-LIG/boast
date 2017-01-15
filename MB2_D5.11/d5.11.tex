@@ -945,10 +945,10 @@ the nesting level of the connected component.
 
 This section presents some tests cases using the MAQAO-in-BOAST framework. We 
 first use a very basic vector addition kernel to get an overview of the multiple 
-files, graphs and output being generated from the initial meta kernel. The 
+files, graphs and outputs being generated from the initial meta kernel. The 
 second example is a kernel extracted from 
 BigDFT~\cite{genovese:bigdft:jcp:2008}, an ab-initio nanosimulation code written 
-at CEA and part of Project Mont-Blanc~2's target applications.
+at CEA, and part of Project Mont-Blanc~2's target applications.
 
   \subsection{Vector Addition}
 
@@ -957,7 +957,7 @@ at CEA and part of Project Mont-Blanc~2's target applications.
   kernel. This abstract representation is then used to instantiate kernel 
   versions as needed. The routine below can be used for generating both C and 
   Fortran instantiations. It can also generate accelerator-enabled CUDA or 
-  OpenCL routines, which is out of scope for the present document however.
+  OpenCL routines, which is out of scope for the present document, however.
   
 \begin{lstlisting}[style=BOAST]
 def vector_add
@@ -1003,10 +1003,10 @@ void vector_add(const int32_t n, const float * a, const float * b, float * c){
 }
 \end{lstlisting}
 
-BOAST's building passes then generate binaries form the C-source kernel, both as 
+BOAST's building passes then generate binaries from the C-source kernel, both as 
 a shared object that can be loaded within the BOAST \ruby process, and as an 
 executable, on which the MAQAO pass is called, if enabled, which is the case by 
-default if BOAST using the shipped \verb|boast_maqao.sh| shell script.
+default if BOAST is called using the shipped \verb|boast_maqao.sh| shell script.
 
 MAQAO first outputs general details about the executable and routine to be 
 processed, as a sanity check to verify that the binary file can be loaded and 
@@ -1021,7 +1021,7 @@ language: C
 \begin{figure}[h]
   \centering
 \includegraphics[width=0.8\textwidth]{c_no_fpic}
-\caption{Function control flow graph for the generated vector addition kernel, the loop (numbered 0) is in the connected component~2.}\label{fig:cfg_vec_add}
+\caption{Function control flow graph for the generated vector addition kernel, the loop (numbered 0) is in the connected component~\#2.}\label{fig:cfg_vec_add}
 \end{figure}
 
 The control flow graph of the kernel function is generated 
@@ -1060,7 +1060,7 @@ is listed for reference.
 \end{verbatim}
 
 In the case of this basic loop, the code does not exhibit any inter-iteration 
-dependence cycle as expected. The data dependence graph is consistent with this 
+dependence cycle, as expected. The data dependence graph is consistent with this 
 observation (see Fig.~\ref{fig:dg_vec_add}).
 
 \begin{verbatim}
@@ -1095,7 +1095,7 @@ vector_add:
 \end{verbatim}
 
 Instrumenting and tracing memory accesses in the routine confirms that three 
-instructions respectively access three 2-MB arrays in an unidimensional pattern 
+instructions respectively access three 2-MB arrays in an unidimensional pattern,
 with a stride of 4-bytes (the size of C~\texttt{float} elements), as shown in 
 the processed trace extract below.
 
@@ -1128,8 +1128,8 @@ for i0 = 0 to 2097151
   set. As such, it heavily relies on convolution filtering kernels. A family of 
   such kernels have been ported onto BOAST as meta-kernels. We therefore applied 
   the MAQAO-in-BOAST framework to the \texttt{MagicFilter1d} members of that 
-  family. The common piece of BOAST meta-kernel common to this family of kernels 
-  is shown below for references, though most of the actual meta-code is defined 
+  family. The piece of BOAST meta-kernel common to this family of kernels 
+  is shown below for references, though most of the actual meta-code is actually defined 
   in sub-modules.
 
 \begin{lstlisting}[style=BOAST]
@@ -1158,11 +1158,11 @@ end
 A part of one instance of this meta kernel is shown in Fortran below. It has 
 been shortened for editing purpose. However, it clearly shows the benefit of 
 using BOAST, since working on such kernels ``by hand'' would be tricky and error 
-prone. This listing is YAML annotated on loop structures, in anticipation for 
+prone. This listing is YAML-annotated on loop structures, in anticipation for 
 MAQAO processing. The careful reader may have noticed that the \texttt{For3} 
 annotation does not precede a loop statement. This signifies that the 
 corresponding loop has been unrolled and inlined. Thus, no loop statement is 
-needed on this ``virtual'' loop for this kernel instance.
+needed on this ``virtual'' loop, in this kernel instance.
 
 \input{mf1d_f90.tex}
 \begin{figure}[p]
@@ -1173,7 +1173,7 @@ kernel.}\label{fig:cfgmf1d}
 \end{figure}
 
 Once the MAQAO pass is reached in the building process, the binary analysis 
-starts. Five loops are found in the generated binary as can be shown in the 
+starts. Five loops are found in the generated binary, as can be seen in the 
 identification output below. A cropped version of the huge control graph is also 
 shown on Figure~\ref{fig:cfgmf1d}.
 
@@ -1222,7 +1222,7 @@ maqao_symbol: d_sym8_md_p_10_ld_u1_v1_1_t_t_t_
 # - loop operator: <=
 \end{verbatim}
 
-We will not detail all the loops here. However, Loop 4 (MAQAO ID) corresponding 
+We will not detail all the loops here. However, Loop~\#4 (MAQAO ID) corresponding 
 to BOAST's generated Loop \verb|For0| is especially interesting. The loop is 
 shown below followed by the corresponding unoptimized (for illustration purpose) 
 assembly code output by MAQAO. While the source code of the loop is extremely 
@@ -1282,9 +1282,9 @@ short, the resulting binary is long and complex instead.
 \end{verbatim}
 \end{footnotesize}
 
-This, while the three other loops (MAQAO ID Loop 0 is not innermost) are readily 
-simdizable, Loop~4 instead exhibits issues in terms both of code path complexity 
-(4 different execution paths founds in the loop), and suboptimal strides.
+This means that, while the three other loops are readily 
+simdizable (MAQAO ID Loop~\#0 is not considered, because not innermost), Loop~\#4 instead exhibits issues in terms of both code path complexity 
+(4~different execution paths founds in the loop), and suboptimal strides.
 
 \begin{verbatim}
 - circuits analysis - checking whether data dependences are compatible with vectorization
@@ -1304,8 +1304,8 @@ simdizable, Loop~4 instead exhibits issues in terms both of code path complexity
 \end{verbatim}
 
 The output of the memory reference instrumentation trace, however, shows that 
-actual behaviour of this loop at run-time in terms of memory access pattern is 
-smoother than inferred from the structure of the assembly instructions flow alone.
+the actual behaviour of this loop at run-time, in terms of memory access patterns, is 
+much smoother than inferred from the structure of the assembly instructions flow alone.
 
 \begin{small}
 \begin{verbatim}
