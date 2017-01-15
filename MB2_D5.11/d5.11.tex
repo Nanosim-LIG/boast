@@ -1373,13 +1373,16 @@ micro-kernel and a kernel from the BigDFT application.
 
 On going works is now dedicated to make both environment able to cooperate in a 
 more automatized manner and to enrich the scope of MAQAO analyses on ARM 
-architectures with the context of BOAST in mind. In particular, exploring data 
-layout issues and hinting, on which compilers have little control, would allow 
-to return more relevant feedback to BOAST and improve the overall optimization 
-process. Since BOAST has the ability to annotate not only loops but any abstract 
-syntactical tree (AST) element, MAQAO would then have the opportunity to 
-guide its own data layout analysis, and also to confront findings with accurate 
-information right from the source code generator.
+architectures with the context of BOAST in mind. The source code wrapper needed 
+to build executable versions of the kernels for MAQAO processing could be 
+generated automatically, which would not be much more convenient, but would 
+allow BOAST to transfer parameters to the kernel before execution. Moreover, 
+exploring data layout issues and hinting, on which compilers have little 
+control, would allow to return more relevant feedback to BOAST and improve the 
+overall optimization process. Since BOAST has the ability to annotate not only 
+loops but any abstract syntactical tree (AST) element, MAQAO would then have the 
+opportunity to guide its own data layout analysis, and also to confront findings 
+with accurate information right from the source code generator.
 
 \bibliographystyle{plain}
 \bibliography{d5.11}
