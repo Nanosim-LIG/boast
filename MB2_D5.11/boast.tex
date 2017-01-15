@@ -34,7 +34,7 @@ BOAST attempts to solve this problem by offering the kernel developer several to
 \subsubsection{Usage}
 
 
-The usage of BOAST will be illustrated using the following Ruby/BOAST listing.
+The usage of BOAST will be illustrated using the following \ruby/BOAST listing.
 This example shows how to load BOAST, change it's environment, define a simple vector addition kernel, execute it using different languages, and check the accuracy of the obtained results.
 
 \lstset{style=BOAST}
@@ -93,14 +93,14 @@ Here, this configuration is changed on lines 4 and 5 to set the default real var
 
 \paragraph{Kernel definition} is done on lines 7 to 25.
 The definition is enclosed in a procedure that will be called in different contexts, yielding different kernel versions.
-First, the parameters of the kernel are defined on lines 8 to 11, and stored in ruby variables.
+First, the parameters of the kernel are defined on lines 8 to 11, and stored in \ruby variables.
 Those parameters have a direction (similar to FORTRAN intent). The \emph{Real} parameters have a dimension, meaning they are arrays, in this case of length \emph{n}.
 The \emph{Procedure} is declared on line 12 by giving its name and parameter list.
 It is associated a block of code that spans from line 12 to 23 and constitute its body.
 A local integer variable \emph{i} is defined on line 12 and declared using the keyword \emph{decl}.
-On line 14, an assignment expression is saved for later use in the ruby variable \emph{expr}.
+On line 14, an assignment expression is saved for later use in the \ruby variable \emph{expr}.
 This expression computes one element of the result array.
-The difference between a ruby assignment (using the \emph{=} operator) and a BOAST assignment (using the \emph{===} operator) has to be noted.
+The difference between a \ruby assignment (using the \emph{=} operator) and a BOAST assignment (using the \emph{===} operator) has to be noted.
 On lines 15 to 22 we can see some BOAST meta-programming.
 Here, based on the BOAST \emph{lang} state, the code will select either a GPU or CPU implementation.
 The GPU implementation obtains an index of the element to process (line 16) and stores it into the \emph{i} variable.
@@ -118,7 +118,7 @@ A reference result is computed on line 32.
 An epsilon is defined to check the accuracy of further computed results (line 33).
 From line 35 to 44 the kernel will be generated for each target language supported by BOAST.
 To do this we first change the BOAST \emph{lang} state and print it on the standard output (lines 36 and 37).
-The \emph{vector\_add} ruby procedure is then called, which generates a new instance of the computing kernel, adapted to the chosen language (line 38).
+The \emph{vector\_add} \ruby procedure is then called, which generates a new instance of the computing kernel, adapted to the chosen language (line 38).
 The generated code is then printed to the standard output.
 The output array is set randomly and then the computing kernel is called through the \emph{run} method  (line 44).
 Compilation is launched implicitly here, it could also be requested explicitly by calling the \emph{build} method.
@@ -126,7 +126,7 @@ First, the kernel takes positional arguments that correspond to its parameters.
 The following parameters are named options that are ignored in \emph{C} and \emph{FORTRAN} but interpreted in \emph{OpenCL} and \emph{CUDA}.
 Once the kernel has finished executing we compare the output \emph{c} to the computed reference (line 42) and raise an error should the maximum discrepancy be superior to \emph{epsilon}.
 
-\paragraph{Installation} of BOAST is made through the simple following command provided ruby >= 1.9.3 and its development files are installed.
+\paragraph{Installation} of BOAST is made through the simple following command provided \ruby >= 1.9.3 and its development files are installed.
 
 \lstset{style=Bash}
 \begin{lstlisting}
