@@ -158,42 +158,42 @@ remainder of this document.
 \subsubsection{Presentation}
 MAQAO, the Modular Assembly Quality Analyzer and Optimizer, is a performance analysis and processing 
 tool working at the level of compiled, binary code. It was initially developed at the University of 
-Versailles in France, and has been partially developed at Inria in Bordeaux as well since around 
+Versailles in France, and has been partially developed at Inria in Bordeaux as well, since around 
 2010. While primarily focused on Intel processors (x86-64, xeon phi, and even Itanium), it was 
-ported on the ARM architecture as part of Mont-Blanc~2 task D5.3 work, and delivered as 
+ported on the ARM architecture as part of Mont-Blanc~2 task D5.3's work, and delivered as 
 Deliverable~D5.4. The MAQAO tool presents itself as an extensible framework for binary code 
-processing. It is a made of a C-language low-level core set of libraries and a high-level set of 
+processing. It is a made of a C-language low-level core set of libraries, and a high-level set of 
 wrappers making the framework scriptable in the language \lua using the embedded interpretor. 
 
 The core libraries of MAQAO enable the fundamental operations to disassemble a binary file, modify 
 its assembly instructions (operation designated as 'patching'), and re-assemble the modified binary. 
 Possible instruction modifications include moving/inserting/suppressing code blocks, inserting 
-function calls, or operations designated as 'instrumentation' where some sets of instructions are 
-both moved and modified such as a function call is made every time such instructions are called 
+function calls, or operations designated as 'instrumentation,' where some sets of instructions are 
+both moved and modified, such as that function call is made every time such instructions are called, 
 before executing the instrumented instructions themselves. Core services also include foundational 
 capabilities such as building call graphs, control flow graphs and instruction 
 level dependence graphs from the disassembled binary functions.
 
-A set of \lua-to-C wrapper routines implement the transition between the C~core and the Lua 
+A set of \lua-to-C wrapper routines implement the transition between the C~core and the \lua 
 services. These routines enable to manipulate relevant assembly objects such as binary files, 
 functions, basic instruction blocks, individual instructions, instruction operands, loops and 
 labels. 
 
-On top of those transitional routines, special-purpose processing modules can be implemented in Lua 
+On top of those transitional routines, special-purpose processing modules can be implemented in \lua 
 to perform high level operations such as analysis, tracing and hinting. In particular, tracing 
 involves instrumenting every memory reference in the studied kernel with calls to the memory access 
-accounting routine in the MAQAO Trace Library (MTL) which monitor every memory address referenced 
-within the kernel routine during an execution, and generate a compressed trace of the memory 
+accounting routine in the MAQAO Trace Library (MTL), which monitors every memory address referenced 
+within the kernel routine during an execution, and generates a compressed trace of the memory 
 references. The trace can then be further processed to output memory access patterns as human 
 readable algebraic expressions.
 
 \subsubsection{Usage}
 
-The MAQAO framework version developed in Bordeaux is very much targeted at an experimented audience, 
+The MAQAO framework version developed in Bordeaux is very much targeted at an experienced audience, 
 and, as a note of warning, it may lack the user friendliness commonly found in mature academic and 
 commercial programming tools. It is aimed at expert users desirous to dig further into the binary 
 kernel code produced by their compiler, and build their own, custom analysis strategies.
-This section presents MAQAO from a functional point-of-view, and specify usage for the most common
+This section presents MAQAO from a functional point-of-view, and specifies usage for the most common
 operations.
 
 \paragraph{Requirements and Installation}
@@ -207,7 +207,7 @@ follow the ELF format specification and System V general ABI specification, and 
 ARM architecture, while optional debugging information must follow the DWARF-2 format. Support for 
 ARM's Thumb instruction sets is limited to disassembly only.
 
-Building MAQAO involves running \cmake followed by the \verb|make| command after untaring the 
+Building MAQAO involves running \cmake followed by the \verb|make| command, after untaring the 
 distribution or checking it out from the development repository:
 
 \begin{verbatim}
@@ -229,7 +229,7 @@ convenience, and is assumed to be set accordingly in the remainder of the docume
 
 Disassembling and low level assembly management is handled by MAQAO's Madras module. Every MAQAO 
 module is accessed by specifying its name as first argument of MAQAO. Module's arguments are then 
-prepended after the module name. Binary disassembled listing can be obtained using Madras as 
+prepended after the module name. Binary disassembled listings can be obtained using Madras as 
 follows:
 
 \begin{verbatim}
@@ -247,12 +247,12 @@ bf4c <s1111>:
 \paragraph{Instrument}
 
 Instrumentation is the process of inserting probes for a set of specific
-assembler instructions such that every time such an instruction is encountered
+assembler instructions such that every time on of these instructions is encountered
 during execution, some accounting probe function can be called to account for
-that instruction. Instrumentation in MAQAO is provided by the Memory module,
+that instruction occurrence. Instrumentation in MAQAO is provided by the Memory module,
 to target memory referencing instructions, such as to extract memory access
 patterns at run-time. The Memory module itself calls the Madras module under the
-hood to perform the low-level assembly manipulation involved.
+hood, to perform the low-level assembly manipulations involved.
 
 \begin{verbatim}
 $ maqao memory -i -bin=<BINARY> -f=<FUNCTION_NAME> -m=unicore -tp==<TEMP_DIR>
@@ -270,12 +270,12 @@ probe functions are trace recording routines from the MAQAO Trace Library (MTL).
 \paragraph{Trace}
 
 Executing the resulting instrumented kernel produces a trace file containing a 
-compressed representation of the target addresses of the memory accesses 
+compressed representation of the target addresses of each memory access 
 instruction encountered during execution. For each instruction instrumented, the 
 flow of addresses captured is compressed on-the-fly using a lossless
-algorithm name \emph{Nested Loop Recognition} (NLR), designed by Ketterlin and 
+algorithm named \emph{Nested Loop Recognition} (NLR), designed by Ketterlin and 
 Clauss~\cite{ketterlin:nlr:cgo:2008}. The trace is stored using a compact text 
-file format, not meant to be read as is by the programmer, as shown below.
+file format, not meant to be read as-is by the programmer, as shown below.
 
 \begin{footnotesize}
 \begin{verbatim}
@@ -298,11 +298,11 @@ the human-readable form of the trace from the compact trace and from the compani
 $ maqao memory -d -t=<COMPACT_TRACE> -meta=<META_LUA_FILE> -tp=<TEMP_DIR>
 \end{verbatim}
 
- This human-readable version shows, for each instrumented instruction, the
- corresponding thread id, the id of the loop containing the instruction as
- assigned by MAQAO, and the 'instrumented instruction' id also incrementally
- assigned by MAQAO. Multiple instances may exist when multiple threads invoke
- the instruction.
+This human-readable version shows, for each instrumented instruction, the
+corresponding thread id, the id of the loop containing the instruction as
+assigned by MAQAO, and the 'instrumented instruction' id also incrementally
+assigned by MAQAO. Multiple instances may exist when multiple threads invoke
+the instruction.
 
 \begin{footnotesize}
 \begin{verbatim}
@@ -324,12 +324,12 @@ by the instrumentation are represented by as a pseudo source-code with loops and
 expressions. The expressions describe the memory addresses that have been
 accessed, and depend on the surrounding loop counters and loop bounds, as
 detected by the NLR algorithm. The portion of trace above corresponds to the
-\texttt{b} array reference in the basic loop nest below extracted from routine
+Array \texttt{b} reference in the basic loop nest below, extracted from routine
 \texttt{s111} of the TSVC benchmark
 suite~\cite{maleki:vectorization:pact:2011,callahan:tsvc:sc:1988}. Array
-elements are 32-bit single precision floating point values. Thus, the
+elements in this example are 32-bit single precision floating point values. Thus, the
 \texttt{8*i1} expression in the trace expresses a 2-element stride array
-traversal corresponding to the innermost loop \texttt{i} index step value in the
+traversal, corresponding to the innermost loop \texttt{i} index step value in the
 source code. The \texttt{i0} is not referenced in the expression, meaning the
 outer loop is a repetition loop.
 
@@ -353,7 +353,7 @@ accesses.
 
 MAQAO's SIMD analyzer is a MAQAO module built on top of the \lua API to analyze
 simdization potential in compiled kernel binaries, as well as possible issues
-hindering vectorization. The SIMD analyzer module can be applied to a kernel
+hindering vectorization. The SIMD analyzer module can be applied to a kernel,
 using the following command:
 
 \begin{verbatim}
@@ -374,7 +374,7 @@ locations, provided the binary was compiled with debugging information included
 \end{figure}
 
 The listing below is extracted from kernel \texttt{s116} in the TSVC benchmark
-suite. Note that since the innermost index loop runs five by five steps, there is no
+suite. Note that since the innermost index loop runs five by five steps at a time, there are no
 intra-iteration dependencies for the innermost loop.
 \lstset{style=C}
 \begin{lstlisting}
@@ -397,15 +397,15 @@ for (int nl = 0; nl < ntimes*10; nl++) {
 \caption{Control flow graph for TSVC s116.}\label{fig:cfgs116}
 \end{figure}
 
-Running the simd module on the kernel produce the following output as well as
+Running the simd module on the kernel produces the following output, as well as
 the instruction level dependence graph in \texttt{.dot} format (see
-Fig.~\ref{fig:dgs116}) and the control flow graph (see Fig.~\ref{fig:cfgs116}). 
+Fig.~\ref{fig:dgs116}), and the control flow graph (see Fig.~\ref{fig:cfgs116}). 
 The output indicates the routine being analyzed, the
 source language of the routine as indicated in the binary DWARF debugging
 information, and the loops detected in the function assembler code. For each
-loop entries, the MAQAO assigned loop id and the corresponding source code line
+loop entry, the MAQAO assigned loop id and the corresponding source code line
 are mentioned. Note that the number of loops found in the binary code may differ
-from the number of loops in the source file, due to possible code
+from the number of loops in the source file (in either way, larger or smaller), due to possible code
 transformations and optimizations by the compiler, such as loop unrolling,
 splitting or even inlining. 
 
@@ -420,13 +420,13 @@ language: C
 \end{verbatim}
 \end{small}
 
-The module then list a disassembled text for the detected loops, indicating for
+The module then lists a disassembled text for the detected loops, indicating for
 each assembler instruction line the corresponding source code file and line, the
 corresponding loop number and nesting, the instruction address and the
 disassembled instruction. Loop nest paths are ordered from outermost on the left
 to innermost on the right. For instance, \verb|l.48:47| for address
-\texttt{0xcd64} indicates that the instruction is both part of loop 47 and 48
-in terms of MAQAO loop ids, and loop 47 is nested in loop 48. SIMD potential is
+\texttt{0xcd64} indicates that the instruction is both part of~loop 47 and~48
+in terms of MAQAO loop ids, and loop 47 is nested in loop~48. SIMD potential is
 explored for the innermost loops of the function.
 
 \begin{small}
@@ -460,12 +460,12 @@ explored for the innermost loops of the function.
 
 Possible issues preventing proper simdization include inter-instruction 
 dependencies, appearing as dependence cycles. Dependences found in the loop nest 
-assemble instructions are displayed in the function's associated dependence 
-graph (see Fig.~\ref{fig:dgs116}). Edges in Red corresponds to memory index 
+assembler instructions are displayed in the function's associated dependence 
+graph (see Fig.~\ref{fig:dgs116}). Edges in Red correspond to memory index 
 computation dependences (instruction paths leading to the generation of an 
-address used in a memory reference), while black edges corresponds to data 
+address used in a memory reference), while black edges correspond to data 
 computation dependencies. The dependence graph confirms that no dependence cycle 
-would prevent simdization in this \texttt{s116} loop 47.
+would prevent simdization in this \texttt{s116} loop~47.
 
 \begin{small}
 \begin{verbatim}
@@ -475,7 +475,7 @@ would prevent simdization in this \texttt{s116} loop 47.
 \end{verbatim}
 \end{small}
 
-However the five element memory access strides for each stream are large, and do not immediately
+However the 5-element memory access strides for each stream are large, and do not immediately
 match the preferred vector length of the underlying architecture.
 
 \begin{small}
@@ -499,7 +499,7 @@ building blocks provided by the core services together with the \lua layer. Cust
 scripts are written in \lua. They can be executed by specifying the script filename as the first 
 argument of the MAQAO executable, while the remaining arguments can be used by the script itself for 
 its own purpose. The SIMD analyzer script is meant to serve has an example on how to write custom 
-MAQAO scripts, and how to access and manipulate objects such as binary files, function, loops or 
+MAQAO scripts, and how to access and manipulate objects such as binary files, functions, loops or 
 assembly instructions, for instance, from within \lua scripts.
 
 \section{Integration}\label{sec:integration}
