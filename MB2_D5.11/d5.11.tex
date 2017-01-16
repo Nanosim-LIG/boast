@@ -47,6 +47,20 @@
   morekeywords={BOAST, pr, decl, opn, close}
 }
 
+\lstdefinestyle{Bash}{
+  language=Bash,
+  basicstyle=\small\sffamily,
+  frame=single,
+  rulecolor=\color{bluelst},
+  commentstyle=\color{greenlst}\textit,
+  keywordstyle=\bfseries,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  tabsize=4
+}
+
 \begin{document}
 \devnum{[5.11]}
 \title{[MAQAO in BOAST]}
@@ -147,7 +161,126 @@ remainder of this document.
 %  \item Purpose, capabilities, usage
 %\end{itemize}
 
-\input{boast.tex}
+\subsubsection{Presentation}
+
+BOAST is an automatic performance tuning framework aiming at meta-programming and optimizing computing kernels.
+BOAST has been extensively described in the Mont-Blanc 2 deliverable 5.5~\cite{tichadou15} and thus will only be briefly described here.
+For a more in-depth presentation, reader should refer to the afore mentioned document.
+
+The primary goal of BOAST is to bring performance portability to critical parts of high performance computing applications.
+Those \emph{computing kernels} are well-defined parts of an application that are compute or memory intensive and represent a significant part of the computing time.
+Their inputs are usually limited in complexity, thus those kernels are a prime target for optimization.
+
+Unfortunately, the variety of platforms an HPC code can encounter keeps growing, and a lot of time is spent optimizing computing kernels for new architectures.
+BOAST attempts to solve this problem by offering the kernel developer several tools:
+\begin{itemize}
+  \item an Embedded Domain Specific language to describe computing kernels and their possible optimizations;
+  \item a code generation engine that can output the kernel in several languages used in the HPC community: C, FORTRAN, CUDA and OpenCL;
+  \item a runtime to select the versions to test, build them, execute them and test their performance and accuracy.
+\end{itemize}
+
+
+\subsubsection{Usage}
+
+
+The usage of BOAST will be illustrated using the following \ruby/BOAST listing.
+This example shows how to load BOAST, change it's environment, define a simple vector addition kernel, execute it using different languages, and check the accuracy of the obtained results.
+
+\lstset{style=BOAST}
+\begin{lstlisting}
+require 'BOAST'
+include BOAST
+
+set_array_start(0)
+set_default_real_size(4)
+
+def vector_add
+  n = Int( "n", :dir => :in)
+  a = Real("a", :dir => :in,  :dim => [ Dim(n) ] )
+  b = Real("b", :dir => :in,  :dim => [ Dim(n) ] )
+  c = Real("c", :dir => :out, :dim => [ Dim(n) ] )
+  p = Procedure("vector_add", [n,a,b,c]) {
+    decl i = Int("i")
+    expr = c[i] === a[i] + b[i]
+    if (get_lang == CL or get_lang == CUDA) then
+      pr i === get_global_id(0)
+      pr expr
+    else
+      pr For(i,0,n-1) {
+        pr expr
+      }
+    end
+  }
+  return p.ckernel
+end
+
+n = 1024*1024
+a = NArray.sfloat(n).random
+b = NArray.sfloat(n).random
+c = NArray.sfloat(n)
+
+c_ref = a + b
+epsilon = 10e-15
+
+[FORTRAN, C, CL, CUDA].each { |l|
+  set_lang( l )
+  puts "#{get_lang_name}:"
+  k = vector_add
+  puts k
+  c.random!
+  k.run(n, a, b, c, global_work_size: [n,1,1], local_work_size: [32,1,1])
+  diff_max = (c_ref - c).abs.max
+  raise "Error: max error too big: #{diff_max}!" if diff_max > epsilon
+}
+puts "Success!"
+\end{lstlisting}
+
+\paragraph{Loading BOAST} is done on lines 1 and 2.
+It loads the BOAST framework in its environmental configuration.
+This configuration can be changed through configuration files or environment variables.
+Here, this configuration is changed on lines 4 and 5 to set the default real variable size to 4 bytes and the first index of arrays to 0 (C like arrays).
+
+\paragraph{Kernel definition} is done on lines 7 to 25.
+The definition is enclosed in a procedure that will be called in different contexts, yielding different kernel versions.
+First, the parameters of the kernel are defined on lines 8 to 11, and stored in \ruby variables.
+Those parameters have a direction (similar to FORTRAN intent). The \emph{Real} parameters have a dimension, meaning they are arrays, in this case of length \emph{n}.
+The \emph{Procedure} is declared on line 12 by giving its name and parameter list.
+It is associated a block of code that spans from line 12 to 23 and constitute its body.
+A local integer variable \emph{i} is defined on line 12 and declared using the keyword \emph{decl}.
+On line 14, an assignment expression is saved for later use in the \ruby variable \emph{expr}.
+This expression computes one element of the result array.
+The difference between a \ruby assignment (using the \emph{=} operator) and a BOAST assignment (using the \emph{===} operator) has to be noted.
+On lines 15 to 22 we can see some BOAST meta-programming.
+Here, based on the BOAST \emph{lang} state, the code will select either a GPU or CPU implementation.
+The GPU implementation obtains an index of the element to process (line 16) and stores it into the \emph{i} variable.
+This is printed using the \emph{pr} keyword, meaning that this line is to appear in the generated source.
+The expression we saved earlier is then printed (line 17).
+The CPU implementation prints a for loop that will process all the elements of the arrays.
+We can see here an example, though far-fetched, of code factoring.
+The line 24 returns the computing kernel object corresponding to the printed \emph{p} procedure.
+The procedure \emph{vector\_add} is automatically set as the entry point of the computing kernel.
+
+\paragraph{Kernel execution} is done on lines 27 to 48.
+Line 27 to 30 define input values for our kernel.
+Three of these objects are numerical arrays of size \emph{n}, two of them (input ones) are initialized with random values.
+A reference result is computed on line 32.
+An epsilon is defined to check the accuracy of further computed results (line 33).
+From line 35 to 44 the kernel will be generated for each target language supported by BOAST.
+To do this we first change the BOAST \emph{lang} state and print it on the standard output (lines 36 and 37).
+The \emph{vector\_add} \ruby procedure is then called, which generates a new instance of the computing kernel, adapted to the chosen language (line 38).
+The generated code is then printed to the standard output.
+The output array is set randomly and then the computing kernel is called through the \emph{run} method  (line 44).
+Compilation is launched implicitly here, it could also be requested explicitly by calling the \emph{build} method.
+First, the kernel takes positional arguments that correspond to its parameters.
+The following parameters are named options that are ignored in \emph{C} and \emph{FORTRAN} but interpreted in \emph{OpenCL} and \emph{CUDA}.
+Once the kernel has finished executing we compare the output \emph{c} to the computed reference (line 42) and raise an error should the maximum discrepancy be superior to \emph{epsilon}.
+
+\paragraph{Installation} of BOAST is made through the simple following command provided \ruby >= 1.9.3 and its development files are installed.
+
+\lstset{style=Bash}
+\begin{lstlisting}
+gem install --user-install BOAST
+\end{lstlisting}
 
 \subsection{MAQAO}
 %\begin{itemize}
