@@ -293,7 +293,7 @@ MAQAO, the Modular Assembly Quality Analyzer and Optimizer, is a performance ana
 tool working at the level of compiled, binary code. It was initially developed at the University of 
 Versailles in France, and has been partially developed at Inria in Bordeaux as well, since around 
 2010. While primarily focused on Intel processors (x86-64, xeon phi, and even Itanium), it was 
-ported on the ARM architecture as part of Mont-Blanc~2 task D5.3's work, and delivered as 
+ported on the ARM architecture as part of Mont-Blanc~2 task T5.3's work, and delivered as 
 Deliverable~D5.4. The MAQAO tool presents itself as an extensible framework for binary code 
 processing. It is a made of a C-language low-level core set of libraries, and a high-level set of 
 wrappers making the framework scriptable in the language \lua using the embedded interpretor. 
@@ -877,7 +877,7 @@ Madras' binary patching capabilities is then used by MAQAO's instrumentation
 code in the Memory module to insert accounting probes inside the targeted kernel 
 routine, for each assembly instruction resulting in a memory read or memory 
 write. Instrumenting \verb|$pc|relative memory references is however not 
-supported on the ARM architecture at this time. Example below shows a diff 
+supported on the ARM architecture at this time. Example below shows a \verb|diff| 
 between an uninstrumented binary listing fragment and the corresponding 
 instrumented assembly code. Instruction \verb|vldr s14, [r1]| at address 
 \texttt{0xbe78} (and other memory referencing instructions as well, such as the 
