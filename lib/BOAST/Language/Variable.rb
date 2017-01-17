@@ -376,7 +376,7 @@ module BOAST
       else
         return Index::new(self, *args)
       end
-     end
+    end
  
     def boast_header(lang=C)
       return decl_texture_s if texture?
@@ -574,13 +574,13 @@ module BOAST
     end
 
     def alloc_c( dims, align = get_address_size)
-      d = dims.collect { |d| d.to_s }.reverse.join(")*(")
+      ds = dims.collect { |d| d.to_s }.reverse.join(")*(")
       if align > (OS.bits/8) then
         # check alignment is a power of 2
         raise "Invalid alignment #{align}!" if align & (align - 1) != 0
-        return FuncCall::new(:posix_memalign, address, align, FuncCall::new(:sizeof, @type.decl) * d)
+        return FuncCall::new(:posix_memalign, address, align, FuncCall::new(:sizeof, @type.decl) * ds)
       else
-        return self === FuncCall::new(:malloc, FuncCall::new(:sizeof, @type.decl) * d).cast(self)
+        return self === FuncCall::new(:malloc, FuncCall::new(:sizeof, @type.decl) * ds).cast(self)
       end
     end
 

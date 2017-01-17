@@ -503,7 +503,7 @@ module BOAST
       if tar.class == Variable and tar.type.vector_length > 1 then
         return @target.copy("#{@target} = #{Load(@source, @target, @options)}", DISCARD_OPTIONS)
       elsif src.class == Variable and src.type.vector_length > 1 then
-        r_t, oper = transition(tar, src, Affectation)
+        r_t, _ = transition(tar, src, Affectation)
         opts = @options.clone
         opts[:store_type] = r_t
         return @target.copy("#{Store(@target, @source, opts)}", DISCARD_OPTIONS)
@@ -972,7 +972,7 @@ module BOAST
       @operand1 = x
       @operand2 = y
       op1, op2 = op_to_var
-      @return_type, dummy = transition(op1, op2, Modulo)
+      @return_type, _ = transition(op1, op2, Modulo)
     end
 
     def to_s

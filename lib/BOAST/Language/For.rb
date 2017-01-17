@@ -135,7 +135,7 @@ module BOAST
         ensure
           pop_env( :replace_constants )
         end
-      rescue Exception => ex
+      rescue Exception
         open
         block.call(*args)
         close

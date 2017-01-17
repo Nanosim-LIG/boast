@@ -189,7 +189,7 @@ module BOAST
         if verbose then
           sh call_string
         else
-          status, stdout, stderr = systemu call_string
+          status, _, stderr = systemu call_string
           if not status.success? then
             puts stderr
             fail "#{t.source}: compilation failed"

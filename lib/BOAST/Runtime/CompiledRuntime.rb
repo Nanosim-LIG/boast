@@ -8,7 +8,12 @@ require 'os'
 
 class Dir
   module Tmpname
-    module_function
+    class << self
+      undef_method :make_tmpname
+    end
+
+    undef_method :make_tmpname
+
     def make_tmpname(prefix_suffix, n)
       case prefix_suffix
       when String
@@ -25,6 +30,9 @@ class Dir
       path << "_#{n}" if n
       path << suffix
     end
+
+    module_function :make_tmpname
+
   end
 end
 
@@ -283,7 +291,6 @@ EOF
     def get_params_value
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
-      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       push_env(:decl_module => true) {
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
@@ -324,7 +331,6 @@ EOF
     def get_results
       argc = @procedure.parameters.length
       argv = Variable::new("_boast_argv", CustomType, :type_name => "VALUE", :dimension => [ Dimension::new(0,argc-1) ] )
-      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       push_env(:decl_module => true) {
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]

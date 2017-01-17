@@ -53,7 +53,6 @@ module BOAST
         @context = OpenCL::create_context([device])
       end
       program = @context.create_program_with_source([@code.string])
-      opts = options[:CLFLAGS]
       begin
         program.build(:options => options[:CLFLAGS])
       rescue OpenCL::Error => e

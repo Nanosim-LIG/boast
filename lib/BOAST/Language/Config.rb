@@ -133,27 +133,34 @@ module BOAST
   class << self
     alias use_vla_old? use_vla?
     private :use_vla_old?
+    alias set_model_old set_model
+    private :set_model_old
+    alias model_old= model=
+    private :model_old=
   end
 
+  undef_method :use_vla?
   # @return the boolean evaluation of the *use_vla* state. false if lang is CL or CUDA.
   def use_vla?
     return false if [CL,CUDA].include?(lang)
     return use_vla_old?
   end
 
+  undef_method :set_model
   def set_model(val)
-    @@model=val
+    set_model_old(val)
     Intrinsics::generate_conversions
   end
 
+  undef_method :model=
   def model=(val)
-    @@model=val
+    set_model_old(val)
     Intrinsics::generate_conversions
   end
 
   # @private
   def get_default_architecture
-    arhchitecture = nil
+    architecture = nil
     begin
       env = nil
       if ENV["ARCHITECTURE"] then

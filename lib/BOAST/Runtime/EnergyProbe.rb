@@ -176,7 +176,7 @@ EOF
   rb_hash_aset(_boast_stats, ID2SYM(rb_intern("energy")), results);
 }
 EOF
-		end
+    end
     def is_available?
       return false if OS.mac?
       path = []
