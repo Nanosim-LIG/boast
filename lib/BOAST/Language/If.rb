@@ -15,6 +15,7 @@ module BOAST
     #   @param [Hash{Expression, :else => Proc}] conditions each condition and its associated block (can be nil)
     #   @param [Proc,nil] block else block if :else is not specified in the conditions or nil
     def initialize(conditions, &block)
+      super()
       @conditions = []
       @blocks = []
       if conditions.is_a?(Hash) then

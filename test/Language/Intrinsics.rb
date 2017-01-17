@@ -698,7 +698,7 @@ EOF
     }
   end
 
-  def test_full_maskz_load
+  def test_empty_maskz_load
     push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([0,0,0,0])
       a = Real(:a, :dim => Dim())

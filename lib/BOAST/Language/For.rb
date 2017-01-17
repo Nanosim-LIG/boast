@@ -32,6 +32,7 @@ module BOAST
     # @option options [Boolean] :unroll specifies if {pr} must try to unroll the loop
     # @option options [Array<Object>] :args arguments to be passed to the block. Will be superseded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
+      super()
       default_options = {:step => 1}
       default_options.update( options )
       @options = options

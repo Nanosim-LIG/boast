@@ -11,7 +11,7 @@ class TestExpression < Minitest::Test
 
   def test_arithmetic
     exp = lambda { |a,b,c,d,e,f,g,h|
-      a + +b + -(c * d)/e +g**h
+      a + +b + -(c * d)/e + g**h
     }
     vals = 8.times.collect { rand(100) + 1 }
     vals_var = vals.collect(&:to_var)

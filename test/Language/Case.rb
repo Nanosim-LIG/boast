@@ -76,7 +76,7 @@ EOF
     end
   end
 
-  def test_pr_case_default
+  def test_pr_case_multiple_values_default
     c1 = Case(@expr, [@const1, @const2] => @block1, :default => @block2)
     c2 = Case(@expr, [@const1, @const2] => @block1, &@block2)
     begin
@@ -152,7 +152,6 @@ EOF
     c2 = Case(@expr, @const1 => @block1, @const2 => @block3, &@block2)
     begin
       [c1, c2].each { |c|
-        block = lambda { pr c }
         set_lang(FORTRAN)
         assert_subprocess_output( <<EOF, "" ) { opn c }
 select case ((n) * (2))
@@ -221,12 +220,11 @@ EOF
     end
   end
 
-  def test_pr_multiple_case_default
+  def test_pr_multiple_case_default_by_line
     c1 = Case(@expr, @const1 => @block1, @const2 => @block3, :default => @block2)
     c2 = Case(@expr, @const1 => @block1, @const2 => @block3, &@block2)
     begin
       [c1, c2].each { |c|
-        block = lambda { pr c }
         set_lang(FORTRAN)
         assert_subprocess_output( <<EOF, "" ) { opn c }
 select case ((n) * (2))

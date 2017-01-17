@@ -38,6 +38,10 @@ EOF
       return self
     end
 
+    def initialize
+      @args = nil
+    end
+
   end
 
 end
