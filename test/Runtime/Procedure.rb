@@ -64,10 +64,10 @@ class TestProcedure < Minitest::Test
       c_a.random!
       set_lang(l)
       k = p.ckernel( :includes => "immintrin.h")
-      r = k.run(b_a, c_a)
+      k.run(b_a, c_a)
       assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
     }
-   end
+  end
 
   def test_function
     a = Int( :a, :dir => :in )
@@ -99,7 +99,7 @@ class TestProcedure < Minitest::Test
       ah.random!(100)
       a_out_ref = ah + 2
       k = p.ckernel
-      r = k.run(ah.size, ah, 2)
+      k.run(ah.size, ah, 2)
       assert_equal(a_out_ref, ah)
     }
   end
@@ -125,7 +125,7 @@ class TestProcedure < Minitest::Test
       ah.random!(100)
       a_out_ref = ah + 2
       k = p.ckernel
-      r = k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1])
+      k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1])
       assert_equal(a_out_ref, ah)
     }
   end
@@ -152,7 +152,7 @@ class TestProcedure < Minitest::Test
       ah.random!(100)
       a_out_ref = ah + 2 * repeat
       k = p.ckernel
-      r = k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1], :repeat => repeat)
+      k.run(ah, 2, :global_work_size => [nelem,1,1], :local_work_size => [32,1,1], :repeat => repeat)
       assert_equal(a_out_ref, ah)
     }
   end
