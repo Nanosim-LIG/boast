@@ -129,7 +129,6 @@ module BOAST
       run_method = <<EOF
 def self.run(*args)
   raise "Wrong number of arguments \#{args.length} for #{@procedure.parameters.length}" if args.length > #{@procedure.parameters.length+1} or args.length < #{@procedure.parameters.length}
-  energy_data = NArray::float(1024)
   params = []
   opts = BOAST::get_run_config
   opts = opts.update(args.pop) if args.length == #{@procedure.parameters.length+1}
