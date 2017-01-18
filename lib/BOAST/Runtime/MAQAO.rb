@@ -34,6 +34,18 @@ module BOAST
 
   module MAQAO
 
+    def create_executable_target( linker, ldflags, kernel_files)
+      file target_executable => target_executable_depends do
+        sh "#{linker} -o #{target_executable} #{target_executable_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+        maqao_script = @compiler_options[:MAQAO_SCRIPT]
+        if maqao_script == '' then
+          maqao_script = "#{@compiler_options[:MAQAO_PATH]}/scripts/maqao_from_boast.sh"
+        end
+      end
+      sh "#{maqao_script} #{@compiler_options[:MAQAO_PATH]} #{@procedure.name} Init_#{base_name} #{target_executable}"
+      Rake::Task[target_executable].invoke
+    end
+
     def create_targets( linker, ldshared, ldflags, kernel_files)
       file target => target_depends do
         sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"

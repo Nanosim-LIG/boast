@@ -459,9 +459,9 @@ EOF
       @procedure.boast_header(@lang)
 
       get_output.print <<EOF
-void Init_#{module_name}( void );
+void Init_#{base_name}( void );
 int _boast_repeat;
-void Init_#{module_name}( void ) {
+void Init_#{base_name}( void ) {
 EOF
       increment_indent_level
       output.puts "  FILE * __boast_f;"
@@ -516,7 +516,7 @@ EOF
 }
 int main(int argc, char * argv[]) {
   _boast_repeat=atoi(argv[1]);
-  Init_#{module_name}();
+  Init_#{base_name}();
   return 0;
 }
 EOF
