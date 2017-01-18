@@ -63,11 +63,13 @@ module BOAST
 
       cflags_no_fpic = cflags.gsub("-fPIC","")
 
+      rule ".nofpic#{objext}" => '.c' do |t|
+        c_call_string = "#{c_compiler} #{cflags_no_fpic} -c -o #{t.name} #{t.source}"
+        runner.call(t, c_call_string)
+      end
+
       rule ".#{objext}" => '.c' do |t|
         c_call_string = "#{c_compiler} #{cflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, c_call_string)
-        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
-        c_call_string = "#{c_compiler} #{cflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, c_call_string)
       end
 
@@ -96,11 +98,13 @@ module BOAST
 
       cxxflags_no_fpic = cxxflags.gsub("-fPIC","")
 
+      rule ".nofpic#{RbConfig::CONFIG["OBJEXT"]}" => '.cpp' do |t|
+        cxx_call_string = "#{cxx_compiler} #{cxxflags_no_fpic} -c -o #{t.name} #{t.source}"
+        runner.call(t, cxx_call_string)
+      end
+
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cpp' do |t|
         cxx_call_string = "#{cxx_compiler} #{cxxflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, cxx_call_string)
-        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
-        cxx_call_string = "#{cxx_compiler} #{cxxflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, cxx_call_string)
       end
     end
@@ -119,11 +123,13 @@ module BOAST
 
       fcflags_no_fpic = fcflags.gsub("-fPIC","")
 
+      rule ".nofpic#{RbConfig::CONFIG["OBJEXT"]}" => '.f90' do |t|
+        f_call_string = "#{f_compiler} #{fcflags_no_fpic} -c -o #{t.name} #{t.source}"
+        runner.call(t, f_call_string)
+      end
+
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.f90' do |t|
         f_call_string = "#{f_compiler} #{fcflags} -c -o #{t.name} #{t.source}"
-        runner.call(t, f_call_string)
-        t_name_no_fpic = t.name.gsub(/\.o$/,"_no_fpic.o")
-        f_call_string = "#{f_compiler} #{fcflags_no_fpic} -c -o #{t_name_no_fpic} #{t.source}"
         runner.call(t, f_call_string)
       end
     end
@@ -180,14 +186,14 @@ module BOAST
       end
 
       if OS.mac? then
-        ldflags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress #{ldflags}"
         ldshared = "-dynamic -bundle"
+        ldshared_flags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress"
       else
-        ldflags = "-Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic #{ldflags}"
         ldshared = "-shared"
+        ldshared_flags = "-Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic"
       end
 
-      return [linker, ldshared, ldflags]
+      return [linker, ldshared, ldshared_flags, ldflags]
     end
 
     def setup_compilers(probes, options = {})

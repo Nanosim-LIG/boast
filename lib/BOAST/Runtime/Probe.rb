@@ -68,7 +68,16 @@ EOF
       else
         get_output.print "  #{RESULT} = (int64_t)(_boast_stop.tv_sec - _boast_start.tv_sec) * 1000000000ll + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
       end
+    end
+
+    def store
       get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
+    end
+
+    def to_yaml
+      get_output.print <<EOF
+  printf(":duration: %lf\\n", (double)#{RESULT}*(double)1e-9);
+EOF
     end
 
   end
@@ -126,6 +135,9 @@ EOF
     end
 
     def compute
+    end
+
+    def store
       get_output.print <<EOF
   if( _boast_papi_results != Qnil) {
     VALUE _boast_papi_stats = Qnil;

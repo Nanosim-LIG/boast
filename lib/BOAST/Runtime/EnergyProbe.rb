@@ -111,6 +111,8 @@ EOF
 EOF
     end
     def compute
+    end
+    def store
       get_output.print <<EOF
 {
   VALUE results;
@@ -147,6 +149,8 @@ EOF
       get_output.puts "_boast_energy = redfst_get(_boast_energy);"
     end
     def compute
+    end
+    def store
       get_output.print <<EOF
 {
   VALUE results;
@@ -214,6 +218,8 @@ EOF
       get_output.puts "emlStop(_boast_energy);";
     end
     def compute
+    end
+    def store
       get_output.print <<EOF
 {
   VALUE results;

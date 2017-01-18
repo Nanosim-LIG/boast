@@ -61,6 +61,9 @@ EOF
 EOF
     end
 
+    def store
+    end
+
   end
 
 end
