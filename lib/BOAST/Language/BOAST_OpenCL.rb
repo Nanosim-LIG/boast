@@ -13,7 +13,6 @@ module BOAST
 
     def barrier(*locality)
       if lang == CL then
-        loc=""
         if locality.include?(:local) and locality.include?(:global) then
           return FuncCall::new("barrier","CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE")
         elsif locality.include?(:local) then

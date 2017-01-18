@@ -45,8 +45,8 @@ do while (i < n)
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
-        set_lang(l)
+      [C, CL, CUDA].each { |lg|
+        set_lang(lg)
         assert_subprocess_output( <<EOF, "", &block )
 while (i < n) {
   a[i - (1)] = i;

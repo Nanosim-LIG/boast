@@ -24,7 +24,7 @@ module BOAST
       private
 
       def token_string_generator(name, *args)
-       s = <<EOF
+       return <<EOF
     def #{name}_string(#{args.join(",")})
       return eval get_strings[get_lang][:#{name}]
     end
@@ -36,6 +36,10 @@ EOF
     def [](*args)
       @args = args
       return self
+    end
+
+    def initialize
+      @args = nil
     end
 
   end

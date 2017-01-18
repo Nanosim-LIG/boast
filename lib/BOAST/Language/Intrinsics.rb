@@ -374,7 +374,9 @@ module BOAST
 
     [64, 128].each { |vector_size|
       q = (vector_size == 128 ? "q" : "")
-      [8, 16, 32, 64].each { |size|
+      scal_sizes = [8, 16, 32]
+      scal_sizes.push 64 if vector_size > 64
+      scal_sizes.each { |size|
         [:signed, :unsigned].each { |sign|
           vtype = vector_type_name( :int, size, vector_size, sign )
           type = type_name_ARM( :int, size, sign )
@@ -393,7 +395,9 @@ module BOAST
           }
         }
       }
-      [32, 64].each { |size|
+      scal_sizes = [32]
+      scal_sizes.push 64 if vector_size > 64
+      scal_sizes.each { |size|
         vtype = vector_type_name( :float, size, vector_size )
         type = type_name_ARM( :float, size )
         [[:ADD, "add"], [:SUB, "sub"], [:MUL, "mul"],

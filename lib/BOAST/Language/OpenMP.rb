@@ -143,6 +143,7 @@ EOF
       end
 
       def initialize(options = {}, &block)
+        super()
         @openmp_clauses = options
         @block = block
       end

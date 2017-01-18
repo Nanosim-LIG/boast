@@ -25,6 +25,8 @@ module BOAST
     HASH_NAME = "options"
 
     def initialize( *parameters )
+      @rules = nil
+      @checkers = nil
       if parameters.length == 1 and parameters[0].is_a?(Hash) then
         @parameters = []
         parameters[0].each { |key, value|

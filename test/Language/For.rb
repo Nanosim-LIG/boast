@@ -45,8 +45,8 @@ do i = 1, n, 1
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
-        set_lang(l)
+      [C, CL, CUDA].each { |lg|
+        set_lang(lg)
         assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n; i += 1) {
   a[i - (1)] = i;
@@ -232,8 +232,8 @@ a(1) = 1
 a(2) = 2
 a(3) = 3
 EOF
-    [C, CL, CUDA].each { |l|
-      set_lang(l)
+    [C, CL, CUDA].each { |lg|
+      set_lang(lg)
       assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = 1;
 a[2 - (1)] = 2;

@@ -6,6 +6,7 @@ module BOAST
     attr_reader :constants
 
     def initialize(constants = nil, &block)
+      super()
       @constants = constants
       @block = block
     end
@@ -85,6 +86,7 @@ module BOAST
     # @param [Hash{#to_s, :default => Proc}] control conditions and associated blocks.
     # @param [Proc,nil] block if provided, and :default is not defined in control (or nil), will be used as the default block.
     def initialize(expression, control = {}, &block)
+      super()
       @expression = expression
       @case_conditions = []
       default = control.delete(:default)

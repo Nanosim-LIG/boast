@@ -51,7 +51,7 @@ module BOAST
             const = const[ind]
           }
           return "#{const}#{@source.type.suffix}"
-        rescue Exception => e
+        rescue Exception
         end
       end
       return to_s_fortran if lang == FORTRAN

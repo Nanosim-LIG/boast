@@ -11,6 +11,7 @@ module BOAST
     # @param [Expression] condition
     # @param [Proc,nil] block if given, will be evaluated when {pr} is called
     def initialize(condition, &block)
+      super()
       @condition = condition
       @block = block
     end

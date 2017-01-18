@@ -294,8 +294,8 @@ X86architectures ={"pentium2"=>["MMX"],
    "MMX"]}
   private_constant :X86architectures
   ARMarchitectures = {
-    "ARMv7" => ["neon"],
-    "ARMv8" => ["asimd"]
+    "armv7-a" => ["NEON"],
+    "armv8-a" => ["ASIMD"]
   }
   private_constant :ARMarchitectures
 end

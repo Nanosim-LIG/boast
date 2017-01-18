@@ -7,20 +7,19 @@ module BOAST
     include Inspectable
     extend Functor
 
-    @return_type
-    @options
-
     attr_reader :func_name
     attr_reader :args
     attr_accessor :prefix
 
     def initialize(func_name, *args)
+      @prefix = nil
       @func_name = func_name
       if args.last.kind_of?(Hash) then
         @options = args.last
         @args = args[0..-2]
       else
         @args = args
+        @options = {}
       end
       @return_type = @options[:return] ? @options[:return] : @options[:returns] if @options
     end

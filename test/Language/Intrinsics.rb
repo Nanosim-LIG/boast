@@ -21,7 +21,7 @@ class TestIntrinsics < Minitest::Test
       assert_subprocess_output( <<EOF, "", &block )
 _mm_add_ps( a, b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f32( a, b );
 EOF
@@ -37,10 +37,10 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_add_pd( a, b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, &block )
       }
-      push_env( :architecture => ARM, :model => :ARMv8 ) {
+      push_env( :architecture => ARM, :model => "armv8-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f64( a, b );
 EOF
@@ -129,7 +129,7 @@ _mm_sqrt_ps( b );
 sqrtf( a );
 sqrt( c );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, "Vector square root unsupported on ARM architecture!", &block )
       }
     }
@@ -164,7 +164,7 @@ _mm_sin_ps( b );
 sinf( a );
 sin( c );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, "Vector square root unsupported on ARM architecture!", &block )
       }
     }
@@ -189,7 +189,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm512_add_pd( a, b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, &block )
       }
     }
@@ -203,7 +203,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_add_ps( a, _mm_cvtepi32_ps( _mm_cvtepi16_epi32( b ) ) );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f32( a, vcvtq_f32_s32( vmovl_s16( b ) ) );
 EOF
@@ -233,10 +233,10 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_add_pd( a, _mm_cvtpi32_pd( b ) );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, &block )
       }
-      push_env( :architecture => ARM, :model => :ARMv8 ) {
+      push_env( :architecture => ARM, :model => "armv8-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vaddq_f64( a, vcvt_f64_f32( vcvt_f32_s32( b ) ) );
 EOF
@@ -252,7 +252,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm512_add_pd( a, _mm512_cvtepi32_pd( _mm256_cvtepi16_epi32( b ) ) );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, &block )
       }
     }
@@ -266,7 +266,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_mul_ps( a, b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmulq_f32( a, b );
 EOF
@@ -282,10 +282,10 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_mul_pd( a, b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_raises( IntrinsicsError, &block )
       }
-      push_env( :architecture => ARM, :model => :ARMv8 ) {
+      push_env( :architecture => ARM, :model => "armv8-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmulq_f64( a, b );
 EOF
@@ -301,7 +301,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 _mm_mul_ps( _mm_cvtepi32_ps( a ), b );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmulq_f32( vcvtq_f32_s32( a ), b );
 EOF
@@ -323,7 +323,7 @@ EOF
 _mm_fmadd_ps( a, b, c );
 EOF
       }
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmlaq_f32( c, a, b );
 EOF
@@ -345,7 +345,7 @@ EOF
 _mm_fnmadd_ps( a, b, c );
 EOF
       }
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmlsq_f32( c, a, b );
 EOF
@@ -363,7 +363,7 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 b = _mm_loadu_ps( &a[0] );
 EOF
-        push_env( :architecture => ARM, :model => :ARMv7 ) {
+        push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 b = vld1q_f32( &a[0] );
 EOF
@@ -383,7 +383,7 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 b = _mm_load_ps( &a[0] );
 EOF
-        push_env( :architecture => ARM, :model => :ARMv7 ) {
+        push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 b = vld1q_f32( &a[0] );
 EOF
@@ -435,7 +435,7 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 _mm_storeu_ps( (float * ) &a[0], b );
 EOF
-        push_env( :architecture => ARM, :model => :ARMv7 ) {
+        push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vst1q_f32( (float * ) &a[0], b );
 EOF
@@ -454,7 +454,7 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 _mm_storeu_ps( (float * ) &a[0], _mm_add_ps( b, b ) );
 EOF
-        push_env( :architecture => ARM, :model => :ARMv7 ) {
+        push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vst1q_f32( (float * ) &a[0], vaddq_f32( b, b ) );
 EOF
@@ -474,7 +474,7 @@ EOF
         assert_subprocess_output( <<EOF, "", &block )
 _mm_store_ps( (float * ) &a[0], b );
 EOF
-        push_env( :architecture => ARM, :model => :ARMv7 ) {
+        push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vst1q_f32( (float * ) &a[0], b );
 EOF
@@ -521,7 +521,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_set1_ps( 1.0f );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
       assert_subprocess_output( <<EOF, "", &block )
 b = vdupq_n_f32( 1.0f );
 EOF
@@ -536,7 +536,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_setzero_ps( );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
       assert_subprocess_output( <<EOF, "", &block )
 b = vdupq_n_f32( 0.0f );
 EOF
@@ -551,7 +551,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_setr_ps( 1.0f, 2.0f, 3.0f, 4.0f );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
       assert_subprocess_output( <<EOF, "", &block )
 b = vsetq_lane_f32( 4.0f, vsetq_lane_f32( 3.0f, vsetq_lane_f32( 2.0f, vsetq_lane_f32( 1.0f, vdupq_n_f32( 0 ), 0 ), 1 ), 2 ), 3 );
 EOF
@@ -566,7 +566,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_set1_ps( 1.0f );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
       assert_subprocess_output( <<EOF, "", &block )
 b = vdupq_n_f32( 1.0f );
 EOF
@@ -581,7 +581,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 b = _mm_setzero_ps( );
 EOF
-      push_env( :architecture => ARM, :model => :ARMv7 ) {
+      push_env( :architecture => ARM, :model => "armv7-a" ) {
       assert_subprocess_output( <<EOF, "", &block )
 b = vdupq_n_f32( 0.0f );
 EOF
@@ -698,7 +698,7 @@ EOF
     }
   end
 
-  def test_full_maskz_load
+  def test_empty_maskz_load
     push_env(:array_start => 0, :lang => C, :model => "skylake-avx512".to_sym, :architecture => X86 ) {
       m = Mask([0,0,0,0])
       a = Real(:a, :dim => Dim())

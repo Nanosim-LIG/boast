@@ -115,7 +115,7 @@ EOF
     rb_funcall(_boast_event_set, rb_intern("start"), 0);
   }
 EOF
-  end
+    end
 
     def stop
       get_output.print <<EOF
