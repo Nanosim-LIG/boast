@@ -60,7 +60,7 @@ module BOAST
         when 2
           type = NArray::SINT
         when 4
-          type = NArray::SINT
+          type = NArray::INT
         else
           STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
