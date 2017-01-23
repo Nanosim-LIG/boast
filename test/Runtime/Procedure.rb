@@ -55,6 +55,7 @@ class TestProcedure < Minitest::Test
   end
 
   def test_procedure_vector
+    skip if get_architecture == ARM
     b = Real( :b, :dir => :in, :vector_length => 2 )
     c = Real( :c, :dir => :out, :vector_length => 2, :dim => Dim(4) )
     p = Procedure("vector_copy", [b,c]) { pr c[1] === b }
