@@ -499,8 +499,8 @@ EOF
       get_output.puts '  printf("---\n");'
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
-        get_output.puts '  printf(":return: %ld\n", (long long)_boast_ret);' if type_ret.kind_of?(Int) and type_ret.signed
-        get_output.puts '  printf(":return: %uld\n", (unsigned long long)_boast_ret);' if type_ret.kind_of?(Int) and not type_ret.signed
+        get_output.puts '  printf(":return: %lld\n", (long long)_boast_ret);' if type_ret.kind_of?(Int) and type_ret.signed
+        get_output.puts '  printf(":return: %ulld\n", (unsigned long long)_boast_ret);' if type_ret.kind_of?(Int) and not type_ret.signed
         get_output.puts '  printf(":return: %lf\n", (double)_boast_ret);' if type_ret.kind_of?(Real)
 
       end
