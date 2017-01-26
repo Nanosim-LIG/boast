@@ -5,6 +5,24 @@ require_relative '../helper'
 
 class Vectors < Minitest::Test
 
+  def test_vector_elem_access
+    push_env( :default_real_size => 4, :lang => FORTRAN ) {
+      a = Real :a, :vector_length => 4
+      n = Int :n
+      b = Real :b, :vector_length => 4, :dim => Dim( n )
+      block = lambda {
+        pr a.s1 === 1.0
+        pr a.s2 === (a + a).s0
+        pr b[5].s1 === 2.0
+      }
+      assert_subprocess_output( <<EOF, "", &block )
+a(2) = 1.0
+a(3) = (a + a)(1)
+(b(:, 5))(2) = 2.0
+EOF
+    }
+  end
+
   def test_decl_vector
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
