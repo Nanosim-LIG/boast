@@ -149,8 +149,6 @@ module BOAST
     include Annotation
     ANNOTATIONS = [ :name, :type, :dimension ]
 
-    alias_method :orig_method_missing, :method_missing
-
     def method_missing(m, *a, &b)
       if @type.methods.include?(:members) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
@@ -161,12 +159,12 @@ module BOAST
           return copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length) if lang == CL
           return copy("#{name}(#{existing_set.index(required_set[0])+1})", :vector_length => 1) if lang == FORTRAN
           return copy("#{name}[#{existing_set.index(required_set[0])}]", :vector_length => 1) if lang == C
-          return orig_method_missing(m, *a, &b)
+          super
         else
-          return orig_method_missing(m, *a, &b)
+          super
         end
       else
-        return orig_method_missing(m, *a, &b)
+        super
       end
     end
 
