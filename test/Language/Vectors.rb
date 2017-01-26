@@ -12,12 +12,18 @@ class Vectors < Minitest::Test
       b = Real :b, :vector_length => 4, :dim => Dim( n )
       block = lambda {
         pr a.s1 === 1.0
+        pr a.components(1) === 1.0
         pr a.s2 === (a + a).s0
+        pr a.components(2) === (a + a).components(0)
         pr b[5].s1 === 2.0
+        pr b[5].components(1) === 2.0
       }
       assert_subprocess_output( <<EOF, "", &block )
 a(2) = 1.0
+a(2) = 1.0
 a(3) = (a + a)(1)
+a(3) = (a + a)(1)
+(b(:, 5))(2) = 2.0
 (b(:, 5))(2) = 2.0
 EOF
     }
