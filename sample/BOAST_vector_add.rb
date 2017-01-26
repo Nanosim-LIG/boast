@@ -35,16 +35,14 @@ epsilon = 10e-15
 
 c_ref = a + b
 
-[:FORTRAN, :C, :CL, :CUDA].each { |l|
-  set_lang( BOAST.const_get(l)  )
+[FORTRAN, C, CL, CUDA].each { |l|
+  set_lang( l )
   puts "#{get_lang_name}:"
   k = vector_add
-  puts k.print
+  puts k
   c.random!
-  k.run(n, a, b, c, :global_work_size => [n,1,1], :local_work_size => [32,1,1])
-  diff = (c_ref - c).abs
-  diff.each { |elem|
-    raise "Warning: residue too big: #{elem}" if elem > epsilon
-  }
+  puts k.run(n, a, b, c, global_work_size: [n,1,1], local_work_size: [32,1,1])
+  diff_max = (c_ref - c).abs.max
+  raise "Error: max error too big: #{diff_max}!" if diff_max > epsilon
 }
 puts "Success!"
