@@ -17,12 +17,14 @@ module BOAST
       var = to_var
       if var.type.methods.include?(:members) and var.type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
-      elsif var.vector? and m.to_s[0] == 's' and lang == CL or lang == FORTRAN then
+      elsif var.vector? and m.to_s[0] == 's' and lang != CUDA then
         required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(var.type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
           return var.copy(var.name+"."+m.to_s, :vector_length => m.to_s[1..-1].length) if lang == CL
           return var.copy("(#{var.name})(#{existing_set.index(required_set[0])+1})", :vector_length => 1) if lang == FORTRAN
+          return var.copy("(#{var.name})[#{existing_set.index(required_set[0])}]", :vector_length => 1) if lang == C and architecture == X86
+          return super
         else
           return super
         end

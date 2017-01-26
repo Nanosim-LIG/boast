@@ -26,6 +26,16 @@ a(3) = (a + a)(1)
 (b(:, 5))(2) = 2.0
 (b(:, 5))(2) = 2.0
 EOF
+      push_env( :lang => C, :architecture => X86 ) {
+        assert_subprocess_output( <<EOF, "", &block )
+a[1] = 1.0f;
+a[1] = 1.0f;
+a[2] = (_mm_add_ps( a, a ))[0];
+a[2] = (_mm_add_ps( a, a ))[0];
+(b[5 - (1)])[1] = 2.0f;
+(b[5 - (1)])[1] = 2.0f;
+EOF
+      }
     }
   end
 
