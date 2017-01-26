@@ -147,6 +147,13 @@ module BOAST
       f.close
     end
 
+    def save_executable
+      f = File::open(target_executable, "rb")
+      @executable = StringIO::new
+      @executable.write( f.read )
+      f.close
+    end
+
     def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files)
       file target => target_depends do
         #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
@@ -352,19 +359,19 @@ EOF
       end
     end
 
-    def copy_scalar_param_to_file(param)
+    def copy_scalar_param_to_file(param, base_path)
       if param.scalar_output? then
         get_output.puts <<EOF
-  __boast_f = fopen("#{@tmp_dir}/#{@procedure.name}/#{base_name}/#{param}.out", "wb");
+  __boast_f = fopen("#{base_path}/#{param}.out", "wb");
   fwrite(&#{param}, sizeof(#{param}), 1, __boast_f);
   fclose(__boast_f);
 EOF
       end
     end
 
-    def copy_scalar_param_from_file(param)
+    def copy_scalar_param_from_file(param, base_path)
       get_output.puts <<EOF
-  __boast_f = fopen("#{@tmp_dir}/#{@procedure.name}/#{base_name}/#{param}.in", "rb");
+  __boast_f = fopen("#{base_path}/#{param}.in", "rb");
   fread(&#{param}, sizeof(#{param}), 1, __boast_f);
   fclose(__boast_f);
 EOF
@@ -373,10 +380,10 @@ EOF
     def copy_array_param_to_ruby(param, ruby_param)
     end
 
-    def copy_array_param_to_file(param)
+    def copy_array_param_to_file(param, base_path)
       if param.direction == :out or param.direction == :inout then
         get_output.puts <<EOF
-  __boast_f = fopen("#{@tmp_dir}/#{@procedure.name}/#{base_name}/#{param}.out", "wb");
+  __boast_f = fopen("#{base_path}/#{param}.out", "wb");
   fwrite(#{param}, 1, __boast_sizeof_#{param}, __boast_f);
   fclose(__boast_f);
   free(#{param});
@@ -388,9 +395,9 @@ EOF
       end
     end
 
-    def copy_array_param_from_file(param)
+    def copy_array_param_from_file(param, base_path)
       get_output.puts <<EOF
-  __boast_f = fopen("#{@tmp_dir}/#{@procedure.name}/#{base_name}/#{param}.in", "rb");
+  __boast_f = fopen("#{base_path}/#{param}.in", "rb");
   fseek(__boast_f, 0L, SEEK_END);
   __boast_sizeof_#{param} = ftell(__boast_f);
   rewind(__boast_f);
@@ -424,25 +431,25 @@ EOF
       end
     end
 
-    def get_executable_params_value
+    def get_executable_params_value( base_path )
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
           if not param.dimension? then
-            copy_scalar_param_from_file(param)
+            copy_scalar_param_from_file(param, base_path)
           else
-            copy_array_param_from_file(param)
+            copy_array_param_from_file(param, base_path)
           end
         end
       }
     end
 
-    def get_executable_params_return_value
+    def get_executable_params_return_value( base_path )
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
           if not param.dimension then
-            copy_scalar_param_to_file(param)
+            copy_scalar_param_to_file(param, base_path)
           else
-            copy_array_param_to_file(param)
+            copy_array_param_to_file(param, base_path)
           end
         end
       }
@@ -481,7 +488,7 @@ EOF
       @probes.reverse.map(&:decl)
       @probes.map(&:configure)
 
-      get_executable_params_value
+      get_executable_params_value( "#{@tmp_dir}/#{@procedure.name}/#{base_name}" )
 
       @probes.reverse.map(&:start)
 
@@ -505,7 +512,7 @@ EOF
 
       end
 
-      get_executable_params_return_value
+      get_executable_params_return_value( "#{@tmp_dir}/#{@procedure.name}/#{base_name}" )
 
       @probes.map(&:compute)
 
@@ -605,8 +612,21 @@ EOF
       return [ module_file_source, library_source ]
     end
 
+    def target_executable_sources
+      return [ executable_source, library_source ]
+    end
+
     def cleanup(kernel_files)
       ([target] + target_depends + target_sources).each { |fn|
+        File::unlink(fn)
+      }
+      kernel_files.each { |f|
+        f.unlink
+      }
+    end
+
+    def cleanup_executable(kernel_files)
+      ( [target_executable] + target_executable_depends + target_executable_sources ).each { |fn|
         File::unlink(fn)
       }
       kernel_files.each { |f|
@@ -623,8 +643,13 @@ EOF
         ps = params[0..-1]
       end
 
+      Dir::mkdir(@tmp_dir, 0700) unless Dir::exist?(@tmp_dir)
+
+      dump_executable
       dump_ref_inputs( { base_name => ps }, @tmp_dir )
       boast_ret = YAML::load `#{target_executable} #{options[:repeat]}`
+      File::unlink(target_executable) unless keep_temp
+
       res = load_ref_outputs(@tmp_dir)["#{@tmp_dir}/#{@procedure.name}/#{base_name}"]
       @procedure.parameters.each_with_index { |param, indx|
         if param.direction == :in or param.constant then
@@ -639,6 +664,11 @@ EOF
       }
       p = Pathname::new("#{@tmp_dir}/#{@procedure.name}/#{base_name}")
       p.children.each { |f| File::unlink f }
+      unless keep_temp then
+        Dir::rmdir("#{@tmp_dir}/#{@procedure.name}/#{base_name}")
+        Dir::rmdir("#{@tmp_dir}/#{@procedure.name}")
+        Dir::rmdir("#{@tmp_dir}")
+      end
       return boast_ret
     end
 
@@ -650,7 +680,9 @@ EOF
       @compiler_options = compiler_options
 
       @marker = Tempfile::new([@procedure.name,""])
-      @tmp_dir = Dir::mktmpdir
+      Dir::mktmpdir { |dir|
+        @tmp_dir = "#{dir}"
+      }
 
       kernel_files = get_sub_kernels
 
@@ -662,11 +694,15 @@ EOF
 
       create_executable_target(linker, ldflags, kernel_files)
 
+      save_executable
+
       instance_eval <<EOF
       def run(*args, &block)
         run_executable(*args, &block)
       end
 EOF
+
+      cleanup_executable(kernel_files) unless keep_temp
 
       return self
 
@@ -733,6 +769,13 @@ EOF
       f = path ? File::open(path,"wb") : File::open(module_file_path,"wb")
       @module_binary.rewind
       f.write( @module_binary.read )
+      f.close
+    end
+
+    def dump_executable(path = nil)
+      f = path ? File::open(path,"wb",0700) : File::open(target_executable,"wb",0700)
+      @executable.rewind
+      f.write( @executable.read )
       f.close
     end
 
