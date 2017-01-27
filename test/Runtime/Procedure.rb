@@ -108,6 +108,7 @@ class TestProcedure < Minitest::Test
   def test_procedure_opencl_array
     begin
       silence_warnings { require 'opencl_ruby_ffi' }
+      plts = OpenCL::platforms
     rescue
       skip "Missing OpenCL on the platform!"
     end
@@ -134,6 +135,7 @@ class TestProcedure < Minitest::Test
   def test_procedure_opencl_array_repeat
     begin
       silence_warnings { require 'opencl_ruby_ffi' }
+      plts = OpenCL::platforms
     rescue
       skip "Missing OpenCL on the platform!"
     end
