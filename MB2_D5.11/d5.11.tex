@@ -790,6 +790,18 @@ cycles, complex branching.
 [...]
 \end{verbatim}
 
+One possible automated usage for BOAST here consists in setting a stop
+condition on the vectorization of a particular loop. This allows to find a
+candidate that the compiler managed to vectorize. The user can then interpret
+further the result and try to understand why vectorization succeeded in this
+case.
+
+One possible interactive usage could be for the user to specify several
+configuration and see if some of them are simdizable. If some are but none are
+vectorized by the compiler it can hint at new transformations to implement in
+the kernel meta-sources, or a possible hand written simdization using BOAST
+vector instructions.
+
 \subsection{Kernel generation}
 
 Our MAQAO port on ARM requires the resulting kernel binary to be an executable.
