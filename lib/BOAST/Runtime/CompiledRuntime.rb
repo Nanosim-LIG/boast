@@ -94,6 +94,10 @@ module BOAST
       return "#{base_path}.#{RbConfig::CONFIG["OBJEXT"]}"
     end
 
+    def library_nofpic_object
+      return "#{base_path}.nofpic#{RbConfig::CONFIG["OBJEXT"]}"
+    end
+
     def library_path
       return "#{base_path}.#{RbConfig::CONFIG["DLEXT"]}"
     end
@@ -102,8 +106,24 @@ module BOAST
       return module_file_path
     end
 
+    def executable_source
+      return "#{base_path}_executable.c"
+    end
+
+    def executable_object
+      return "#{base_path}_executable.nofpic#{RbConfig::CONFIG["OBJEXT"]}"
+    end
+
+    def target_executable
+      return "#{base_path}_executable"
+    end
+
     def target_depends
       return [ module_file_object, library_object ]
+    end
+
+    def target_executable_depends
+      return [ library_nofpic_object, executable_object ]
     end
 
     def save_binary
@@ -127,12 +147,26 @@ module BOAST
       f.close
     end
 
-    def create_targets( linker, ldshared, ldflags, kernel_files)
+    def save_executable
+      f = File::open(target_executable, "rb")
+      @executable = StringIO::new
+      @executable.write( f.read )
+      f.close
+    end
+
+    def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files)
       file target => target_depends do
-        #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
-        sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+        #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
+        sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
       end
       Rake::Task[target].invoke
+    end
+
+    def create_executable_target( linker, ldflags, kernel_files)
+      file target_executable => target_executable_depends do
+        sh "#{linker} -o #{target_executable} #{target_executable_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+      end
+      Rake::Task[target_executable].invoke
     end
 
     def method_name
@@ -325,7 +359,52 @@ EOF
       end
     end
 
+    def copy_scalar_param_to_file(param, base_path)
+      if param.scalar_output? then
+        get_output.puts <<EOF
+  __boast_f = fopen("#{base_path}/#{param}.out", "wb");
+  fwrite(&#{param}, sizeof(#{param}), 1, __boast_f);
+  fclose(__boast_f);
+EOF
+      end
+    end
+
+    def copy_scalar_param_from_file(param, base_path)
+      get_output.puts <<EOF
+  __boast_f = fopen("#{base_path}/#{param}.in", "rb");
+  fread(&#{param}, sizeof(#{param}), 1, __boast_f);
+  fclose(__boast_f);
+EOF
+    end
+
     def copy_array_param_to_ruby(param, ruby_param)
+    end
+
+    def copy_array_param_to_file(param, base_path)
+      if param.direction == :out or param.direction == :inout then
+        get_output.puts <<EOF
+  __boast_f = fopen("#{base_path}/#{param}.out", "wb");
+  fwrite(#{param}, 1, __boast_sizeof_#{param}, __boast_f);
+  fclose(__boast_f);
+  free(#{param});
+EOF
+      else
+        get_output.puts <<EOF
+  free(#{param});
+EOF
+      end
+    end
+
+    def copy_array_param_from_file(param, base_path)
+      get_output.puts <<EOF
+  __boast_f = fopen("#{base_path}/#{param}.in", "rb");
+  fseek(__boast_f, 0L, SEEK_END);
+  __boast_sizeof_#{param} = ftell(__boast_f);
+  rewind(__boast_f);
+  #{param} = malloc(__boast_sizeof_#{param});
+  fread(#{param}, 1, __boast_sizeof_#{param}, __boast_f);
+  fclose(__boast_f);
+EOF
     end
 
     def get_results
@@ -350,6 +429,118 @@ EOF
         get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));" if type_ret.kind_of?(Int) and not type_ret.signed
         get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));" if type_ret.kind_of?(Real)
       end
+    end
+
+    def get_executable_params_value( base_path )
+      push_env(:decl_module => true) {
+        @procedure.parameters.each do |param|
+          if not param.dimension? then
+            copy_scalar_param_from_file(param, base_path)
+          else
+            copy_array_param_from_file(param, base_path)
+          end
+        end
+      }
+    end
+
+    def get_executable_params_return_value( base_path )
+      push_env(:decl_module => true) {
+        @procedure.parameters.each do |param|
+          if not param.dimension then
+            copy_scalar_param_to_file(param, base_path)
+          else
+            copy_array_param_to_file(param, base_path)
+          end
+        end
+      }
+    end
+
+    def fill_executable_source
+      get_output.puts "#include <inttypes.h>"
+      get_output.puts "#include <stdlib.h>"
+      get_output.puts "#include <stdio.h>"
+      @includes.each { |inc|
+        get_output.puts "#include \"#{inc}\""
+      }
+      @probes.map(&:header)
+      @procedure.boast_header(@lang)
+
+      get_output.print <<EOF
+void Init_#{base_name}( void );
+int _boast_repeat;
+void Init_#{base_name}( void ) {
+EOF
+      increment_indent_level
+      output.puts "  FILE * __boast_f;"
+      push_env(:decl_module => true) {
+        @procedure.parameters.each { |param|
+          if param.dimension? then
+            output.puts "  size_t __boast_sizeof_#{param};"
+          end
+          param_copy = param.copy
+          param_copy.constant = nil
+          param_copy.direction = nil
+          param_copy.reference = nil
+          param_copy.decl
+        }
+        get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
+      }
+      @probes.reverse.map(&:decl)
+      @probes.map(&:configure)
+
+      get_executable_params_value( "#{@tmp_dir}/#{@procedure.name}/#{base_name}" )
+
+      @probes.reverse.map(&:start)
+
+      get_output.puts  "  int _boast_i;"
+      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
+      get_output.print "    "
+      get_output.print "_boast_ret = " if @procedure.properties[:return]
+      get_output.print "#{method_name}( "
+      get_output.print create_procedure_call_parameters.join(", ")
+      get_output.puts  " );"
+      get_output.puts  "  }"
+
+      @probes.map(&:stop)
+
+      get_output.puts '  printf("---\n");'
+      if @procedure.properties[:return] then
+        type_ret = @procedure.properties[:return].type
+        get_output.puts '  printf(":return: %lld\n", (long long)_boast_ret);' if type_ret.kind_of?(Int) and type_ret.signed
+        get_output.puts '  printf(":return: %ulld\n", (unsigned long long)_boast_ret);' if type_ret.kind_of?(Int) and not type_ret.signed
+        get_output.puts '  printf(":return: %lf\n", (double)_boast_ret);' if type_ret.kind_of?(Real)
+
+      end
+
+      get_executable_params_return_value( "#{@tmp_dir}/#{@procedure.name}/#{base_name}" )
+
+      @probes.map(&:compute)
+
+      @probes.map(&:to_yaml)
+
+      decrement_indent_level
+      get_output.print <<EOF
+}
+int main(int argc, char * argv[]) {
+  _boast_repeat=atoi(argv[1]);
+  Init_#{base_name}();
+  return 0;
+}
+EOF
+
+    end
+
+    def create_executable_source
+      f = File::open(executable_source, "w+")
+      push_env(:output => f, :lang => C) {
+        fill_executable_source
+
+        if debug_source? then
+          f.rewind
+          puts f.read
+        end
+      }
+      f.close
     end
 
     def fill_module_file_source
@@ -383,7 +574,10 @@ EOF
 
       get_results
 
-      @probes.map(&:compute)
+      @probes.each { |p|
+        p.compute
+        p.store
+      }
 
       store_results
 
@@ -418,6 +612,10 @@ EOF
       return [ module_file_source, library_source ]
     end
 
+    def target_executable_sources
+      return [ executable_source, library_source ]
+    end
+
     def cleanup(kernel_files)
       ([target] + target_depends + target_sources).each { |fn|
         File::unlink(fn)
@@ -427,9 +625,93 @@ EOF
       }
     end
 
+    def cleanup_executable(kernel_files)
+      ( [target_executable] + target_executable_depends + target_executable_sources ).each { |fn|
+        File::unlink(fn)
+      }
+      kernel_files.each { |f|
+        f.unlink
+      }
+    end
+
+    def run_executable(*params)
+      options = {:repeat => 1}
+      if params.last.kind_of?(Hash) then
+        options.update(params.last)
+        ps = params[0..-2]
+      else
+        ps = params[0..-1]
+      end
+
+      Dir::mkdir(@tmp_dir, 0700) unless Dir::exist?(@tmp_dir)
+
+      dump_executable
+      dump_ref_inputs( { base_name => ps }, @tmp_dir )
+      boast_ret = YAML::load `#{target_executable} #{options[:repeat]}`
+      File::unlink(target_executable) unless keep_temp
+
+      res = load_ref_outputs(@tmp_dir)["#{@tmp_dir}/#{@procedure.name}/#{base_name}"]
+      @procedure.parameters.each_with_index { |param, indx|
+        if param.direction == :in or param.constant then
+          next
+        end
+        if param.dimension then
+          ps[indx][0..-1] = res[indx][0..-1]
+        else
+          boast_ret[:reference_return] = {} unless boast_ret[:reference_return]
+          boast_ret[:reference_return][param.name.to_sym] = res[indx]
+        end
+      }
+      p = Pathname::new("#{@tmp_dir}/#{@procedure.name}/#{base_name}")
+      p.children.each { |f| File::unlink f }
+      unless keep_temp then
+        Dir::rmdir("#{@tmp_dir}/#{@procedure.name}/#{base_name}")
+        Dir::rmdir("#{@tmp_dir}/#{@procedure.name}")
+        Dir::rmdir("#{@tmp_dir}")
+      end
+      return boast_ret
+    end
+
+    def build_executable(options={})
+      compiler_options = BOAST::get_compiler_options
+      compiler_options.update(options)
+      @probes = [TimerProbe]
+      linker, _, _, ldflags = setup_compilers(@probes, compiler_options)
+      @compiler_options = compiler_options
+
+      @marker = Tempfile::new([@procedure.name,""])
+      Dir::mktmpdir { |dir|
+        @tmp_dir = "#{dir}"
+      }
+
+      kernel_files = get_sub_kernels
+
+      create_library_source
+
+      create_executable_source
+
+      save_source
+
+      create_executable_target(linker, ldflags, kernel_files)
+
+      save_executable
+
+      instance_eval <<EOF
+      def run(*args, &block)
+        run_executable(*args, &block)
+      end
+EOF
+
+      cleanup_executable(kernel_files) unless keep_temp
+
+      return self
+
+    end
+
     public
 
     def build(options={})
+      return build_executable(options) if executable? and (@lang == C or @lang == FORTRAN)
       compiler_options = BOAST::get_compiler_options
       compiler_options.update(options)
       @probes = []
@@ -441,7 +723,7 @@ EOF
         @probes.push AffinityProbe unless OS.mac?
       end
       @probes = [MPPAProbe] if @architecture == MPPA
-      linker, ldshared, ldflags = setup_compilers(@probes, compiler_options)
+      linker, ldshared, ldshared_flags, ldflags = setup_compilers(@probes, compiler_options)
       @compiler_options = compiler_options
 
       @marker = Tempfile::new([@procedure.name,""])
@@ -454,7 +736,7 @@ EOF
 
       save_source
 
-      create_targets(linker, ldshared, ldflags, kernel_files)
+      create_targets(linker, ldshared, ldshared_flags, ldflags, kernel_files)
 
       save_binary
 
@@ -487,6 +769,13 @@ EOF
       f = path ? File::open(path,"wb") : File::open(module_file_path,"wb")
       @module_binary.rewind
       f.write( @module_binary.read )
+      f.close
+    end
+
+    def dump_executable(path = nil)
+      f = path ? File::open(path,"wb",0700) : File::open(target_executable,"wb",0700)
+      @executable.rewind
+      f.write( @executable.read )
       f.close
     end
 

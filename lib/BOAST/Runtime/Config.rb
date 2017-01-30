@@ -21,6 +21,7 @@ module BOAST
     :MAQAO_FLAGS => '',
     :MAQAO_PATH => '',
     :MAQAO_PASS => false,
+    :MAQAO_SCRIPT => '',
     :OPENMP => false,
     :probes => nil
   }
@@ -46,6 +47,7 @@ module BOAST
     private_boolean_state_accessor :debug_source
     private_boolean_state_accessor :debug_kernel_source
     private_boolean_state_accessor :ffi
+    private_boolean_state_accessor :executable
     private_boolean_state_accessor :keep_temp
     private_state_accessor :fortran_line_length
   end
@@ -54,12 +56,14 @@ module BOAST
   boolean_state_accessor :debug_source
   boolean_state_accessor :debug_kernel_source
   boolean_state_accessor :ffi
+  boolean_state_accessor :executable
   boolean_state_accessor :keep_temp
   state_accessor         :fortran_line_length
   default_state_getter :verbose,             false
   default_state_getter :debug_source,        false
   default_state_getter :debug_kernel_source, false
   default_state_getter :ffi,                 false
+  default_state_getter :executable,          false
   default_state_getter :keep_temp,           false
   default_state_getter :fortran_line_length, 72
 

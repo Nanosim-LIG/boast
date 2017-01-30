@@ -60,7 +60,7 @@ module BOAST
         when 2
           type = NArray::SINT
         when 4
-          type = NArray::SINT
+          type = NArray::INT
         else
           STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
@@ -107,7 +107,7 @@ module BOAST
         return nil
       end
       f = File::new( directory + "/" + "#{param.name+suffix}", "wb" )
-      if param.dimension then
+      if param.dimension or param.vector? then
         f.write value.to_s
       else
         type = get_scalar_type(param)
@@ -122,7 +122,7 @@ module BOAST
         return nil
       end
       f = File::new( directory + "/" + param.name+suffix, "rb" )
-      if param.dimension then
+      if param.dimension or param.vector? then
         type = get_array_type(param)
         if f.size == 0 then
           res = NArray::new(type, 1)

@@ -1,0 +1,111 @@
+\begin{lstlisting}[language={[90]Fortran},basicstyle=\footnotesize\sffamily]
+SUBROUTINE d_sym8_md_p_10_ld_u1_v1_1_t_t_t(n, ndat, nx, ny, x, y)
+  integer, parameter :: wp=kind(1.0d0)
+  integer(kind=4), parameter :: lowfil = -8
+  integer(kind=4), parameter :: upfil = 7
+  integer(kind=4), intent(in) :: n
+  integer(kind=4), intent(in) :: ndat
+  integer(kind=4), intent(in) :: nx
+  integer(kind=4), intent(in) :: ny
+  real(kind=8), intent(in), dimension(0:nx - (1), 0:ndat - (1)) :: x
+  real(kind=8), intent(out), dimension(0:ny - (1), 0:ndat - (1)) :: y
+  real(kind=8), parameter, dimension(-8:7) :: sym8_md_fil = reshape((/&
+& &
+8.4334247333529341094733325815816232969177478728797427310317e-7_wp, &
+-0.00001290557201342060969516786758559028264129757158423127355882943e0&
+&_wp, &
+0.000087629844762105595646891618941163970464425424613649618138794e0_wp&
+&, &
+-0.000301580381326904631671637038261698791032841826554967601640246e0_w&
+&p, &
+0.001747237136729939034494478127498529416920979083511241686685502e0_wp&
+&, &
+-0.00942047030201080385922711540948195074607340327611386232053071e0_wp&
+&, &
+0.02373821463724942397566389712597274534984899296281082155336152e0_wp,&
+& &
+0.06126258958312079821953805969111734845421975622016765542503018e0_wp,&
+& &
+0.99404156978340039931786167125707312696826875197808439082533262e0_wp,&
+& &
+-0.06048952891969835160028346363993374032323310579329060307398682e0_wp&
+&, &
+-0.02103025160930381434955489412839065067238766803542905035107527e0_wp&
+&, &
+0.013372634148547947527334234670132209969450042970835150850985441e0_wp&
+&, &
+-0.003441281444934938572808815096868218611693146749743898558729002e0_w&
+&p, &
+0.0004944322768868991919228225947675097243713535139015057534937039e0_w&
+&p, &
+-0.00005185986881173432922848639136911486874128383207856851537290756e0&
+&_wp, &
+2.727344929119796596577153130172279928753156083478007592916189e-6_wp /&
+&), shape(sym8_md_fil))
+  integer(kind=4) :: i1
+  integer(kind=4) :: i2
+  integer(kind=4) :: l
+  real(kind=8), dimension(0:0) :: tt
+  real(kind=8) :: filter_val
+  integer(kind=4), dimension(-8 - (7):7 - (-8) - (1)) :: mod_arr
+! ---
+! For0:
+!   :iterator: l
+!   :first: -8 - (7)
+!   :last: 7 - (-8) - (1)
+!   :step: 1
+!   :operator: <=
+  do l = -8 - (7), 7 - (-8) - (1), 1
+    mod_arr(l) = modulo(l, n)
+  end do
+!$omp parallel  default(shared) private(i1, i2, l, tt, filter_val&
+!$omp&)
+! ---
+! For1:
+!   :iterator: i2
+!   :first: 0
+!   :last: ndat - (1)
+!   :step: 1
+!   :operator: <=
+!$omp do 
+  do i2 = 0, ndat - (1), 1
+! ---
+! For2:
+!   :iterator: i1
+!   :first: 0
+!   :last: ! ' -(-8) - (1)'
+!   :step: 1
+!   :operator: <=
+    do i1 = 0,  -(-8) - (1), 1
+      tt(0) = 0.0_wp
+! ---
+! For3:
+!   :iterator: l
+!   :first: '-8'
+!   :last: '7'
+!   :step: 1
+!   :operator: <=
+      filter_val = 8.4334247333529341094733325815816232969177478728797&
+&427310317e-7_wp
+      tt(0) = tt(0) + (x(mod_arr(-8 + i1), i2 + 0)) * (filter_val)
+      filter_val = -0.000012905572013420609695167867585590282641297571&
+&58423127355882943e0_wp
+      tt(0) = tt(0) + (x(mod_arr(-7 + i1), i2 + 0)) * (filter_val)
+      filter_val = 0.0000876298447621055956468916189411639704644254246&
+&13649618138794e0_wp
+      tt(0) = tt(0) + (x(mod_arr(-6 + i1), i2 + 0)) * (filter_val)
+      filter_val = -0.000301580381326904631671637038261698791032841826&
+&554967601640246e0_wp
+      tt(0) = tt(0) + (x(mod_arr(-5 + i1), i2 + 0)) * (filter_val)
+      filter_val = 0.0017472371367299390344944781274985294169209790835&
+&11241686685502e0_wp
+      tt(0) = tt(0) + (x(mod_arr(-4 + i1), i2 + 0)) * (filter_val)
+
+!  [ . . . ]
+
+    end do
+  end do
+!$omp end do 
+!$omp end parallel 
+END SUBROUTINE d_sym8_md_p_10_ld_u1_v1_1_t_t_t
+\end{lstlisting}

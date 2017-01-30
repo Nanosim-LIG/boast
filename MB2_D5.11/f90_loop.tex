@@ -1,0 +1,21 @@
+\begin{lstlisting}[language={[90]Fortran}]
+! ---
+! For9:
+!   :iterator: i2
+!   :first: 0
+!   :last: ndat - (1)
+!   :step: 1
+!   :operator: <=
+!$omp do 
+  do i2 = 0, ndat - (1), 1
+! ---
+! For10:
+!   :iterator: i1
+!   :first: 0
+!   :last: ! ' -(-8) - (1)'
+!   :step: 1
+!   :operator: <=
+    do i1 = 0,  -(-8) - (1), 1
+      tt0 = 0.0_wp
+\end{lstlisting}
+

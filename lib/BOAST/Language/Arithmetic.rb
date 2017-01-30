@@ -136,11 +136,18 @@ module BOAST
     end
 
     def components( range )
-      if self.type.vector_length == 1
+      var = self.to_var
+      if var.type.vector_length == 1
         return self
       else
-        existing_set = [*('0'..'9'),*('a'..'z')].first(self.type.vector_length)
-        eval "self.s#{existing_set[range].join("")}"
+        existing_set = [*('0'..'9'),*('a'..'z')].first(var.type.vector_length)
+        if range.kind_of?(Range) then
+          eval "self.s#{existing_set[range].join("")}"
+        elsif range.kind_of?(Array) then
+          eval "self.s#{existing_set.values_at(*range).join("")}"
+        else
+          eval "self.s#{existing_set[range]}"
+        end
       end
     end
 

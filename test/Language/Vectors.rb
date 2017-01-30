@@ -5,6 +5,50 @@ require_relative '../helper'
 
 class Vectors < Minitest::Test
 
+  def test_vector_elem_access
+    push_env( :default_real_size => 4, :lang => FORTRAN ) {
+      a = Real :a, :vector_length => 4
+      n = Int :n
+      b = Real :b, :vector_length => 4, :dim => Dim( n )
+      block = lambda {
+        pr a.s1 === 1.0
+        pr a.components(1) === 1.0
+        pr a.s2 === (a + a).s0
+        pr a.components(2) === (a + a).components(0)
+        pr b[5].s1 === 2.0
+        pr b[5].components(1) === 2.0
+      }
+      assert_subprocess_output( <<EOF, "", &block )
+a(2) = 1.0
+a(2) = 1.0
+a(3) = (a + a)(1)
+a(3) = (a + a)(1)
+(b(:, 5))(2) = 2.0
+(b(:, 5))(2) = 2.0
+EOF
+      push_env( :lang => C, :architecture => X86, :model => :nehalem ) {
+        assert_subprocess_output( <<EOF, "", &block )
+a[1] = 1.0f;
+a[1] = 1.0f;
+a[2] = (_mm_add_ps( a, a ))[0];
+a[2] = (_mm_add_ps( a, a ))[0];
+(b[5 - (1)])[1] = 2.0f;
+(b[5 - (1)])[1] = 2.0f;
+EOF
+        push_env( :architecture => ARM, :model => :"armv7-a" ) {
+          assert_subprocess_output( <<EOF, "", &block )
+a[1] = 1.0f;
+a[1] = 1.0f;
+a[2] = (vaddq_f32( a, a ))[0];
+a[2] = (vaddq_f32( a, a ))[0];
+(b[5 - (1)])[1] = 2.0f;
+(b[5 - (1)])[1] = 2.0f;
+EOF
+        }
+      }
+    }
+  end
+
   def test_decl_vector
     push_env( :default_real_size => 4, :lang => C, :model => :nehalem, :architecture => X86 ) {
       a = Real :a, :vector_length => 4
