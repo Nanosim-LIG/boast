@@ -4,10 +4,31 @@ module BOAST
     attr_reader :source
     attr_reader :indexes
     attr_accessor :alignment
+    attr_accessor :vector_index
+
+    def method_missing(m, *a, &b)
+      var = to_var
+      if var.type.methods.include?(:members) and var.type.members[m.to_s] then
+        return struct_reference(type.members[m.to_s])
+      elsif var.vector? and m.to_s[0] == 's' and lang != CUDA then
+        required_set = m.to_s[1..-1].chars.to_a
+        existing_set = [*('0'..'9'),*('a'..'z')].first(var.type.vector_length)
+        if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
+          return var.copy(var.name+"."+m.to_s, :vector_length => m.to_s[1..-1].length) if lang == CL
+          @vector_index = existing_set.index(required_set[0])
+          return self
+        else
+          return super
+        end
+      else
+        return super
+      end
+    end
 
     def initialize(source, *indexes)
       @source = source
       @indexes = indexes
+      @vector_index = nil
     end
 
     def align?
@@ -20,7 +41,9 @@ module BOAST
     end
 
     def to_var
-      var = @source.copy("#{self}", :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil, :align => alignment)
+      options = { :const => nil, :constant => nil, :dim => nil, :dimension => nil, :direction => nil, :dir => nil, :align => alignment }
+      options[:vector_length] = 1 if @vector_index
+      var = @source.copy("#{self}", options)
       return var
     end
 
@@ -79,7 +102,7 @@ module BOAST
         end
       }
       s = ""
-      s += "#{@source}(#{@source.vector? ? ":, " : "" }#{indexes_dup.join(", ")})"
+      s += "#{@source}(#{@source.vector? ? (@vector_index ? "#{@vector_index+1}, " : ":, ") : "" }#{indexes_dup.join(", ")})"
       return s
     end
 
@@ -171,6 +194,9 @@ module BOAST
         sub = to_s_c_reversed
       end
       s = "#{@source}[" + sub + "]"
+      if @vector_index then
+        s += "[#{@vector_index}]"
+      end
       return s
     end
 
