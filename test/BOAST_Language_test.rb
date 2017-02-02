@@ -14,6 +14,7 @@ require_relative 'Language/Case'
 require_relative 'Language/While'
 require_relative 'Language/Procedure'
 require_relative 'Language/FuncCall'
+require_relative 'Language/Annotation'
 require_relative 'helper'
 
 class TestLanguage < Minitest::Test
