@@ -47,6 +47,11 @@ module BOAST
       BOAST::annotate_number(name)
     end
 
+    # (see BOAST#reset_annotate_numbers
+    def reset_annotate_numbers
+      BOAST::reset_annotate_numbers
+    end
+
   end
 
   module_function
@@ -130,6 +135,11 @@ module BOAST
     num = @@annotate_numbers[name]
     @@annotate_numbers[name] = num + 1
     return num
+  end
+
+  # Resets the annotate_numbers to an empty Hash
+  def reset_annotate_numbers
+    @@annotate_numbers = Hash::new { |h,k| h[k] = 0 }
   end
 
   # Annotates an Object by inlining a YAML structure in a comment.
