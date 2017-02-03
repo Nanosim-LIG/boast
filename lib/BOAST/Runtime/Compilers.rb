@@ -175,7 +175,12 @@ module BOAST
     def setup_linker(options, probes)
       ldflags = options[:LDFLAGS]
       ldflags += " -march=#{get_model}"
-      ldflags += " -L#{RbConfig::CONFIG["libdir"]} #{RbConfig::CONFIG["LIBRUBYARG"]}"
+      ldflags += " -L#{RbConfig::CONFIG["libdir"]}"
+      if RbConfig::CONFIG["ENABLE_SHARED"] != "no" then
+        ldflags += " #{RbConfig::CONFIG["LIBRUBYARG"]}"
+      else
+        ldflags += " -Wl,-R#{RbConfig::CONFIG["libdir"]}"
+      end
       probes.each { |p|
         ldflags += " #{p.ldflags}" if p.respond_to?(:ldflags)
       }
