@@ -32,15 +32,22 @@ module BOAST
       narray_path = nil
       begin
         spec = Gem::Specification::find_by_name('narray')
-        narray_path = spec.full_gem_path
+        narray_path = spec.require_path
+        if narray_path == "." then
+          narray_path = spec.full_gem_path
+        end
       rescue Gem::LoadError => e
       rescue NoMethodError => e
         spec = Gem::available?('narray')
         if spec then
-          require 'narray' 
-          narray_path = Gem.loaded_specs['narray'].full_gem_path
+          require 'narray'
+          narray_path = Gem.loaded_specs['narray'].require_path
+          if narray_path == "." then
+            narray_path = Gem.loaded_specs['narray'].full_gem_path
+          end
         end
       end
+      return narray_path
     end
 
     def setup_c_compiler(options, includes, narray_path, runner, probes)
