@@ -5,6 +5,45 @@ require_relative '../helper'
 
 class TestAnnotation < Minitest::Test
 
+  def test_annotate_expression
+    push_env( :lang => C, :annotate => true, :annotate_list => [ "Expression" ], :annotate_indepth_list => [ ], :annotate_level => 2 ) {
+      i = Int("i")
+      n = Int("n")
+      expr = n + i * 2
+      block = lambda { pr expr }
+      assert_subprocess_output( <<EOF, "", &block )
+/* --- */
+/* Expression0:  */
+n + (i) * (2);
+EOF
+      push_env( :annotate_indepth_list => [ "Expression" ], :annotate_level => 0 ) {
+        assert_subprocess_output( <<EOF, "", &block )
+/* --- */
+/* Expression1: */
+/*   :operator: BOAST::Addition */
+/*   :operand1: n */
+/*   :operand2: \"(i) * (2)\" */
+n + (i) * (2);
+EOF
+        push_env( :annotate_level => 1 ) {
+          assert_subprocess_output( <<EOF, "", &block )
+/* --- */
+/* Expression3: */
+/*   :operator: BOAST::Addition */
+/*   :operand1: n */
+/*   :operand2: */
+/*     Expression2: */
+/*       :operator: BOAST::Multiplication */
+/*       :operand1: i */
+/*       :operand2: 2 */
+n + (i) * (2);
+EOF
+        }
+      }
+    }
+    reset_annotate_numbers
+  end
+
   def test_reset_annotate_numebrs
     push_env( :lang => C, :annotate => true, :annotate_list => [ "For" ], :annotate_indepth_list => [ "For", "Expression" ], :annotate_level => 2 ) {
       i = Int("i")
