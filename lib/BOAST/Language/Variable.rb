@@ -328,7 +328,7 @@ module BOAST
     end
   
     def to_s
-      if force_replace_constant? or ( replace_constant? and constant? and replace_constants? and not dimension? ) then
+      if force_replace_constant? or ( ( replace_constant? or replace_constants? ) and constant? and not dimension? ) then
         s = @constant.to_s + @type.suffix
         return s
       end

@@ -9,6 +9,31 @@ end
 
 class TestExpression < Minitest::Test
 
+  def test_replace_constant
+    a = 5
+    push_env( :lang => C, :replace_constants => true ) {
+      i = Int :i, :const => 5
+      block = lambda { pr i - 1 }
+assert_subprocess_output( <<EOF, "", &block )
+5 - (1);
+EOF
+    }
+  end
+
+  def test_empty_return
+    block = lambda { pr Return(nil) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+ return
+EOF
+    [C,CL,CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
+ return ;
+EOF
+    }
+  end
+
   def test_arithmetic
     exp = lambda { |a,b,c,d,e,f,g,h|
       a + +b + -(c * d)/e + g**h
