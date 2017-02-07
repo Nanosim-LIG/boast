@@ -486,6 +486,10 @@ module BOAST
       return ( @type.vector? and @type.vector_length > 1 )
     end
 
+    def __attr_align?
+      return ( __align? or ( vector? and not @direction ) )
+    end
+
     def decl_c_s(device = false)
       return decl_texture_s if texture?
       s = ""

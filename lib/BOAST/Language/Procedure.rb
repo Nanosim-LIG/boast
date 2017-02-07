@@ -198,7 +198,7 @@ module BOAST
       @locals.each { |l|
         BOAST::decl l
         align = l.align
-        BOAST::pr align if align
+        BOAST::pr align if align and not l.send(:__attr_align?)
       }
       return self
     end
@@ -240,7 +240,7 @@ module BOAST
       end
       (@parameters + @locals).each { |v|
         align = v.align
-        BOAST::pr align if align
+        BOAST::pr align if align and not v.send(:__attr_align?)
       }
       return self
     end
