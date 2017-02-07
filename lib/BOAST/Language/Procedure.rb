@@ -6,11 +6,12 @@ module BOAST
     include Inspectable
     extend Functor
     include Annotation
-    ANNOTATIONS = [ :name, :parameters, :constants ]
+    ANNOTATIONS = [ :name, :parameters, :constants, :locals ]
 
     attr_reader :name
     attr_reader :parameters
     attr_reader :constants
+    attr_reader :locals
     attr_reader :properties
     attr_reader :headers
 
@@ -27,6 +28,8 @@ module BOAST
       @parameters = parameters
       @constants = properties[:constants]
       @constants = [] unless @constants
+      @locals = properties[:locals]
+      @locals = [] unless @locals
       @block = block
       @properties = properties
       @headers = properties[:headers]
@@ -148,9 +151,9 @@ module BOAST
         s += "void "
       end
       s += "#{@name}("
-      if parameters.first then
-        s += parameters.first.send(:decl_c_s, @properties[:local])
-        parameters[1..-1].each { |p|
+      if @parameters.first then
+        s += @parameters.first.send(:decl_c_s, @properties[:local])
+        @parameters[1..-1].each { |p|
           s += ", "+p.send(:decl_c_s, @properties[:local])
         }
       end
@@ -172,7 +175,7 @@ module BOAST
         s += "SUBROUTINE "
       end
       s += "#{@name}("
-      s += parameters.collect(&:name).join(", ")
+      s += @parameters.collect(&:name).join(", ")
       s += ")"
     end
 
@@ -180,11 +183,11 @@ module BOAST
       s = indent + decl_c_s + "{"
       output.puts s
       increment_indent_level
-      constants.each { |c|
+      @constants.each { |c|
         BOAST::decl c
       }
       if lang == C then
-        parameters.each { |p|
+        @parameters.each { |p|
           align = p.align
           BOAST::pr align if align
         }
@@ -192,6 +195,11 @@ module BOAST
       if @properties[:return] then
         BOAST::decl @properties[:return]
       end
+      @locals.each { |l|
+        BOAST::decl l
+        align = l.align
+        BOAST::pr align if align
+      }
       return self
     end
 
@@ -201,7 +209,7 @@ module BOAST
       increment_indent_level
       tmp_buff = StringIO::new
       push_env( :output => tmp_buff ) {
-        parameters.each { |p|
+        @parameters.each { |p|
           p.type.define if p.type.kind_of? CStruct
         }
       }
@@ -209,13 +217,18 @@ module BOAST
       s += tmp_buff.read
       s += indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
-      constants.each { |c|
+      @constants.each { |c|
         BOAST::decl c
       }
-      parameters.each { |p|
+      @parameters.each { |p|
         BOAST::decl p
-        align = p.align
-        BOAST::pr align if align
+#        align = p.align
+#        BOAST::pr align if align
+      }
+      @locals.each { |l|
+        BOAST::decl l
+#        align = l.align
+#        BOAST::pr align if align
       }
       if @properties[:functions] then
         @properties[:functions].each { |f|
@@ -225,6 +238,10 @@ module BOAST
       if @properties[:return] then
         BOAST::decl @properties[:return]
       end
+      (@parameters + @locals).each { |v|
+        align = v.align
+        BOAST::pr align if align
+      }
       return self
     end
 
@@ -274,9 +291,9 @@ module BOAST
         s += "void "
       end
       s += "#{@name}#{trailer}("
-      if parameters.first then
-        s += parameters.first.boast_header(lang)
-        parameters[1..-1].each { |p|
+      if @parameters.first then
+        s += @parameters.first.boast_header(lang)
+        @parameters[1..-1].each { |p|
           s += ", "
           s += p.boast_header(lang)
         }
