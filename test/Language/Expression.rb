@@ -23,9 +23,7 @@ EOF
   def test_empty_return
     block = lambda { pr Return(nil) }
     set_lang(FORTRAN)
-    assert_subprocess_output( <<EOF, "", &block )
- return
-EOF
+    assert_subprocess_output( " return \n", "", &block )
     [C,CL,CUDA].each { |l|
       set_lang(l)
       assert_subprocess_output( <<EOF, "", &block )
