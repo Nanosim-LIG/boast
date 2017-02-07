@@ -189,7 +189,7 @@ module BOAST
       if lang == C then
         @parameters.each { |p|
           align = p.align
-          BOAST::pr align if align
+          BOAST::pr align if align and not p.send(:__attr_align?)
         }
       end
       if @properties[:return] then
