@@ -6,7 +6,7 @@ module BOAST
     # @param [#to_var] value to return
     # @return [Expression]
     def Return(value)
-      return Expression::new("return",nil, value)
+      return Expression::new("return",nil, value ? value : "" )
     end
 
     # Creates an Expression using the boolean And Operator
