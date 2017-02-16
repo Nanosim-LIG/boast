@@ -25,6 +25,9 @@ module BOAST
           next
         end
         if param.dimension then
+          outputs[indx].each { |elem|
+            raise "Error! #{elem}" if elem.nan?
+          }
           diff = (outputs[indx] - ref_outputs[indx]).abs
           if epsilon then
             diff.each { |elem|
@@ -33,6 +36,7 @@ module BOAST
           end
           res[param.name] = diff.max
         else
+          raise "Error: #{param.name} is NaN!" if outputs[indx].nan?
           raise "Error: #{param.name} different from ref: #{outputs[indx]} != #{ref_outputs[indx]} !" if epsilon and (outputs[indx] - ref_outputs[indx]).abs > epsilon
           res[param.name] = (outputs[indx] - ref_outputs[indx]).abs
         end
