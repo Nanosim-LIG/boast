@@ -48,13 +48,13 @@ module BOAST
     def to_s_fortran
       s = ""
       s += @prefix if @prefix
-      s += "#{func_name}(#{@args.join(", ")})"
+      s += "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
     end
 
     def to_s_c
       s = ""
       s += @prefix if @prefix
-      s += "#{func_name}(#{@args.join(", ")})"
+      s += "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
     end
 
     private :to_s_fortran, :to_s_c
