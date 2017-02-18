@@ -159,12 +159,12 @@ module BOAST
           return copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length) if lang == CL
           return copy("#{name}(#{existing_set.index(required_set[0])+1})", :vector_length => 1) if lang == FORTRAN
           return copy("#{name}[#{existing_set.index(required_set[0])}]", :vector_length => 1) if lang == C
-          super
+          return super
         else
-          super
+          return super
         end
       else
-        super
+        return super
       end
     end
 
