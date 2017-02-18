@@ -2,6 +2,12 @@ module BOAST
 
   module_function
 
+  class Empty
+    def self.empty_binding
+      return binding
+    end
+  end
+
   # @!parse module Functors; functorize Expression; end
   class Expression
     include PrivateStateAccessor

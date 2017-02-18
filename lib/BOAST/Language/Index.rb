@@ -69,7 +69,7 @@ module BOAST
             dim = dims[indx]
             s = "#{indxs[indx]}"
             s += " - (#{dim.start})" unless 0.equal?(dim.start)
-            ind = eval(s)
+            ind = Empty.empty_binding.eval(s)
             ind = ind.to_i
             const = const[ind]
           }
