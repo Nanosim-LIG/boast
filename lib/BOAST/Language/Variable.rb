@@ -393,9 +393,7 @@ module BOAST
       s += " #{@name}"
       if dimension? and use_vla? and lang != FORTRAN  then
         s += "["
-        s += @dimension.reverse.collect { |d|
-          d.to_s
-        }.join("][")
+        s += @dimension.reverse.collect(&:to_s).join("][")
         s += "]"
       end
       return s
@@ -501,9 +499,7 @@ module BOAST
       if __vla_array? then
         s += " #{@name}["
         s += "__restrict__ " if __restrict?
-        s += @dimension.reverse.collect { |d|
-          d.to_s
-        }.join("][")
+        s += @dimension.reverse.collect(&:to_s).join("][")
         s += "]"
       else
         s += " *" if __pointer?(device)
@@ -520,7 +516,7 @@ module BOAST
         end
         if __dimension?(device) then
           s +="[("
-          s += @dimension.collect{ |d| d.to_s }.reverse.join(")*(")
+          s += @dimension.collect(&:to_s).reverse.join(")*(")
           s +=")]"
         end 
       end
@@ -579,7 +575,7 @@ module BOAST
     end
 
     def alloc_c( dims, align = get_address_size)
-      ds = dims.collect { |d| d.to_s }.reverse.join(")*(")
+      ds = dims.collect(&:to_s).reverse.join(")*(")
       if align > (OS.bits/8) then
         # check alignment is a power of 2
         raise "Invalid alignment #{align}!" if align & (align - 1) != 0

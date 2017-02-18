@@ -32,7 +32,7 @@ EOF
 EOF
         when :option_list
           s += <<EOF
-        return " (\#{[c].flatten.join(", ")})"
+        return " (\#{[c].flatten.collect(&:to_s).join(", ")})"
 EOF
         when :simple
           s += <<EOF
@@ -40,13 +40,13 @@ EOF
 EOF
         when :list
 s += <<EOF
-        return " #{name}(\#{[c].flatten.join(", ")})"
+        return " #{name}(\#{[c].flatten.collect(&:to_s).join(", ")})"
 EOF
         when :multilist
 s += <<EOF
         s = ""
         c.each { |id, list|
-          s += " #{name}(\#{id}: \#{[list].flatten.join(", ")})"
+          s += " #{name}(\#{id}: \#{[list].flatten.collect(&:to_s).join(", ")})"
         }
         return s
 EOF
