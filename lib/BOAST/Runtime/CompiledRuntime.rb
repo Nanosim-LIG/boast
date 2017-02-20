@@ -215,7 +215,7 @@ EOF
       get_output.print <<EOF
 VALUE #{module_name} = Qnil;
 void Init_#{module_name}();
-VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
+static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
   rb_define_method(#{module_name}, "run", method_run, -1);
@@ -551,7 +551,7 @@ EOF
       fill_module_preamble
 
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
-      get_output.puts "VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
+      get_output.puts "static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
       increment_indent_level
 
       fill_check_args
