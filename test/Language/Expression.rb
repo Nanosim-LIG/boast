@@ -32,6 +32,22 @@ EOF
     }
   end
 
+  def test_coerce
+    i = Int :i
+    a = Real :a
+    block = lambda { pr a === 2.0 * a + 5 * i }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+a = (2.0_wp) * (a) + (5) * (i)
+EOF
+    [C,CL,CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
+a = (2.0) * (a) + (5) * (i);
+EOF
+    }
+  end
+
   def test_arithmetic
     exp = lambda { |a,b,c,d,e,f,g,h|
       a + +b + -(c * d)/e + g**h

@@ -151,5 +151,9 @@ module BOAST
       end
     end
 
+    def coerce(other)
+      return [other.to_var, self]
+    end
+
   end
 end
