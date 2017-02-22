@@ -132,7 +132,7 @@ module BOAST
     alias | or
 
     def cast(type)
-      return type.copy("(#{type.type.decl} *)#{self}")
+      return type.copy("(#{type.type.decl}#{type.dimension? ? " *" : ""})#{self}")
     end
 
     def components( range )

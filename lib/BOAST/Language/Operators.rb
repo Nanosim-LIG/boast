@@ -1013,12 +1013,24 @@ module BOAST
       op1, op2 = op_to_var
       if @return_type and @return_type.type.kind_of?(Real) then
         if @return_type.type.size <= 4 then
-          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmodf(#{op1}, #{op2}) + #{op2} : fmodf(#{op1}, #{op2}));"
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmodf(#{op1}, #{op2}) + #{op2} : fmodf(#{op1}, #{op2}))"
         else
           return "((#{op1} < 0) ^ (#{op2} < 0) ? fmod(#{op1}, #{op2}) + #{op2} : fmod(#{op1}, #{op2}))"
         end
       else
-        return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+        test_op1 = true
+        test_op1 = false if op1.respond_to?(:type) and op1.type.respond_to?(:signed?) and not op1.type.signed?
+        test_op2 = true
+        test_op2 = false if op2.respond_to?(:type) and op2.type.respond_to?(:signed?) and not op2.type.signed?
+        if test_op1 and test_op2 then
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+        elsif test_op1 then
+          return "( (#{op1} < 0) ? (#{op1} % #{op2.cast(op1)}) + #{op2} : #{op1} % #{op2})"
+        elsif test_op2 then
+          return "( (#{op2} < 0) ? (#{op1.cast(op2)} % #{op2}) + #{op2} : #{op1} % #{op2})"
+        else
+          return "(#{op1} % #{op2})"
+        end
       end
     end
 
