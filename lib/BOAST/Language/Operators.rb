@@ -1013,12 +1013,24 @@ module BOAST
       op1, op2 = op_to_var
       if @return_type and @return_type.type.kind_of?(Real) then
         if @return_type.type.size <= 4 then
-          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmodf(#{op1}, #{op2}) + #{op2} : fmodf(#{op1}, #{op2}));"
+          if @return_type.type.signed?
+            return "((#{op1} < 0) ^ (#{op2} < 0) ? fmodf(#{op1}, #{op2}) + #{op2} : fmodf(#{op1}, #{op2}));"
+          else
+            return "fmodf(#{op1}, #{op2})"
+          end
         else
-          return "((#{op1} < 0) ^ (#{op2} < 0) ? fmod(#{op1}, #{op2}) + #{op2} : fmod(#{op1}, #{op2}))"
+          if @return_type.type.signed?
+            return "((#{op1} < 0) ^ (#{op2} < 0) ? fmod(#{op1}, #{op2}) + #{op2} : fmod(#{op1}, #{op2}))"
+          else
+            return "fmod(#{op1}, #{op2})"
+          end
         end
       else
-        return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+        if @return_type.type.signed?
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+        else
+          return "#{op1} % #{op2}"
+        end
       end
     end
 
