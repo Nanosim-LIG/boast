@@ -81,13 +81,13 @@ module BOAST
       end
 
       rule ".#{objext}io" => ".cio" do |t|
-        c_call_string = "#{c_mppa_compiler} -mcore=k1io -mos=rtems"
+        c_call_string = "#{c_mppa_compiler} -mcore=k1bio -mos=rtems"
         c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
 
       rule ".#{objext}comp" => ".ccomp" do |t|
-        c_call_string = "#{c_mppa_compiler} -mcore=k1dp -mos=nodeos"
+        c_call_string = "#{c_mppa_compiler} -mcore=k1bdp -mos=nodeos"
         c_call_string += " -mboard=developer -x c -c -o #{t.name} #{t.source}"
         runner.call(t, c_call_string)
       end
@@ -161,12 +161,12 @@ module BOAST
       linker = "k1-gcc"
       
       rule ".bincomp" => ".#{objext}comp" do |t|
-        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1dp #{board} -mos=nodeos #{ldflags}"
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1bdp #{board} -mos=nodeos #{ldflags}"
         runner.call(t, linker_string)
       end
       
       rule ".binio" => ".#{objext}io" do |t|
-        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1io #{board} -mos=rtems #{ldflags}"
+        linker_string = "#{linker} -o #{t.name} #{t.source} -mcore=k1bio #{board} -mos=rtems #{ldflags}"
         runner.call(t, linker_string)
       end
 

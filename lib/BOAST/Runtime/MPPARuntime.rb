@@ -47,6 +47,11 @@ EOF
   _mppa_duration = _mppa_report->total_time;
   mppa_mon_measure_free_report(_mppa_report);
   mppa_mon_close(_mppa_ctx);
+EOF
+    end
+
+    def store
+      get_output.print <<EOF
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_avg_pwr")),rb_float_new(_mppa_avg_pwr));
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_energy")),rb_float_new(_mppa_energy));
   rb_hash_aset(_boast_stats,ID2SYM(rb_intern("mppa_duration")), rb_float_new(_mppa_duration));
@@ -111,7 +116,7 @@ EOF
     end
 
     def set_io
-      set_output(@code_io)
+      set_output(@code)
     end
 
     def set_comp
@@ -151,8 +156,8 @@ EOF
       f.close
     end
 
-    def create_targets( linker, ldshared, ldflags, kernel_files )
-      create_targets_old( linker, ldshared, ldflags, kernel_files )
+    def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files )
+      create_targets_old( linker, ldshared, ldshared_flags, ldflags, kernel_files )
       file multibinary_path => [io_bin, comp_bin] do
         sh "k1-create-multibinary --clusters #{comp_bin} --clusters-names \"comp-part\" --boot #{io_bin} --bootname \"io-part\" -T #{multibinary_path}"
       end
