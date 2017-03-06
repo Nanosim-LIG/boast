@@ -42,6 +42,17 @@ module BOAST
       else
         @parameters = parameters
       end
+      if @checkers then
+        @checkers.each { |checker| eval checker }
+      end
+      if @rules then
+        s = <<EOF
+  def rules_checker(#{HASH_NAME})
+    return ( (#{@rules.join(") and (")}) )
+  end
+EOF
+        eval s
+      end
     end
 
     # Add to the parameters of the rules the name of the hash variable
@@ -59,12 +70,9 @@ module BOAST
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
       if @rules then
-        if @checkers
-          @checkers.each { |checker| eval checker }
-        end
         s = <<EOF
-      points.reject!{ |#{HASH_NAME}|
-        not @rules.all?{ |r| eval r }
+      points.select!{ |#{HASH_NAME}|
+        rules_checker(#{HASH_NAME})
       }
 EOF
         eval s
