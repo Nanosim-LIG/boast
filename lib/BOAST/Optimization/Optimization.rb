@@ -70,13 +70,11 @@ EOF
     # Remove all points that do not meet ALL the rules.
     def remove_unfeasible (points = [])
       if @rules then
-        s = <<EOF
-      points.select!{ |#{HASH_NAME}|
-        rules_checker(#{HASH_NAME})
-      }
-EOF
-        eval s
+        points.select!{ |pt|
+          rules_checker(pt)
+        }
       end
+      return points
     end
 
     def to_h
