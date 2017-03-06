@@ -193,24 +193,12 @@ EOF
     end
 
     def points
-      params2 = @search_space.parameters.dup
-      param = params2.shift
-      
-      pts = param.values.collect { |val| {param.name => val} }
-      if params2.size == 0 then
-        pts4 = pts 
-      else
-        optim2 = BruteForceOptimizer::new(OptimizationSpace::new(*params2))
-        pts3=[]
-        pts.each{ |p1|
-          optim2.each { |p2|
-            pts3.push(p1.dup.update(p2))
-          }
-        }
-        pts4 = pts3
-      end
-      @search_space.remove_unfeasible pts4
-      return pts4
+      array = @search_space.parameters.collect { |p| p.values.collect { |val| [p.name,val] } }
+      pts = array[0]
+      pts = pts.product(*array[1..-1]) if array.length > 1
+      pts = pts.collect { |a| Hash[ *a.flatten ] }
+      @search_space.remove_unfeasible pts
+      return pts
     end
 
     def each(&block)
