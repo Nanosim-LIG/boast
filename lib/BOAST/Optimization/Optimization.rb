@@ -241,12 +241,11 @@ EOF
       best = [nil, Float::INFINITY]
       e = each
       
-      if @randomize or @checkpoint_size then
-        a = e.to_a
-        (@seed ? a.shuffle!(random: Random.new(@seed)) : a.shuffle!) if @randomize
-        a = a.slice(@checkpoint,@checkpoint_size) if @checkpoint_size
-        e = a.each
+      if @randomize then
+        e = e.to_a
+        (@seed ? e.shuffle!(random: Random.new(@seed)) : e.shuffle!)
       end
+      e = e.drop(@checkpoint).take(@checkpoint_size) if @checkpoint_size
 
       e.each { |config|
         @experiments += 1
