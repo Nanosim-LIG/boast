@@ -91,7 +91,7 @@ EOF
       assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
       assert(compute_kernel_size(o[:elements_number], o[:y_component_number], o[:vector_length], o[:temporary_size], o[:load_overlap], o[:threads_number]) < compute_kernel_size(6,6,8,2,false,1024), "Checkers failed")
     }
-    assert_equal(23100, optimizer.points.length)
+    assert_equal(23100, optimizer.to_a.length)
   end 
 
   def test_bruteforce_point
