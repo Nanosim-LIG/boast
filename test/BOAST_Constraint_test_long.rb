@@ -45,6 +45,55 @@ class TestOptimizationSpace < Minitest::Test
     }
   end
 
+  def test_bruteforce_point_to_enum
+    checker = <<EOF 
+      def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)
+      vector_number = ((elements_number / y_component_number).to_f / vector_length).ceil
+      l_o = load_overlap ? 1 : 0
+  
+      tempload = (1 - l_o) * (vector_number * vector_length) / vector_length * vector_length
+      temp =  l_o * 3 * vector_number * (y_component_number+2) * vector_length
+      res = vector_number * y_component_number * vector_length
+      tempc = 3 * vector_number * (y_component_number + 2) * temporary_size * vector_length
+      out_vec = (1 - l_o) * tempc
+      resc = vector_number * y_component_number * temporary_size * vector_length
+  
+      (tempload + temp + res + tempc + out_vec + resc) * threads_number
+    end
+EOF
+
+    opt_space = OptimizationSpace::new( :elements_number => 1..24,
+                                        :y_component_number => 1..6,
+                                        :vector_length      => [1,2,4,8,16],
+                                        :temporary_size     => [2,4],
+                                        :vector_recompute   => [true],
+                                        :load_overlap       => [true,false],
+                                        :threads_number => [32,64,128,256,512,1024],
+                                        :lws_y => [1,2,4,8,16,32,64,128,256,512,1024],
+                                        :rules => [":lws_y <= :threads_number", 
+                                                   ":threads_number % :lws_y == 0",
+                                                   ":elements_number >= :y_component_number",
+                                                   ":elements_number % :y_component_number == 0", 
+                                                   ":elements_number / :y_component_number <= 4",
+                                                   "compute_kernel_size(:elements_number, :y_component_number, :vector_length, :temporary_size, :load_overlap, :threads_number) < compute_kernel_size(6,6,8,2,false,1024)"
+                                                  ],
+                                        :checkers => checker
+                                        )
+  
+    optimizer = BruteForceOptimizer::new(opt_space, :randomize => false)
+    eval checker
+    optimizer.each{ |o|
+
+      assert(o[:lws_y] <= o[:threads_number], " o[:lws_y] <= o[:threads_number] | #{o}")
+      assert(o[:threads_number] % o[:lws_y] == 0, "o[:threads_number] % o[:lws_y] | #{o}") 
+      assert(o[:y_component_number] <= o[:elements_number], "o[:y_component_number] <= o[:elements_number] | #{o}")
+      assert(o[:elements_number] % o[:y_component_number] == 0, "o[:threads_number] % o[:lws_y] == 0 | #{o}")
+      assert(o[:elements_number] % o[:y_component_number] <= 4, "o[:elements_number] / o[:y_component_number] <= 4 | #{o}")
+      assert(compute_kernel_size(o[:elements_number], o[:y_component_number], o[:vector_length], o[:temporary_size], o[:load_overlap], o[:threads_number]) < compute_kernel_size(6,6,8,2,false,1024), "Checkers failed")
+    }
+    assert_equal(23100, optimizer.points.length)
+  end 
+
   def test_bruteforce_point
     checker = <<EOF 
       def compute_kernel_size (elements_number, y_component_number, vector_length, temporary_size, load_overlap, threads_number)

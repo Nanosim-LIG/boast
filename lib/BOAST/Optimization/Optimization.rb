@@ -51,8 +51,14 @@ module BOAST
     return ( (#{@rules.join(") and (")}) )
   end
 EOF
-        eval s
+      else
+s = <<EOF
+  def rules_checker(#{HASH_NAME})
+    return true
+  end
+EOF
       end
+      eval s
     end
 
     # Add to the parameters of the rules the name of the hash variable
@@ -190,34 +196,59 @@ EOF
       @seed = options[:seed]
     end
 
-    def points
-      array = @search_space.parameters.collect { |p| p.values.collect { |val| [p.name,val] } }
-      pts = array[0]
-      pts = pts.product(*array[1..-1]) if array.length > 1
-      pts = pts.collect { |a| Hash[ *a.flatten ] }
-      @search_space.remove_unfeasible pts
-      return pts
+#    def points
+#      array = @search_space.parameters.collect { |p| p.values.collect { |val| [p.name,val] } }
+#      pts = array[0]
+#      pts = pts.product(*array[1..-1]) if array.length > 1
+#      pts = pts.collect { |a| Hash[ *a.flatten ] }
+#      return pts.select{ |pt| @search_space.rules_checker(pt) }
+#    end
+
+    def to_a
+      return each.to_a
     end
 
-    def each(&block)
-      return self.points.each(&block)
+    alias points to_a
+
+    def each
+      array = @search_space.parameters.collect { |p| [p.name,p.values.to_a] }
+      lazy_block = lambda { |rank, data|
+        array[rank][1].each { |d|
+          data[array[rank][0]] = d
+          if rank == array.length - 1 then
+            yield data.dup if @search_space.rules_checker(data)
+          else
+            lazy_block.call(rank+1, data)
+          end
+        }
+      }
+      if block_given? then
+        lazy_block.call(0, {})
+        return self
+      else
+        return to_enum(:each)
+      end
     end
 
-    def each_random(&block)
-      return self.points.shuffle.each(&block)
+    def each_random( &block)
+      self.points.shuffle.each(&block)
+      return self if block_given?
     end
 
     def optimize(&block)
       @experiments = 0
       @log = {}
       best = [nil, Float::INFINITY]
-      pts = points
+      e = each
       
-      (@seed ? pts.shuffle!(random: Random.new(@seed)) : pts.shuffle!) if @randomize
+      if @randomize or @checkpoint_size then
+        a = e.to_a
+        (@seed ? a.shuffle!(random: Random.new(@seed)) : a.shuffle!) if @randomize
+        a = a.slice(@checkpoint,@checkpoint_size) if @checkpoint_size
+        e = a.each
+      end
 
-      pts = pts.slice(@checkpoint,@checkpoint_size) if @checkpoint_size
-
-      pts.each { |config|
+      e.each { |config|
         @experiments += 1
         metric = block.call(config)
         @log[config] = metric if optimizer_log

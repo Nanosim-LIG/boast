@@ -16,12 +16,31 @@ class TestOptimizationSpace < Minitest::Test
     assert_equal(r[1], opt_space.rules[1])
   end
 
+  def test_optimization_space_to_enum
+    opt_space = OptimizationSpace::new( :param => 1..30, :opt => [1,3] )
+    optimizer = BruteForceOptimizer::new( opt_space )
+    points = optimizer.each.to_a
+    assert_equal((1..30).length*[1,3].length, points.length)
+    assert_equal(points.length, points.uniq.length)
+  end
+
   def test_optimization_space
-    opt_space = OptimizationSpace::new( :param => 1..30 )
+    opt_space = OptimizationSpace::new( :param => 1..30, :opt => [1,3] )
     optimizer = BruteForceOptimizer::new( opt_space )
     points = optimizer.points
-    assert_equal((1..30).length, points.length)
+    assert_equal((1..30).length*[1,3].length, points.length)
     assert_equal(points.length, points.uniq.length)
+  end
+
+  def test_check_rules_to_enum
+    opt_space = OptimizationSpace::new( :param => 1..30,
+                                        :rules => [":param % 2 != 0",
+                                                   ":param % 7 != 0"] )
+    optimizer = BruteForceOptimizer::new( opt_space )
+    count = (1..30).to_a.reject! { |e| e % 2 == 0 or e % 7 == 0 }.length
+    points = optimizer.each.to_a
+    assert_equal(count, points.length)
+    assert_nil(points.find { |e| e[:param] % 2 == 0 or e[:param] % 7 == 0 })
   end
 
   def test_check_rules
