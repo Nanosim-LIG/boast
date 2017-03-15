@@ -33,7 +33,7 @@ module BOAST
       begin
         spec = Gem::Specification::find_by_name('narray')
         narray_path = spec.require_path
-        if narray_path == "." then
+        if not File.exist?(narray_path+"/narray.h") then
           narray_path = spec.full_gem_path
         end
       rescue Gem::LoadError => e
@@ -42,7 +42,7 @@ module BOAST
         if spec then
           require 'narray'
           narray_path = Gem.loaded_specs['narray'].require_path
-          if narray_path == "." then
+          if not File.exist?(narray_path+"/narray.h") then
             narray_path = Gem.loaded_specs['narray'].full_gem_path
           end
         end
