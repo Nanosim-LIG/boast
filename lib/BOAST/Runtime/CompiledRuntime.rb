@@ -41,6 +41,7 @@ module BOAST
   module CompiledRuntime
     attr_accessor :binary
     attr_accessor :source
+    attr_reader :param_struct
 
     private
 
@@ -261,22 +262,23 @@ EOF
 EOF
     end
 
+    def fill_param_struct
+      pars = @procedure.parameters.collect { |param|
+        param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
+      }
+      pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
+      @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
+    end
+
     def fill_decl_module_params
       push_env(:decl_module => true) {
-        @procedure.parameters.each { |param|
-          param_copy = param.copy
-          param_copy.constant = nil
-          param_copy.direction = nil
-          param_copy.reference = nil
-          param_copy.decl
-        }
-        get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
+        param_struct.decl
         get_output.puts "  VALUE _boast_stats = rb_hash_new();"
         get_output.puts "  VALUE _boast_rb_ptr = Qnil;"
         refs = false
-        @procedure.parameters.each_with_index do |param,i|
+        @procedure.parameters.each { |param|
           refs = true if param.scalar_output?
-        end
+        }
         if refs then
           get_output.puts "  VALUE _boast_refs = rb_hash_new();"
           get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"reference_return\")),_boast_refs);"
@@ -284,26 +286,26 @@ EOF
       }
     end
 
-    def copy_scalar_param_from_ruby( param, ruby_param )
+    def copy_scalar_param_from_ruby(str_par, param, ruby_param )
       case param.type
       when Int
-        (param === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
-        (param === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
+        (str_par === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
+        (str_par === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
       when Real
-        (param === FuncCall::new("NUM2DBL", ruby_param)).pr
+        (str_par === FuncCall::new("NUM2DBL", ruby_param)).pr
       end
     end
 
-    def copy_array_param_from_ruby( param, ruby_param )
+    def copy_array_param_from_ruby(str_par, param, ruby_param )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
   if (TYPE(_boast_rb_ptr) == T_STRING) {
     #{
   if param.dimension then
-    "#{param} = (void *)RSTRING_PTR(_boast_rb_ptr)"
+    "#{str_par} = (void *)RSTRING_PTR(_boast_rb_ptr)"
   else
-    (param === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => 1)).to_s
+    (str_par === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => 1)).to_s
   end
     };
   } else if ( IsNArray(_boast_rb_ptr) ) {
@@ -311,9 +313,9 @@ EOF
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     #{
   if param.dimension then
-    "#{param} = (void *) _boast_n_ary->ptr"
+    "#{str_par} = (void *) _boast_n_ary->ptr"
   else
-    (param === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => 1)).to_s
+    (str_par === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => 1)).to_s
   end
     };
   } else {
@@ -328,10 +330,11 @@ EOF
       push_env(:decl_module => true) {
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
+          par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
           if not param.dimension? and not param.vector? then
-            copy_scalar_param_from_ruby(param, argv[i])
+            copy_scalar_param_from_ruby(par, param, argv[i])
           else
-            copy_array_param_from_ruby(param, argv[i])
+            copy_array_param_from_ruby(par, param, argv[i])
           end
         end
       }
@@ -340,69 +343,69 @@ EOF
     def create_procedure_call
       get_output.puts  "  int _boast_i;"
       get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
-      get_output.print "    _boast_ret = " if @procedure.properties[:return]
+      get_output.print "    _boast_params._boast_ret = " if @procedure.properties[:return]
       get_output.print "    #{method_name}( "
       get_output.print create_procedure_call_parameters.join(", ")
       get_output.print "    );"
       get_output.puts  "  }"
     end
 
-    def copy_scalar_param_to_ruby(param, ruby_param)
+    def copy_scalar_param_to_ruby(str_par, param, ruby_param)
       if param.scalar_output? then
         case param.type
         when Int
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));" if param.type.signed?
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));" if not param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{str_par}));" if param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{str_par}));" if not param.type.signed?
         when Real
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{param}));"
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{str_par}));"
         end
       end
     end
 
-    def copy_scalar_param_to_file(param, base_path)
+    def copy_scalar_param_to_file(str_par, param, base_path)
       if param.scalar_output? then
         get_output.puts <<EOF
   __boast_f = fopen("#{base_path}/#{param}.out", "wb");
-  fwrite(&#{param}, sizeof(#{param}), 1, __boast_f);
+  fwrite(&(#{str_par}), sizeof(#{str_par}), 1, __boast_f);
   fclose(__boast_f);
 EOF
       end
     end
 
-    def copy_scalar_param_from_file(param, base_path)
+    def copy_scalar_param_from_file(str_par, param, base_path)
       get_output.puts <<EOF
   __boast_f = fopen("#{base_path}/#{param}.in", "rb");
-  fread(&#{param}, sizeof(#{param}), 1, __boast_f);
+  fread(&(#{str_par}), sizeof(#{str_par}), 1, __boast_f);
   fclose(__boast_f);
 EOF
     end
 
-    def copy_array_param_to_ruby(param, ruby_param)
+    def copy_array_param_to_ruby(str_par, param, ruby_param)
     end
 
-    def copy_array_param_to_file(param, base_path)
+    def copy_array_param_to_file(str_par, param, base_path)
       if param.direction == :out or param.direction == :inout then
         get_output.puts <<EOF
   __boast_f = fopen("#{base_path}/#{param}.out", "wb");
-  fwrite(#{param}, 1, __boast_sizeof_#{param}, __boast_f);
+  fwrite(#{str_par}, 1, __boast_sizeof_#{param}, __boast_f);
   fclose(__boast_f);
-  free(#{param});
+  free(#{str_par});
 EOF
       else
         get_output.puts <<EOF
-  free(#{param});
+  free(#{str_par});
 EOF
       end
     end
 
-    def copy_array_param_from_file(param, base_path)
+    def copy_array_param_from_file(str_par, param, base_path)
       get_output.puts <<EOF
   __boast_f = fopen("#{base_path}/#{param}.in", "rb");
   fseek(__boast_f, 0L, SEEK_END);
   __boast_sizeof_#{param} = ftell(__boast_f);
   rewind(__boast_f);
-  #{param} = malloc(__boast_sizeof_#{param});
-  fread(#{param}, 1, __boast_sizeof_#{param}, __boast_f);
+  #{str_par} = malloc(__boast_sizeof_#{param});
+  fread(#{str_par}, 1, __boast_sizeof_#{param}, __boast_f);
   fclose(__boast_f);
 EOF
     end
@@ -413,10 +416,11 @@ EOF
       push_env(:decl_module => true) {
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
+          par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
           if not param.dimension then
-            copy_scalar_param_to_ruby(param, argv[i])
+            copy_scalar_param_to_ruby(par, param, argv[i])
           else
-            copy_array_param_to_ruby(param, argv[i])
+            copy_array_param_to_ruby(par, param, argv[i])
           end
         end
       }
@@ -425,19 +429,20 @@ EOF
     def store_results
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
-        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_ret));" if type_ret.kind_of?(Int) and type_ret.signed
-        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_ret));" if type_ret.kind_of?(Int) and not type_ret.signed
-        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_ret));" if type_ret.kind_of?(Real)
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((long long)_boast_params._boast_ret));" if type_ret.kind_of?(Int) and type_ret.signed
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_int_new((unsigned long long)_boast_params._boast_ret));" if type_ret.kind_of?(Int) and not type_ret.signed
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"return\")),rb_float_new((double)_boast_params._boast_ret));" if type_ret.kind_of?(Real)
       end
     end
 
     def get_executable_params_value( base_path )
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
+          par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
           if not param.dimension? then
-            copy_scalar_param_from_file(param, base_path)
+            copy_scalar_param_from_file(par, param, base_path)
           else
-            copy_array_param_from_file(param, base_path)
+            copy_array_param_from_file(par, param, base_path)
           end
         end
       }
@@ -446,16 +451,18 @@ EOF
     def get_executable_params_return_value( base_path )
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
+          par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
           if not param.dimension then
-            copy_scalar_param_to_file(param, base_path)
+            copy_scalar_param_to_file(par, param, base_path)
           else
-            copy_array_param_to_file(param, base_path)
+            copy_array_param_to_file(par, param, base_path)
           end
         end
       }
     end
 
     def fill_executable_source
+      fill_param_struct
       get_output.puts "#include <inttypes.h>"
       get_output.puts "#include <stdlib.h>"
       get_output.puts "#include <stdio.h>"
@@ -465,6 +472,7 @@ EOF
       @probes.map(&:header)
       @procedure.boast_header(@lang)
 
+      param_struct.type.define
       get_output.print <<EOF
 void Init_#{base_name}( void );
 int _boast_repeat;
@@ -472,18 +480,13 @@ void Init_#{base_name}( void ) {
 EOF
       increment_indent_level
       output.puts "  FILE * __boast_f;"
+      param_struct.decl
       push_env(:decl_module => true) {
         @procedure.parameters.each { |param|
           if param.dimension? then
             output.puts "  size_t __boast_sizeof_#{param};"
           end
-          param_copy = param.copy
-          param_copy.constant = nil
-          param_copy.direction = nil
-          param_copy.reference = nil
-          param_copy.decl
         }
-        get_output.puts "  #{@procedure.properties[:return].type.decl} _boast_ret;" if @procedure.properties[:return]
       }
       @probes.reverse.map(&:decl)
       @probes.map(&:configure)
@@ -495,7 +498,7 @@ EOF
       get_output.puts  "  int _boast_i;"
       get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
       get_output.print "    "
-      get_output.print "_boast_ret = " if @procedure.properties[:return]
+      get_output.print "_boast_params._boast_ret = " if @procedure.properties[:return]
       get_output.print "#{method_name}( "
       get_output.print create_procedure_call_parameters.join(", ")
       get_output.puts  " );"
@@ -506,9 +509,9 @@ EOF
       get_output.puts '  printf("---\n");'
       if @procedure.properties[:return] then
         type_ret = @procedure.properties[:return].type
-        get_output.puts '  printf(":return: %lld\n", (long long)_boast_ret);' if type_ret.kind_of?(Int) and type_ret.signed
-        get_output.puts '  printf(":return: %ulld\n", (unsigned long long)_boast_ret);' if type_ret.kind_of?(Int) and not type_ret.signed
-        get_output.puts '  printf(":return: %lf\n", (double)_boast_ret);' if type_ret.kind_of?(Real)
+        get_output.puts '  printf(":return: %lld\n", (long long)_boast_params._boast_ret);' if type_ret.kind_of?(Int) and type_ret.signed
+        get_output.puts '  printf(":return: %ulld\n", (unsigned long long)_boast_params._boast_ret);' if type_ret.kind_of?(Int) and not type_ret.signed
+        get_output.puts '  printf(":return: %lf\n", (double)_boast_params._boast_ret);' if type_ret.kind_of?(Real)
 
       end
 
@@ -544,6 +547,7 @@ EOF
     end
 
     def fill_module_file_source
+      fill_param_struct
       fill_module_header
       @probes.map(&:header)
       @procedure.boast_header(@lang)
@@ -551,6 +555,7 @@ EOF
       fill_module_preamble
 
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
+      param_struct.type.define
       get_output.puts "static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
       increment_indent_level
 

@@ -49,7 +49,7 @@ extern "C" {
 EOF
     end
 
-    def copy_array_param_from_ruby( param, ruby_param )
+    def copy_array_param_from_ruby(par, param, ruby_param )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
@@ -58,8 +58,8 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaMalloc( (void **) &#{param}, _boast_array_size);
-    cudaMemcpy(#{param}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
+    cudaMalloc( (void **) &#{par}, _boast_array_size);
+    cudaMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }
@@ -138,7 +138,7 @@ EOF
       get_output.puts " );"
     end
 
-    def copy_array_param_to_ruby(param, ruby_param)
+    def copy_array_param_to_ruby(par, param, ruby_param)
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
@@ -150,11 +150,11 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaMemcpy((void *) _boast_n_ary->ptr, #{param}, _boast_array_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *) _boast_n_ary->ptr, #{par}, _boast_array_size, cudaMemcpyDeviceToHost);
 EOF
       end
       get_output.print <<EOF
-    cudaFree( (void *) #{param});
+    cudaFree( (void *) #{par});
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }

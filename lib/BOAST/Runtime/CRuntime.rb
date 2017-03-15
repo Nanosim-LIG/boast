@@ -26,17 +26,16 @@ module BOAST
     end
 
     def create_procedure_call_parameters
-      params = []
-      @procedure.parameters.each { |param|
+      return @procedure.parameters.collect { |param|
+        par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
         if param.dimension then
-          params.push( param.name )
+          "#{par}"
         elsif param.direction == :out or param.direction == :inout or param.reference? then
-          params.push( "&"+param.name )
+          "&#{par}"
         else
-          params.push( param.name )
+          "#{par}"
         end
       }
-      return params
     end
 
   end
