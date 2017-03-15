@@ -397,7 +397,7 @@ EOF
 EOF
     end
 
-    def copy_array_param_from_ruby( param, ruby_param )
+    def copy_array_param_from_ruby(par, param, ruby_param )
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
@@ -407,23 +407,23 @@ EOF
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
     mppa_write(_mppa_fd_size, &_boast_array_size, sizeof(_boast_array_size));
-    #{param} = (void *) _boast_n_ary->ptr;
-    mppa_write(_mppa_fd_var, #{param}, _boast_array_size);
+    #{par} = (void *) _boast_n_ary->ptr;
+    mppa_write(_mppa_fd_var, #{par}, _boast_array_size);
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }
 EOF
     end
 
-    def copy_scalar_param_from_ruby( param, ruby_param )
+    def copy_scalar_param_from_ruby(par, param, ruby_param )
       case param.type
       when Int
-        (param === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
-        (param === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
+        (par === FuncCall::new("NUM2INT", ruby_param)).pr if param.type.size == 4
+        (par === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
       when Real
-        (param === FuncCall::new("NUM2DBL", ruby_param)).pr
+        (par === FuncCall::new("NUM2DBL", ruby_param)).pr
       end
-      get_output.puts "  mppa_write(_mppa_fd_var, &#{param}, sizeof(#{param}));"
+      get_output.puts "  mppa_write(_mppa_fd_var, &#{par}, sizeof(#{par}));"
     end
 
     def get_params_value
@@ -465,7 +465,7 @@ EOF
     def create_procedure_call
     end
 
-    def copy_array_param_to_ruby(param, ruby_param)
+    def copy_array_param_to_ruby(par, param, ruby_param)
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
@@ -477,7 +477,7 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    mppa_read(_mppa_fd_var, #{param}, _boast_array_size);
+    mppa_read(_mppa_fd_var, #{par}, _boast_array_size);
 EOF
       end
         get_output.print <<EOF
@@ -487,17 +487,17 @@ EOF
 EOF
     end
 
-    def copy_scalar_param_to_ruby(param, ruby_param)
+    def copy_scalar_param_to_ruby(par, param, ruby_param)
       if param.scalar_output? then
         get_output.print <<EOF
-  mppa_read(_mppa_fd_var, &#{param}, sizeof(#{param}));
+  mppa_read(_mppa_fd_var, &#{par}, sizeof(#{par}));
 EOF
         case param.type
         when Int
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{param}));" if param.type.signed?
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{param}));" if not param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{par}));" if param.type.signed?
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{par}));" if not param.type.signed?
         when Real
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{param}));"
+          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{par}));"
         end
       end
     end
@@ -507,7 +507,7 @@ EOF
   _mppa_fd_var = mppa_open(\"/mppa/buffer/host#4/board0#mppa0#pcie0#4\", O_RDONLY);
 EOF
       get_results_old
-      get_output.puts "  mppa_read(_mppa_fd_var, &_boast_ret, sizeof(_boast_ret));" if @procedure.properties[:return]
+      get_output.puts "  mppa_read(_mppa_fd_var, &_boast_params._boast_ret, sizeof(_boast_params._boast_ret));" if @procedure.properties[:return]
       get_output.puts "  mppa_read(_mppa_fd_var, &_boast_duration, sizeof(_boast_duration));"
       get_output.print <<EOF
   mppa_close(_mppa_fd_var);
