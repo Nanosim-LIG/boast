@@ -105,6 +105,37 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_coexecute
+    a1 = Int( :a, :dir => :in )
+    b1 = Int( :b, :dir => :in )
+    c1 = Int( :c )
+    p1 = Procedure("minimum_4", [a1,b1], :return => c1) { pr c1 === Ternary( a1 < b1, a1, b1) }
+    k1 = p1.ckernel
+    n2 = Int( :n, :dir => :in )
+    a2 = Int( :a, :dir => :inout, :dim => [Dim(n2)] )
+    b2 = Int( :b, :dir => :in )
+    i2 = Int( :i )
+    p2 = Procedure("vector_inc_2", [n2, a2, b2]) {
+      decl i2
+      pr For(i2, 1, n2) {
+        pr a2[i2] === a2[i2] + b2
+      }
+    }
+    k2 = p2.ckernel
+
+    a2h = NArray.int(1024)
+    [FORTRAN, C].each { |l|
+      set_lang(l)
+      k1 = p1.ckernel
+      k2 = p2.ckernel
+      a2h.random!(100)
+      a2_out_ref = a2h + 2
+      res = CKernel::coexecute([ [k1, [10, 5]], [k2, [a2h.size, a2h, 2]] ])
+      assert_equal(5, res[0][:return])
+      assert_equal(a2_out_ref, a2h)
+    }
+  end
+
   def test_procedure_opencl_array
     begin
       silence_warnings { require 'opencl_ruby_ffi' }
