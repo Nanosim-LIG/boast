@@ -7,33 +7,19 @@ module BOAST
       get_output.puts "#include <stdint.h>"
     end
     def preamble
-    end
-    def decl
-      get_output.puts "char **_boast_energy_files = 0;"
-      get_output.puts "char **_boast_energy_names = 0;"
-      get_output.puts "uint64_t *_boast_energy_0  = 0;"
-      get_output.puts "uint64_t *_boast_energy_1  = 0;"
-      get_output.puts "int _boast_energy_nsensors = 0;"
-    end
-    def configure
       get_output.print <<EOF
-{
+static int _boast_powercap_init(uint64_t **_boast_energy_0, uint64_t **_boast_energy_1, char ***_boast_energy_files, char ***_boast_energy_names);
+static int _boast_powercap_init(uint64_t **_boast_energy_0, uint64_t **_boast_energy_1, char ***_boast_energy_files, char ***_boast_energy_names) {
+  int _boast_energy_nsensors = 0;
   char buf[128];
   char path[128];
   char *s;
   FILE *f;
   int nproc;
   int i;
-  if( _boast_energy_nsensors ){
-    free(_boast_energy_files);
-    for(i=0; i < _boast_energy_nsensors; ++i)
-      free(_boast_energy_names[i]);
-    free(_boast_energy_names);
-    _boast_energy_nsensors = 0;
-  }
-  _boast_energy_files = malloc(1);
-  _boast_energy_names = malloc(1);
 
+  *_boast_energy_files = malloc(1);
+  *_boast_energy_names = malloc(1);
   for(nproc = 0; ; ++nproc){
     sprintf(path,"/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d",nproc);
     sprintf(buf,"%s/energy_uj",path);
@@ -41,16 +27,16 @@ module BOAST
     if(!f)
       break;
     i = 0;
-    do{
+    do {
       int _boast_fread_ret;
       fclose(f);
       ++_boast_energy_nsensors;
-      _boast_energy_files = realloc(_boast_energy_files, _boast_energy_nsensors * sizeof(*_boast_energy_files));
-      _boast_energy_names = realloc(_boast_energy_names, _boast_energy_nsensors * sizeof(*_boast_energy_names));
-      _boast_energy_files[_boast_energy_nsensors-1] = malloc(128);
-      _boast_energy_names[_boast_energy_nsensors-1] = malloc( 16);
-      s = _boast_energy_names[_boast_energy_nsensors-1];
-      sprintf(_boast_energy_files[_boast_energy_nsensors-1],"%s",buf);
+      *_boast_energy_files = realloc(*_boast_energy_files, _boast_energy_nsensors * sizeof(**_boast_energy_files));
+      *_boast_energy_names = realloc(*_boast_energy_names, _boast_energy_nsensors * sizeof(**_boast_energy_names));
+      (*_boast_energy_files)[_boast_energy_nsensors-1] = malloc(128);
+      (*_boast_energy_names)[_boast_energy_nsensors-1] = malloc( 16);
+      s = (*_boast_energy_names)[_boast_energy_nsensors-1];
+      sprintf((*_boast_energy_files)[_boast_energy_nsensors-1],"%s",buf);
       sprintf(buf, "%s/name", path);
       f = fopen(buf, "r");
       _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
@@ -64,67 +50,86 @@ module BOAST
       sprintf(path,"/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d/intel-rapl:%d:%d",nproc,nproc,i++);
       sprintf(buf,"%s/energy_uj",path);
       f = fopen(buf, "rt");
-    }while(f);
+    } while(f);
   }
-  if( ! _boast_energy_nsensors ){
-    free( _boast_energy_files );
-    free( _boast_energy_names );
-  }else{
-    _boast_energy_0 = malloc(_boast_energy_nsensors * sizeof(*_boast_energy_0));
-    _boast_energy_1 = malloc(_boast_energy_nsensors * sizeof(*_boast_energy_1));
+  if( ! _boast_energy_nsensors ) {
+    free( *_boast_energy_files );
+    free( *_boast_energy_names );
+  } else {
+    *_boast_energy_0 = malloc(_boast_energy_nsensors * sizeof(**_boast_energy_0));
+    *_boast_energy_1 = malloc(_boast_energy_nsensors * sizeof(**_boast_energy_1));
+  }
+  return _boast_energy_nsensors;
+}
+
+static void _boast_powercap_read(int _boast_energy_nsensors, char **_boast_energy_files, uint64_t *_boast_energy);
+static void _boast_powercap_read(int _boast_energy_nsensors, char **_boast_energy_files, uint64_t *_boast_energy) {
+  char buf[32];
+  FILE *f;
+  int i;
+  for(i = 0; i < _boast_energy_nsensors; ++i){
+    int _boast_fread_ret;
+    f = fopen(_boast_energy_files[i], "r");
+    _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
+    fclose(f);
+    if(_boast_fread_ret == 0) {
+      rb_raise(rb_eArgError, "Energy probe read error!");
+    }
+    _boast_energy[i] = atoll(buf);
   }
 }
+
+static void _boast_powercap_store_and_clean( int _boast_energy_nsensors, uint64_t *_boast_energy_0, uint64_t *_boast_energy_1, char **_boast_energy_files, char **_boast_energy_names, VALUE _boast_stats);
+static void _boast_powercap_store_and_clean( int _boast_energy_nsensors, uint64_t *_boast_energy_0, uint64_t *_boast_energy_1, char **_boast_energy_files, char **_boast_energy_names, VALUE _boast_stats) {
+  VALUE results;
+  int i;
+  if( _boast_energy_nsensors ) {
+    results = rb_hash_new();
+    for(i=0; i < _boast_energy_nsensors; ++i){
+      rb_hash_aset(results, ID2SYM(rb_intern(_boast_energy_names[i])), rb_float_new((_boast_energy_1[i] - _boast_energy_0[i]) * 1e-6));
+    }
+    rb_hash_aset(_boast_stats, ID2SYM(rb_intern("energy")), results);
+
+    free(_boast_energy_0);
+    free(_boast_energy_1);
+    for(i=0; i < _boast_energy_nsensors; ++i){
+      free(_boast_energy_files[i]);
+      free(_boast_energy_names[i]);
+    }
+    free(_boast_energy_files);
+    free(_boast_energy_names);
+  }
+}
+
+EOF
+    end
+    def decl
+      get_output.puts "  char **_boast_energy_files = 0;"
+      get_output.puts "  char **_boast_energy_names = 0;"
+      get_output.puts "  uint64_t *_boast_energy_0  = 0;"
+      get_output.puts "  uint64_t *_boast_energy_1  = 0;"
+      get_output.puts "  int _boast_energy_nsensors = 0;"
+    end
+    def configure
+      get_output.print <<EOF
+  _boast_energy_nsensors = _boast_powercap_init(&_boast_energy_0, &_boast_energy_1, &_boast_energy_files, &_boast_energy_names);
 EOF
     end
     def start
       get_output.print <<EOF
-{
-  char buf[32];
-  FILE *f;
-  int i;
-  for(i = 0; i < _boast_energy_nsensors; ++i){
-    int _boast_fread_ret;
-    f = fopen(_boast_energy_files[i], "r");
-    _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
-    fclose(f);
-    if(_boast_fread_ret == 0)
-      rb_raise(rb_eArgError, "Energy probe read error!");
-    _boast_energy_0[i] = atoll(buf);
-  }
-}
+  _boast_powercap_read(_boast_energy_nsensors, _boast_energy_files, _boast_energy_0);
 EOF
     end
     def stop
       get_output.print <<EOF
-{
-  char buf[32];
-  FILE *f;
-  int i;
-  for(i = 0; i < _boast_energy_nsensors; ++i){
-    int _boast_fread_ret;
-    f = fopen(_boast_energy_files[i], "r");
-    _boast_fread_ret = fread(buf, 1, sizeof(buf), f);
-    fclose(f);
-    if(_boast_fread_ret == 0)
-      rb_raise(rb_eArgError, "Energy probe read error!");
-    _boast_energy_1[i] = atoll(buf);
-  }
-}
+  _boast_powercap_read(_boast_energy_nsensors, _boast_energy_files, _boast_energy_1);
 EOF
     end
     def compute
     end
     def store
       get_output.print <<EOF
-{
-  VALUE results;
-  int i;
-  results = rb_hash_new();
-  for(i=0; i < _boast_energy_nsensors; ++i){
-    rb_hash_aset(results, ID2SYM(rb_intern(_boast_energy_names[i])), rb_float_new((_boast_energy_1[i] - _boast_energy_0[i]) * 1e-6));
-  }
-  rb_hash_aset(_boast_stats, ID2SYM(rb_intern("energy")), results);
-}
+  _boast_powercap_store_and_clean( _boast_energy_nsensors, _boast_energy_0, _boast_energy_1, _boast_energy_files, _boast_energy_names, _boast_stats);
 EOF
     end
     def is_available?
