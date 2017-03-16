@@ -11,6 +11,9 @@ module BOAST
       get_output.puts "#include <mppa_mon.h>"
     end
 
+    def preamble
+    end
+
     def decl
       get_output.print <<EOF
   float _mppa_avg_pwr;

@@ -6,6 +6,8 @@ module BOAST
       get_output.puts "#include <stdio.h>"
       get_output.puts "#include <stdint.h>"
     end
+    def preamble
+    end
     def decl
       get_output.puts "char **_boast_energy_files = 0;"
       get_output.puts "char **_boast_energy_names = 0;"
@@ -136,6 +138,8 @@ EOF
     def header
       get_output.puts "#include <redfst.h>"
     end
+    def preamble
+    end
     def decl
       get_output.puts "redfst_dev_t *_boast_energy=0;"
     end
@@ -201,6 +205,8 @@ EOF
     module_function
     def header
       get_output.puts "#include <eml.h>"
+    end
+    def preamble
     end
     def decl
       get_output.puts "emlData_t **_boast_energy=0;";

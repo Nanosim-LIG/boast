@@ -215,42 +215,49 @@ EOF
     def fill_module_preamble
       get_output.print <<EOF
 VALUE #{module_name} = Qnil;
-void Init_#{module_name}();
+
 static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
+
+void Init_#{module_name}();
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
   rb_define_method(#{module_name}, "run", method_run, -1);
 }
-EOF
-    end
 
-    def fill_check_args
-      get_output.print <<EOF
-  VALUE _boast_rb_opts;
-  int _boast_repeat = 1;
-  if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} )
+static VALUE _boast_check_get_options(int _boast_argc, VALUE *_boast_argv);
+static VALUE _boast_check_get_options(int _boast_argc, VALUE *_boast_argv) {
+  VALUE _boast_rb_opts = Qnil;
+  if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} ) {
     rb_raise(rb_eArgError, "Wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})!", _boast_argc);
-  _boast_rb_opts = Qnil;
+  }
   if( _boast_argc == #{@procedure.parameters.length + 1} ) {
     _boast_rb_opts = _boast_argv[_boast_argc -1];
     if ( _boast_rb_opts != Qnil ) {
-      if (TYPE(_boast_rb_opts) != T_HASH)
+      if (TYPE(_boast_rb_opts) != T_HASH) {
         rb_raise(rb_eArgError, "Options should be passed as a hash");
+      }
     }
   }
-EOF
-    end
+  return _boast_rb_opts;
+}
 
-    def add_run_options
-      get_output.print <<EOF
+static VALUE _boast_merge_config(VALUE _boast_rb_opts);
+static VALUE _boast_merge_config(VALUE _boast_rb_opts) {
   VALUE _boast_run_opts;
   _boast_run_opts = rb_const_get(rb_cObject, rb_intern("BOAST"));
   _boast_run_opts = rb_funcall(_boast_run_opts, rb_intern("get_run_config"), 0);
   if ( NUM2UINT(rb_funcall(_boast_run_opts, rb_intern("size"), 0)) > 0 ) {
-    if ( _boast_rb_opts != Qnil )
+    if ( _boast_rb_opts != Qnil ) {
       rb_funcall(_boast_run_opts, rb_intern("update"), 1, _boast_rb_opts);
+    }
     _boast_rb_opts = _boast_run_opts;
   }
+  return _boast_rb_opts;
+}
+
+static int _boast_get_repeat(VALUE _boast_rb_opts);
+static int _boast_get_repeat(VALUE _boast_rb_opts) {
+  int _boast_repeat = 1;
   if ( _boast_rb_opts != Qnil ){
     VALUE _boast_repeat_value = Qnil;
     _boast_repeat_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("repeat")));
@@ -259,6 +266,24 @@ EOF
     if(_boast_repeat < 0)
       _boast_repeat = 1;
   }
+  return _boast_repeat;
+}
+
+EOF
+    end
+
+    def fill_check_args
+      get_output.print <<EOF
+  VALUE _boast_rb_opts = Qnil;
+  int _boast_repeat;
+  _boast_rb_opts = _boast_check_get_options( _boast_argc, _boast_argv);
+EOF
+    end
+
+    def add_run_options
+      get_output.print <<EOF
+  _boast_rb_opts = _boast_merge_config(_boast_rb_opts);
+  _boast_repeat = _boast_get_repeat( _boast_rb_opts );
 EOF
     end
 
@@ -319,7 +344,7 @@ EOF
   end
     };
   } else {
-    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
+    rb_raise(rb_eArgError, "Wrong type of argument for #{param}, expecting array!");
   }
 EOF
     end
@@ -471,6 +496,7 @@ EOF
       }
       @probes.map(&:header)
       @procedure.boast_header(@lang)
+      @probes.map(&:preamble)
 
       param_struct.type.define
       get_output.print <<EOF
@@ -553,6 +579,7 @@ EOF
       @procedure.boast_header(@lang)
 
       fill_module_preamble
+      @probes.map(&:preamble)
 
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
       param_struct.type.define

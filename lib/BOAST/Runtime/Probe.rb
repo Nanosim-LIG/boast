@@ -32,6 +32,9 @@ EOF
       end
     end
 
+    def preamble
+    end
+
     def decl
       if OS.mac? then
         get_output.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
@@ -93,6 +96,9 @@ EOF
     end
 
     def header
+    end
+
+    def preamble
     end
 
     def decl

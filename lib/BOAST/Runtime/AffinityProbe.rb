@@ -14,13 +14,10 @@ module BOAST
       get_output.puts "#include <sched.h>"
     end
 
-    def decl
-      get_output.puts "  cpu_set_t _boast_affinity_mask_old;"
-      get_output.puts "  int _boast_affinity_set = 0;"
-    end
-
-    def configure
-      get_output.print <<EOF
+    def preamble
+      get_output.puts <<EOF
+static int _boast_affinity_setup( VALUE _boast_rb_opts, cpu_set_t * _boast_affinity_mask_old );
+static int _boast_affinity_setup( VALUE _boast_rb_opts, cpu_set_t * _boast_affinity_mask_old ) {
   if( _boast_rb_opts != Qnil ) {
     VALUE _boast_affinity_rb_ptr = Qnil;
 
@@ -31,18 +28,43 @@ module BOAST
       int _boast_affinity_counter;
       int _boast_affinity_cpu_number;
 
-      if( TYPE(_boast_affinity_rb_ptr) != T_ARRAY )
+      if( TYPE(_boast_affinity_rb_ptr) != T_ARRAY ) {
         rb_raise(rb_eArgError, "Option :cpu_affinity should be an array!");
+      }
       CPU_ZERO(&_boast_affinity_mask);
       _boast_affinity_cpu_number = RARRAY_LEN(_boast_affinity_rb_ptr);
-      for( _boast_affinity_counter = 0; _boast_affinity_counter < _boast_affinity_cpu_number; _boast_affinity_counter++ )
+      for( _boast_affinity_counter = 0; _boast_affinity_counter < _boast_affinity_cpu_number; _boast_affinity_counter++ ) {
         CPU_SET(FIX2INT(rb_ary_entry(_boast_affinity_rb_ptr,_boast_affinity_counter)), &_boast_affinity_mask);
-      sched_getaffinity(getpid(), sizeof(_boast_affinity_mask_old), &_boast_affinity_mask_old);
-      if( sched_setaffinity(getpid(), sizeof(_boast_affinity_mask), &_boast_affinity_mask) != 0)
+      }
+      sched_getaffinity(getpid(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
+      if( sched_setaffinity(getpid(), sizeof(_boast_affinity_mask), &_boast_affinity_mask) != 0) {
         rb_raise(rb_eArgError, "Invalid affinity list provided!");
-      _boast_affinity_set = 1;
+      }
+      return 1;
     }
   }
+  return 0;
+}
+
+static int _boast_restore_affinity( int _boast_affinity_set, cpu_set_t * _boast_affinity_mask_old );
+static int _boast_restore_affinity( int _boast_affinity_set, cpu_set_t * _boast_affinity_mask_old ){
+  if ( _boast_affinity_set == 1 ) {
+    sched_setaffinity(getpid(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
+  }
+  return 0;
+}
+
+EOF
+    end
+
+    def decl
+      get_output.puts "  cpu_set_t _boast_affinity_mask_old;"
+      get_output.puts "  int _boast_affinity_set;"
+    end
+
+    def configure
+      get_output.print <<EOF
+  _boast_affinity_set = _boast_affinity_setup( _boast_rb_opts, &_boast_affinity_mask_old);
 EOF
     end
 
@@ -54,10 +76,7 @@ EOF
 
     def compute
       get_output.print <<EOF
-  if ( _boast_affinity_set == 1 ) {
-    sched_setaffinity(getpid(), sizeof(_boast_affinity_mask_old), &_boast_affinity_mask_old);
-    _boast_affinity_set = 0;
-  }
+  _boast_affinity_set = _boast_restore_affinity( _boast_affinity_set, &_boast_affinity_mask_old);
 EOF
     end
 
