@@ -75,6 +75,13 @@ EOF
 
     def store
       get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
+      if OS.mac? then
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)(_mac_boast_start * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom)*1000000000ll));\n"
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)(_mac_boast_stop * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom)*1000000000ll));\n"
+      else
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)_boast_start.tv_sec * 1000000000ll+_boast_start.tv_nsec));\n"
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)_boast_stop.tv_sec * 1000000000ll+_boast_stop.tv_nsec));\n"
+      end
     end
 
     def to_yaml
