@@ -33,60 +33,97 @@ EOF
     end
 
     def preamble
+      get_output.print <<EOF
+struct _boast_timer_struct {
+EOF
+      if OS.mac? then
+        get_output.print <<EOF
+  uint64_t _mac_boast_start, _mac_boast_stop;
+  mach_timebase_info_data_t _mac_boast_timebase_info;
+EOF
+      else
+        get_output.print <<EOF
+  struct timespec _boast_start, _boast_stop;
+EOF
+      end
+      push_env(:indent_level => 2) {
+        BOAST::decl RESULT
+      }
+      get_output.print <<EOF
+};
+
+static inline void _boast_timer_start(struct _boast_timer_struct * _boast_timer) {
+EOF
+      if OS.mac? then
+        get_output.print "  _boast_timer->_mac_boast_start = mach_absolute_time();\n"
+      else
+        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_timer->_boast_start);\n"
+      end
+      get_output.print <<EOF
+}
+
+static inline void _boast_timer_stop(struct _boast_timer_struct * _boast_timer) {
+EOF
+      if OS.mac? then
+        get_output.print "  _boast_timer->_mac_boast_stop = mach_absolute_time();\n"
+      else
+        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_timer->_boast_stop);\n"
+      end
+      get_output.print <<EOF
+}
+
+static inline void _boast_timer_compute(struct _boast_timer_struct * _boast_timer) {
+EOF
+      if OS.mac? then
+        get_output.print "  mach_timebase_info(&_boast_timer->_mac_boast_timebase_info);\n"
+        get_output.print "  _boast_timer->#{RESULT} = (_boast_timer->_mac_boast_stop - _boast_timer->_mac_boast_start) * _boast_timer->_mac_boast_timebase_info.numer / _boast_timer->_mac_boast_timebase_info.denom;\n"
+      else
+        get_output.print "  _boast_timer->#{RESULT} = (int64_t)(_boast_timer->_boast_stop.tv_sec - _boast_timer->_boast_start.tv_sec) * 1000000000ll + _boast_timer->_boast_stop.tv_nsec - _boast_timer->_boast_start.tv_nsec;\n"
+      end
+      get_output.print <<EOF
+}
+
+static inline void _boast_timer_store(struct _boast_timer_struct * _boast_timer, VALUE _boast_stats) {
+EOF
+      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_timer->#{RESULT}*(double)1e-9));\n"
+      if OS.mac? then
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)(_boast_timer->_mac_boast_start * _boast_timer->_mac_boast_timebase_info.numer / _boast_timer->_mac_boast_timebase_info.denom)*1000000000ll));\n"
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)(_boast_timer->_mac_boast_stop * _boast_timer->_mac_boast_timebase_info.numer / _boast_timer->_mac_boast_timebase_info.denom)*1000000000ll));\n"
+      else
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)_boast_timer->_boast_start.tv_sec * 1000000000ll+_boast_timer->_boast_start.tv_nsec));\n"
+        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)_boast_timer->_boast_stop.tv_sec * 1000000000ll+_boast_timer->_boast_stop.tv_nsec));\n"
+      end
+      get_output.print <<EOF
+}
+EOF
     end
 
     def decl
-      if OS.mac? then
-        get_output.print "  uint64_t _mac_boast_start, _mac_boast_stop;\n"
-        get_output.print "  mach_timebase_info_data_t _mac_boast_timebase_info;\n"
-      else
-        get_output.print "  struct timespec _boast_start, _boast_stop;\n"
-      end
-      BOAST::decl RESULT
+      get_output.print "  struct _boast_timer_struct _boast_timer;\n"
     end
 
     def configure
     end
 
     def start
-      if OS.mac? then
-        get_output.print "  _mac_boast_start = mach_absolute_time();\n"
-      else
-        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_start);\n"
-      end
+      get_output.puts "  _boast_timer_start(&_boast_timer);"
     end
 
     def stop
-      if OS.mac? then
-        get_output.print "  _mac_boast_stop = mach_absolute_time();\n"
-      else
-        get_output.print "  clock_gettime(CLOCK_REALTIME, &_boast_stop);\n"
-      end
+      get_output.puts "  _boast_timer_stop(&_boast_timer);"
     end
 
     def compute
-      if OS.mac? then
-        get_output.print "  mach_timebase_info(&_mac_boast_timebase_info);\n"
-        get_output.print "  #{RESULT} = (_mac_boast_stop - _mac_boast_start) * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom;\n"
-      else
-        get_output.print "  #{RESULT} = (int64_t)(_boast_stop.tv_sec - _boast_start.tv_sec) * 1000000000ll + _boast_stop.tv_nsec - _boast_start.tv_nsec;\n"
-      end
+      get_output.puts "  _boast_timer_compute(&_boast_timer);"
     end
 
     def store
-      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)#{RESULT}*(double)1e-9));\n"
-      if OS.mac? then
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)(_mac_boast_start * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom)*1000000000ll));\n"
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)(_mac_boast_stop * _mac_boast_timebase_info.numer / _mac_boast_timebase_info.denom)*1000000000ll));\n"
-      else
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)_boast_start.tv_sec * 1000000000ll+_boast_start.tv_nsec));\n"
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"stop\")),rb_int_new((int64_t)_boast_stop.tv_sec * 1000000000ll+_boast_stop.tv_nsec));\n"
-      end
+      get_output.puts "  _boast_timer_store(&_boast_timer, _boast_stats);"
     end
 
     def to_yaml
       get_output.print <<EOF
-  printf(":duration: %lf\\n", (double)#{RESULT}*(double)1e-9);
+  printf(":duration: %lf\\n", (double)_boast_timer.#{RESULT}*(double)1e-9);
 EOF
     end
 
