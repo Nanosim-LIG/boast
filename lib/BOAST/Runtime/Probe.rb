@@ -144,8 +144,13 @@ EOF
 
     def preamble
       get_output.print <<EOF
-static VALUE _boast_get_papi_envent_set( VALUE _boast_rb_opts );
-static VALUE _boast_get_papi_envent_set( VALUE _boast_rb_opts ) {
+struct _boast_papi_struct {
+  VALUE _boast_event_set;
+  VALUE _boast_papi_results;
+};
+
+static void _boast_get_papi_envent_set( VALUE _boast_rb_opts, struct _boast_papi_struct *_boast_papi );
+static void _boast_get_papi_envent_set( VALUE _boast_rb_opts, struct _boast_papi_struct *_boast_papi ) {
   VALUE _boast_event_set = Qnil;
   if( _boast_rb_opts != Qnil ) {
      VALUE _boast_PAPI_rb_ptr = Qnil;
@@ -160,18 +165,18 @@ static VALUE _boast_get_papi_envent_set( VALUE _boast_rb_opts ) {
       rb_funcall(_boast_event_set, rb_intern("add_named"), 1, _boast_PAPI_rb_ptr);
     }
   }
-  return _boast_event_set;
+  _boast_papi->_boast_event_set = _boast_event_set;
 }
 
-static void _boast_store_papi_results( VALUE _boast_papi_results, VALUE _boast_rb_opts, VALUE _boast_stats );
-static void _boast_store_papi_results( VALUE _boast_papi_results, VALUE _boast_rb_opts, VALUE _boast_stats ) {
-  if( _boast_papi_results != Qnil) {
+static void _boast_store_papi_results( struct _boast_papi_struct *_boast_papi, VALUE _boast_rb_opts, VALUE _boast_stats );
+static void _boast_store_papi_results( struct _boast_papi_struct *_boast_papi, VALUE _boast_rb_opts, VALUE _boast_stats ) {
+  if( _boast_papi->_boast_papi_results != Qnil) {
     VALUE _boast_papi_stats = Qnil;
     _boast_papi_stats = rb_ary_new3(1,rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("PAPI"))));
     _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("flatten"), 0);
-    _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("zip"), 1, _boast_papi_results);
-    _boast_papi_results = rb_funcall(rb_const_get(rb_cObject, rb_intern("Hash")), rb_intern("send"), 2, ID2SYM(rb_intern("[]")), _boast_papi_stats );
-    rb_hash_aset(_boast_stats, ID2SYM(rb_intern(\"PAPI\")), _boast_papi_results);
+    _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("zip"), 1, _boast_papi->_boast_papi_results);
+    _boast_papi->_boast_papi_results = rb_funcall(rb_const_get(rb_cObject, rb_intern("Hash")), rb_intern("send"), 2, ID2SYM(rb_intern("[]")), _boast_papi_stats );
+    rb_hash_aset(_boast_stats, ID2SYM(rb_intern(\"PAPI\")), _boast_papi->_boast_papi_results);
   }
 }
 
@@ -180,29 +185,28 @@ EOF
 
     def decl
       get_output.print <<EOF
-  VALUE _boast_event_set = Qnil;
-  VALUE _boast_papi_results = Qnil;
+  struct _boast_papi_struct _boast_papi = { Qnil, Qnil };
 EOF
     end
 
     def configure
       get_output.print <<EOF
-  _boast_event_set = _boast_get_papi_envent_set( _boast_rb_opts );
+  _boast_get_papi_envent_set( _boast_rb_opts, &_boast_papi );
 EOF
     end
 
     def start
       get_output.print <<EOF
-  if( _boast_event_set != Qnil) {
-    rb_funcall(_boast_event_set, rb_intern("start"), 0);
+  if( _boast_papi._boast_event_set != Qnil) {
+    rb_funcall(_boast_papi._boast_event_set, rb_intern("start"), 0);
   }
 EOF
     end
 
     def stop
       get_output.print <<EOF
-  if( _boast_event_set != Qnil) {
-    _boast_papi_results = rb_funcall(_boast_event_set, rb_intern("stop"), 0);
+  if( _boast_papi._boast_event_set != Qnil) {
+    _boast_papi._boast_papi_results = rb_funcall(_boast_papi._boast_event_set, rb_intern("stop"), 0);
   }
 EOF
     end
@@ -212,7 +216,7 @@ EOF
 
     def store
       get_output.print <<EOF
-  _boast_store_papi_results( _boast_papi_results, _boast_rb_opts, _boast_stats );
+  _boast_store_papi_results( &_boast_papi, _boast_rb_opts, _boast_stats );
 EOF
     end
 
