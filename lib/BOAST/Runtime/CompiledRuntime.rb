@@ -275,7 +275,6 @@ EOF
     def fill_check_args
       get_output.print <<EOF
   VALUE _boast_rb_opts = Qnil;
-  int _boast_repeat;
   _boast_rb_opts = _boast_check_get_options( _boast_argc, _boast_argv);
 EOF
     end
@@ -283,7 +282,7 @@ EOF
     def add_run_options
       get_output.print <<EOF
   _boast_rb_opts = _boast_merge_config(_boast_rb_opts);
-  _boast_repeat = _boast_get_repeat( _boast_rb_opts );
+  _boast_params._boast_repeat = _boast_get_repeat( _boast_rb_opts );
 EOF
     end
 
@@ -292,6 +291,7 @@ EOF
         param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
       }
       pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
+      pars.push Int("_boast_repeat")
       pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)
       @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
     end
@@ -368,7 +368,7 @@ EOF
 
     def create_procedure_call
       get_output.puts  "  int _boast_i;"
-      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_repeat; ++_boast_i){"
+      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_params._boast_repeat; ++_boast_i){"
       get_output.print "    _boast_params._boast_ret = " if @procedure.properties[:return]
       get_output.print "    #{method_name}( "
       get_output.print create_procedure_call_parameters.join(", ")
@@ -501,9 +501,8 @@ EOF
 
       param_struct.type.define
       get_output.print <<EOF
-void Init_#{base_name}( void );
-int _boast_repeat;
-void Init_#{base_name}( void ) {
+void Init_#{base_name}( int _boast_repeat );
+void Init_#{base_name}( int _boast_repeat ) {
 EOF
       increment_indent_level
       output.puts "  FILE * __boast_f;"
@@ -552,8 +551,7 @@ EOF
       get_output.print <<EOF
 }
 int main(int argc, char * argv[]) {
-  _boast_repeat=atoi(argv[1]);
-  Init_#{base_name}();
+  Init_#{base_name}(atoi(argv[1]));
   return 0;
 }
 EOF
@@ -585,13 +583,14 @@ EOF
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
       param_struct.type.define
       get_output.puts "static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
+
       increment_indent_level
+
+      fill_decl_module_params
 
       fill_check_args
 
       add_run_options
-
-      fill_decl_module_params
 
       @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:decl)
 
