@@ -292,6 +292,7 @@ EOF
         param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
       }
       pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
+      pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)
       @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
     end
 
@@ -514,7 +515,7 @@ EOF
           end
         }
       }
-      @probes.reverse.map(&:decl)
+      @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:decl)
       @probes.map(&:configure)
 
       get_executable_params_value( "#{@tmp_dir}/#{@procedure.name}/#{base_name}" )
@@ -592,7 +593,7 @@ EOF
 
       fill_decl_module_params
 
-      @probes.reverse.map(&:decl)
+      @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:decl)
 
       get_params_value
 
