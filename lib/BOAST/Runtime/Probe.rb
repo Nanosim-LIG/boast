@@ -83,7 +83,7 @@ EOF
       get_output.print <<EOF
 }
 
-#ifdef VALUE
+#ifdef RUBY
 static inline void _boast_timer_store(struct _boast_timer_struct * _boast_timer, VALUE _boast_stats) {
 EOF
       get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_timer->#{RESULT}*(double)1e-9));\n"
