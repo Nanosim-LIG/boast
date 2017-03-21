@@ -27,7 +27,7 @@ module BOAST
 
     def create_procedure_indirect_call_parameters
       return @procedure.parameters.collect { |param|
-        par = "_boast_params->#{param}"
+        par = "#{param_struct.struct_reference(param_struct.type.members[param.name.to_s])}".gsub("_boast_params.","_boast_params->")
         if param.dimension then
           "#{par}"
         elsif param.direction == :out or param.direction == :inout or param.reference? then
