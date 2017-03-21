@@ -128,7 +128,7 @@ EOF
     end
 
     def create_procedure_call_parameters
-      return create_procedure_call_parameters_old + ["_boast_block_number", "_boast_block_size", "boast_params._boast_repeat"]
+      return create_procedure_call_parameters_old + ["_boast_block_number", "_boast_block_size", "_boast_params._boast_repeat"]
     end
 
     def create_procedure_call
