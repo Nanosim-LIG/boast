@@ -269,6 +269,18 @@ static int _boast_get_repeat(VALUE _boast_rb_opts) {
   return _boast_repeat;
 }
 
+static int _boast_get_coexecute(VALUE _boast_rb_opts);
+static int _boast_get_coexecute(VALUE _boast_rb_opts) {
+  int _boast_coexecute = 0;
+  if ( _boast_rb_opts != Qnil ){
+    VALUE _boast_coexecute_value = Qnil;
+    _boast_coexecute_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("coexecute")));
+    if(_boast_coexecute_value != Qnil)
+      _boast_coexecute = 1;
+  }
+  return _boast_coexecute;
+}
+
 EOF
     end
 
@@ -283,6 +295,7 @@ EOF
       get_output.print <<EOF
   _boast_rb_opts = _boast_merge_config(_boast_rb_opts);
   _boast_params._boast_repeat = _boast_get_repeat( _boast_rb_opts );
+  _boast_params._boast_coexecute = _boast_get_coexecute( _boast_rb_opts );
 EOF
     end
 
@@ -292,6 +305,7 @@ EOF
       }
       pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
       pars.push Int("_boast_repeat")
+      pars.push Int("_boast_coexecute")
       pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)
       @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
     end
@@ -366,14 +380,30 @@ EOF
       }
     end
 
-    def create_procedure_call
+    def create_procedure_indirect_call
       get_output.puts  "  int _boast_i;"
-      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_params._boast_repeat; ++_boast_i){"
-      get_output.print "    _boast_params._boast_ret = " if @procedure.properties[:return]
-      get_output.print "    #{method_name}( "
-      get_output.print create_procedure_call_parameters.join(", ")
-      get_output.print "    );"
+      get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_params->_boast_repeat; ++_boast_i){"
+      get_output.print "    "
+      get_output.print "_boast_params->_boast_ret = " if @procedure.properties[:return]
+      get_output.print "#{method_name}( "
+      get_output.print create_procedure_indirect_call_parameters.join(", ")
+      get_output.print " );"
       get_output.puts  "  }"
+    end
+
+    def create_procedure_call
+      If("_boast_params._boast_coexecute" => lambda {
+        create_procedure_wrapper_call
+      }, :else => lambda {
+        get_output.puts  "    int _boast_i;"
+        get_output.puts  "    for(_boast_i = 0; _boast_i < _boast_params._boast_repeat; ++_boast_i){"
+        get_output.print "      "
+        get_output.print "_boast_params._boast_ret = " if @procedure.properties[:return]
+        get_output.print "#{method_name}( "
+        get_output.print create_procedure_call_parameters.join(", ")
+        get_output.print " );"
+        get_output.puts  "    }"
+      }).pr
     end
 
     def copy_scalar_param_to_ruby(str_par, param, ruby_param)
@@ -571,6 +601,27 @@ EOF
       f.close
     end
 
+    def create_wrapper
+      get_output.print <<EOF
+static void * boast_wrapper( void * data ) {
+  struct _boast_#{@procedure.name}_params * _boast_params;
+  _boast_params = data;
+EOF
+      get_output.puts "  _boast_timer_start(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe) 
+      create_procedure_indirect_call
+      get_output.puts "  _boast_timer_stop(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe) 
+      get_output.print <<EOF
+  return NULL;
+}
+EOF
+    end
+
+    def create_procedure_wrapper_call
+      get_output.print <<EOF
+    boast_wrapper(&_boast_params);
+EOF
+    end
+
     def fill_module_file_source
       fill_param_struct
       fill_module_header
@@ -581,7 +632,11 @@ EOF
       @probes.map(&:preamble)
 
       set_transition("VALUE", "VALUE", :default,  CustomType::new(:type_name => "VALUE"))
+
       param_struct.type.define
+
+      create_wrapper
+
       get_output.puts "static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
 
       increment_indent_level

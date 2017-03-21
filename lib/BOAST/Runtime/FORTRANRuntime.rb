@@ -44,6 +44,17 @@ module BOAST
       end
     end
 
+    def create_procedure_indirect_call_parameters
+      return @procedure.parameters.collect { |param|
+        par = "_boast_params->#{param}"
+        if param.dimension then
+          "#{par}"
+        else
+          "&#{par}"
+        end
+      }
+    end
+
     def create_procedure_call_parameters
       return @procedure.parameters.collect { |param|
         par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])

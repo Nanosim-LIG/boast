@@ -13,6 +13,7 @@ module BOAST
     alias fill_decl_module_params_old fill_decl_module_params
     alias create_procedure_call_parameters_old create_procedure_call_parameters
     alias store_results_old store_results
+    alias create_wrapper_old create_wrapper
 
     def fill_module_header
       fill_module_header_old
@@ -125,6 +126,9 @@ EOF
     }
   }
 EOF
+    end
+
+    def create_wrapper
     end
 
     def create_procedure_call_parameters
