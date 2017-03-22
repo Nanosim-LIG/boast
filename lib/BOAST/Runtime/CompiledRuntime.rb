@@ -519,7 +519,9 @@ EOF
     def copy_scalar_param_from_file(str_par, param, base_path)
       get_output.puts <<EOF
   __boast_f = fopen("#{base_path}/#{param}.in", "rb");
-  fread(&(#{str_par}), sizeof(#{str_par}), 1, __boast_f);
+  if( fread(&(#{str_par}), sizeof(#{str_par}), 1, __boast_f) != 1 ) {
+    exit(-1);
+  }
   fclose(__boast_f);
 EOF
     end
@@ -549,7 +551,9 @@ EOF
   __boast_sizeof_#{param} = ftell(__boast_f);
   rewind(__boast_f);
   #{str_par} = malloc(__boast_sizeof_#{param});
-  fread(#{str_par}, 1, __boast_sizeof_#{param}, __boast_f);
+  if( fread(#{str_par}, 1, __boast_sizeof_#{param}, __boast_f) != __boast_sizeof_#{param} ) {
+    exit(-1);
+  }
   fclose(__boast_f);
 EOF
     end

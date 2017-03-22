@@ -129,11 +129,11 @@ EOF
   printf(":duration: %lf\\n", (double)_boast_params._boast_timer.#{RESULT}*(double)1e-9);
 EOF
       if OS.mac? then
-        get_output.puts "  printf(\":start: %ld\\n\",(int64_t)(_boast_params._boast_timer.start * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
-        get_output.puts "  printf(\":end: %ld\\n\",(int64_t)(_boast_params._boast_timer.stop * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
+        get_output.puts "  printf(\":start: %lld\\n\",(int64_t)(_boast_params._boast_timer.start * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
+        get_output.puts "  printf(\":end: %lld\\n\",(int64_t)(_boast_params._boast_timer.stop * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
       else
-        get_output.puts "  printf(\":start: %ld\\n\",(int64_t)_boast_params._boast_timer.start.tv_sec * 1000000000ll+_boast_params._boast_timer.start.tv_nsec);"
-        get_output.puts "  printf(\":end: %ld\\n\",(int64_t)_boast_params._boast_timer.stop.tv_sec * 1000000000ll+_boast_params._boast_timer.stop.tv_nsec);"
+        get_output.puts "  printf(\":start: %lld\\n\",(int64_t)_boast_params._boast_timer.start.tv_sec * 1000000000ll+_boast_params._boast_timer.start.tv_nsec);"
+        get_output.puts "  printf(\":end: %lld\\n\",(int64_t)_boast_params._boast_timer.stop.tv_sec * 1000000000ll+_boast_params._boast_timer.stop.tv_nsec);"
       end
     end
 
