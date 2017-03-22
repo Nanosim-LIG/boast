@@ -441,6 +441,15 @@ EOF
   pthread_mutex_unlock(_boast_params->_boast_synchro.mutex);
 EOF
       else
+        get_output.print <<EOF
+  pthread_spin_lock(_boast_params->_boast_synchro.spin);
+  *_boast_params->_boast_synchro.counter -= 1;
+  while( *_boast_params->_boast_synchro.counter ) {
+    pthread_spin_unlock(_boast_params->_boast_synchro.spin);
+    pthread_spin_lock(_boast_params->_boast_synchro.spin);
+  }
+  pthread_spin_unlock(_boast_params->_boast_synchro.spin);
+EOF
       end
       get_output.puts "  _boast_timer_start(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe)
       create_procedure_indirect_call

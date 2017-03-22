@@ -4,9 +4,10 @@ module BOAST
 
     module Synchro
       extend FFI::Library
-      ffi_lib FFI::Library::LIBC
+      ffi_lib 'pthread'
       typedef :pointer, :mutex
       typedef :pointer, :cond
+      typedef :pointer, :spin
       attach_function 'pthread_mutex_init', [ :mutex, :pointer ], :int
       attach_function 'pthread_mutex_destroy', [ :mutex ], :int
       #attach_function 'pthread_mutex_lock', [ :mutex ], :int
@@ -16,17 +17,26 @@ module BOAST
       attach_function 'pthread_cond_destroy', [ :cond ], :int
       #attach_function 'pthread_cond_wait', [ :cond, :mutex ], :int
       #attach_function 'pthread_cond_broadcast', [ :cond ], :int
+
+      attach_function 'pthread_spin_init', [ :spin, :int ], :int
+      attach_function 'pthread_spin_destroy', [ :spin ], :int
     end
 
     def self.coexecute(kernels)
       semaphore = Mutex.new
       pval = FFI::MemoryPointer::new(:int)
       pval.write_int(kernels.length)
-      mutex = FFI::MemoryPointer::new(128)
-      Synchro.pthread_mutex_init(mutex, nil)
-      condition = FFI::MemoryPointer::new(128)
-      Synchro.pthread_cond_init(mutex, nil)
-      sync = [pval, mutex, condition]
+      if synchro == 'MUTEX' then
+        mutex = FFI::MemoryPointer::new(128)
+        Synchro.pthread_mutex_init(mutex, nil)
+        condition = FFI::MemoryPointer::new(128)
+        Synchro.pthread_cond_init(mutex, nil)
+        sync = [pval, mutex, condition]
+      else
+        spinlock = FFI::MemoryPointer::new(128)
+        Synchro.pthread_spin_init(spinlock, 0)
+        sync = [pval, spinlock]
+      end
       threads = []
       returns = []
       args = []
@@ -49,8 +59,12 @@ module BOAST
         }
       }
       threads.each { |thr| thr.join }
-      Synchro.pthread_mutex_destroy(mutex)
-      Synchro.pthread_cond_destroy(condition)
+      if synchro == 'MUTEX' then
+        Synchro.pthread_mutex_destroy(mutex)
+        Synchro.pthread_cond_destroy(condition)
+      else
+        Synchro.pthread_spin_destroy(spinlock)
+      end
       return returns
     end
 
