@@ -109,8 +109,11 @@ class TestProcedure < Minitest::Test
     a1 = Int( :a, :dir => :in )
     b1 = Int( :b, :dir => :in )
     c1 = Int( :c )
-    p1 = Procedure("minimum_4", [a1,b1], :return => c1) { pr c1 === Ternary( a1 < b1, a1, b1) }
+    p1 = Procedure("minimum_4", [a1,b1], :return => c1) {
+      pr c1 === Ternary( a1 < b1, a1, b1)
+    }
     k1 = p1.ckernel
+
     n2 = Int( :n, :dir => :in )
     a2 = Int( :a, :dir => :inout, :dim => [Dim(n2)] )
     b2 = Int( :b, :dir => :in )

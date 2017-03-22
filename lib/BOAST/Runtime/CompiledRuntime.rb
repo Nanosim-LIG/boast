@@ -207,6 +207,7 @@ module BOAST
 #include "narray.h"
 #endif
 EOF
+      get_output.puts "#include <pthread.h>" unless executable?
       @includes.each { |inc|
         get_output.puts "#include \"#{inc}\""
       }
@@ -282,6 +283,25 @@ static int _boast_get_coexecute(VALUE _boast_rb_opts) {
 }
 
 EOF
+      if !executable? then
+        get_output.print <<EOF
+struct _boast_synchro_struct {
+  volatile int * counter;
+EOF
+        if get_synchro == 'MUTEX' then
+          get_output.print <<EOF
+  pthread_mutex_t * mutex;
+  pthread_cond_t * condition;
+EOF
+        else
+          get_output.print <<EOF
+  pthread_spinlock_t * spin;
+EOF
+        end
+        get_output.print <<EOF
+};
+EOF
+      end
     end
 
     def fill_check_args
@@ -380,6 +400,12 @@ EOF
       }
     end
 
+    def create_procedure_wrapper_call
+      get_output.print <<EOF
+    rb_thread_call_without_gvl(boast_wrapper, &_boast_params, RUBY_UBF_PROCESS, NULL);
+EOF
+    end
+
     def create_procedure_indirect_call
       get_output.puts  "  int _boast_i;"
       get_output.puts  "  for(_boast_i = 0; _boast_i < _boast_params->_boast_repeat; ++_boast_i){"
@@ -387,7 +413,7 @@ EOF
       get_output.print "_boast_params->_boast_ret = " if @procedure.properties[:return]
       get_output.print "#{method_name}( "
       get_output.print create_procedure_indirect_call_parameters.join(", ")
-      get_output.print " );"
+      get_output.puts " );"
       get_output.puts  "  }"
     end
 
@@ -395,14 +421,16 @@ EOF
       If("_boast_params._boast_coexecute" => lambda {
         create_procedure_wrapper_call
       }, :else => lambda {
+        TimerProbe.start if @probes.include?(TimerProbe)
         get_output.puts  "    int _boast_i;"
         get_output.puts  "    for(_boast_i = 0; _boast_i < _boast_params._boast_repeat; ++_boast_i){"
         get_output.print "      "
         get_output.print "_boast_params._boast_ret = " if @procedure.properties[:return]
         get_output.print "#{method_name}( "
         get_output.print create_procedure_call_parameters.join(", ")
-        get_output.print " );"
+        get_output.puts " );"
         get_output.puts  "    }"
+        TimerProbe.stop if @probes.include?(TimerProbe)
       }).pr
     end
 
@@ -616,12 +644,6 @@ EOF
 EOF
     end
 
-    def create_procedure_wrapper_call
-      get_output.print <<EOF
-    boast_wrapper(&_boast_params);
-EOF
-    end
-
     def fill_module_file_source
       fill_param_struct
       fill_module_header
@@ -653,11 +675,11 @@ EOF
 
       @probes.map(&:configure)
 
-      @probes.reverse.map(&:start)
+      @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:start)
 
       create_procedure_call
 
-      @probes.map(&:stop)
+      @probes.reject{ |e| e ==TimerProbe }.map(&:stop)
 
       get_results
 
