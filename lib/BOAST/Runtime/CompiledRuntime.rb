@@ -208,6 +208,8 @@ module BOAST
 #endif
 EOF
       get_output.puts "#include <pthread.h>" unless executable?
+      get_output.puts "#include <sys/types.h>" unless executable?
+      get_output.puts "#include \"ruby/thread.h\"" unless executable?
       @includes.each { |inc|
         get_output.puts "#include \"#{inc}\""
       }
@@ -269,21 +271,9 @@ static int _boast_get_repeat(VALUE _boast_rb_opts) {
   }
   return _boast_repeat;
 }
-
-static int _boast_get_coexecute(VALUE _boast_rb_opts);
-static int _boast_get_coexecute(VALUE _boast_rb_opts) {
-  int _boast_coexecute = 0;
-  if ( _boast_rb_opts != Qnil ){
-    VALUE _boast_coexecute_value = Qnil;
-    _boast_coexecute_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("coexecute")));
-    if(_boast_coexecute_value != Qnil)
-      _boast_coexecute = 1;
-  }
-  return _boast_coexecute;
-}
-
 EOF
-      if !executable? then
+
+    if !executable? then
         get_output.print <<EOF
 struct _boast_synchro_struct {
   volatile int * counter;
@@ -300,6 +290,37 @@ EOF
         end
         get_output.print <<EOF
 };
+static int _boast_get_coexecute(VALUE _boast_rb_opts, struct _boast_synchro_struct * _boast_synchro);
+static int _boast_get_coexecute(VALUE _boast_rb_opts, struct _boast_synchro_struct * _boast_synchro) {
+  int _boast_coexecute = 0;
+  if ( _boast_rb_opts != Qnil ){
+    VALUE _boast_coexecute_value = Qnil;
+    _boast_coexecute_value = rb_hash_aref(_boast_rb_opts, ID2SYM(rb_intern("coexecute")));
+    if(_boast_coexecute_value != Qnil) {
+      VALUE address;
+      _boast_coexecute = 1;
+      address = rb_funcall(rb_ary_entry(_boast_coexecute_value, 0), rb_intern("address"), 0);
+      _boast_synchro->counter = sizeof(_boast_synchro->counter) == 4 ? (void *) NUM2ULONG(address) : (void *) NUM2ULL(address);
+EOF
+      if get_synchro == 'MUTEX' then
+        get_output.print <<EOF
+      address = rb_funcall(rb_ary_entry(_boast_coexecute_value, 1), rb_intern("address"), 0);
+      _boast_synchro->mutex = sizeof(_boast_synchro->mutex) == 4 ? (void *) NUM2ULONG(address) : (void *) NUM2ULL(address);
+      address = rb_funcall(rb_ary_entry(_boast_coexecute_value, 2), rb_intern("address"), 0);
+      _boast_synchro->condition = sizeof(_boast_synchro->condition) == 4 ? (void *) NUM2ULONG(address) : (void *) NUM2ULL(address);
+EOF
+      else
+        get_output.print <<EOF
+      address = rb_funcall(rb_ary_entry(_boast_coexecute_value, 1), rb_intern("address"), 0);
+      _boast_synchro->spin = sizeof(_boast_synchro->spin) == 4 ? (void *) NUM2ULONG(address) : (void *) NUM2ULL(address);
+EOF
+      end
+      get_output.print <<EOF
+    }
+  }
+  return _boast_coexecute;
+}
+
 EOF
       end
     end
@@ -315,8 +336,8 @@ EOF
       get_output.print <<EOF
   _boast_rb_opts = _boast_merge_config(_boast_rb_opts);
   _boast_params._boast_repeat = _boast_get_repeat( _boast_rb_opts );
-  _boast_params._boast_coexecute = _boast_get_coexecute( _boast_rb_opts );
 EOF
+      get_output.puts "  _boast_params._boast_coexecute = _boast_get_coexecute( _boast_rb_opts, &_boast_params._boast_synchro );" unless executable?
     end
 
     def fill_param_struct
@@ -327,6 +348,7 @@ EOF
       pars.push Int("_boast_repeat")
       pars.push Int("_boast_coexecute")
       pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)
+      pars.push CStruct("_boast_synchro", :type_name => "_boast_synchro_struct", :members => [Int(:dummy)]) unless executable?
       @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
     end
 
@@ -398,6 +420,35 @@ EOF
           end
         end
       }
+    end
+
+    def create_wrapper
+      get_output.print <<EOF
+static void * boast_wrapper( void * data ) {
+  struct _boast_#{@procedure.name}_params * _boast_params;
+  _boast_params = data;
+EOF
+      if get_synchro == 'MUTEX' then
+        get_output.print <<EOF
+  pthread_mutex_lock(_boast_params->_boast_synchro.mutex);
+  *_boast_params->_boast_synchro.counter -= 1;
+  if( *_boast_params->_boast_synchro.counter == 0 ) {
+    pthread_cond_broadcast( _boast_params->_boast_synchro.condition );
+  }
+  while( *_boast_params->_boast_synchro.counter ) {
+    pthread_cond_wait( _boast_params->_boast_synchro.condition, _boast_params->_boast_synchro.mutex );
+  }
+  pthread_mutex_unlock(_boast_params->_boast_synchro.mutex);
+EOF
+      else
+      end
+      get_output.puts "  _boast_timer_start(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe)
+      create_procedure_indirect_call
+      get_output.puts "  _boast_timer_stop(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe)
+      get_output.print <<EOF
+  return NULL;
+}
+EOF
     end
 
     def create_procedure_wrapper_call
@@ -627,21 +678,6 @@ EOF
         end
       }
       f.close
-    end
-
-    def create_wrapper
-      get_output.print <<EOF
-static void * boast_wrapper( void * data ) {
-  struct _boast_#{@procedure.name}_params * _boast_params;
-  _boast_params = data;
-EOF
-      get_output.puts "  _boast_timer_start(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe) 
-      create_procedure_indirect_call
-      get_output.puts "  _boast_timer_stop(&_boast_params->_boast_timer);" if @probes.include?(TimerProbe) 
-      get_output.print <<EOF
-  return NULL;
-}
-EOF
     end
 
     def fill_module_file_source

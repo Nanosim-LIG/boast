@@ -139,6 +139,66 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_coexecute2
+    n = Int( :n, :dir => :in )
+    a = Int( :a, :dir => :inout, :dim => [Dim(n)] )
+    b = Int( :b, :dir => :in )
+    i = Int( :i )
+    p = Procedure("vector_inc_3", [n, a, b]) {
+      decl i
+      pr For(i, 1, n) {
+        pr a[i] === a[i] + b
+      }
+    }
+    ah1 = NArray.int(1024*1024)
+    ah2 = NArray.int(1024*1024)
+    [FORTRAN, C].each { |l|
+      set_lang(l)
+      k1 = p.ckernel
+      k2 = p.ckernel
+      ah2.random!(100)
+      ah1.random!(100)
+      a1_out_ref = ah1 + 3*2
+      a2_out_ref = ah2 + 2*2
+      CKernel::coexecute([ [k1, [ah1.size, ah1, 3]], [k2, [ah2.size, ah2, 2]] ])
+      res = CKernel::coexecute([ [k1, [ah1.size, ah1, 3]], [k2, [ah2.size, ah2, 2]] ])
+      assert_equal(a2_out_ref, ah2)
+      assert_equal(a1_out_ref, ah1)
+      assert( res[1][:start] < res[0][:end] && res[0][:start] < res[1][:end] ) unless executable? or ffi?
+    }
+  end
+
+  def test_coexecute3
+    n = Int( :n, :dir => :in )
+    a = Int( :a, :dir => :inout, :dim => [Dim(n)] )
+    b = Int( :b, :dir => :in )
+    i = Int( :i )
+    p = Procedure("vector_inc_4", [n, a, b]) {
+      decl i
+      pr For(i, 1, n) {
+        pr a[i] === a[i] + b
+      }
+    }
+    ah1 = NArray.int(1024*1024)
+    ah2 = NArray.int(1024*1024)
+    [FORTRAN, C].each { |l|
+      set_lang(l)
+      repeat = 2
+      k1 = p.ckernel
+      k2 = p.ckernel
+      ah2.random!(100)
+      ah1.random!(100)
+      a1_out_ref = ah1 + 3 * (repeat)
+      a2_out_ref = ah2 + 2 * (repeat)
+      k1.run( ah1.size, ah1, 3, :repeat => repeat/2, :cpu_affinity => [0])
+      k2.run( ah2.size, ah2, 2, :repeat => repeat/2, :cpu_affinity => [3])
+      res = CKernel::coexecute([ [k1, [ah1.size, ah1, 3, {:cpu_affinity => [1], :repeat => repeat/2}]], [k2, [ah2.size, ah2, 2,{:cpu_affinity => [2], :repeat => repeat/2}]] ])
+      assert_equal(a2_out_ref, ah2)
+      assert_equal(a1_out_ref, ah1)
+      assert( res[1][:start] < res[0][:end] && res[0][:start] < res[1][:end] ) unless executable? or ffi?
+    }
+  end
+
   def test_procedure_opencl_array
     begin
       silence_warnings { require 'opencl_ruby_ffi' }

@@ -86,13 +86,13 @@ EOF
 #ifdef RUBY
 static inline void _boast_timer_store(struct _boast_timer_struct * _boast_timer, VALUE _boast_stats) {
 EOF
-      get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_timer->#{RESULT}*(double)1e-9));\n"
+      get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"duration\")),rb_float_new((double)_boast_timer->#{RESULT}*(double)1e-9));"
       if OS.mac? then
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)(_boast_timer->start * _boast_timer->timebase_info.numer / _boast_timer->timebase_info.denom)*1000000000ll));\n"
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"end\")),rb_int_new((int64_t)(_boast_timer->stop * _boast_timer->timebase_info.numer / _boast_timer->timebase_info.denom)*1000000000ll));\n"
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)(_boast_timer->start * _boast_timer->timebase_info.numer / _boast_timer->timebase_info.denom)*1000000000ll));"
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"end\")),rb_int_new((int64_t)(_boast_timer->stop * _boast_timer->timebase_info.numer / _boast_timer->timebase_info.denom)*1000000000ll));"
       else
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)_boast_timer->start.tv_sec * 1000000000ll+_boast_timer->start.tv_nsec));\n"
-        get_output.print "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"end\")),rb_int_new((int64_t)_boast_timer->stop.tv_sec * 1000000000ll+_boast_timer->stop.tv_nsec));\n"
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"start\")),rb_int_new((int64_t)_boast_timer->start.tv_sec * 1000000000ll+_boast_timer->start.tv_nsec));"
+        get_output.puts "  rb_hash_aset(_boast_stats,ID2SYM(rb_intern(\"end\")),rb_int_new((int64_t)_boast_timer->stop.tv_sec * 1000000000ll+_boast_timer->stop.tv_nsec));"
       end
       get_output.print <<EOF
 }
@@ -128,6 +128,13 @@ EOF
       get_output.print <<EOF
   printf(":duration: %lf\\n", (double)_boast_params._boast_timer.#{RESULT}*(double)1e-9);
 EOF
+      if OS.mac? then
+        get_output.puts "  printf(\":start: %ld\\n\",(int64_t)(_boast_params._boast_timer.start * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
+        get_output.puts "  printf(\":end: %ld\\n\",(int64_t)(_boast_params._boast_timer.stop * _boast_params._boast_timer.timebase_info.numer / _boast_params._boast_timer.timebase_info.denom)*1000000000ll);"
+      else
+        get_output.puts "  printf(\":start: %ld\\n\",(int64_t)_boast_params._boast_timer.start.tv_sec * 1000000000ll+_boast_params._boast_timer.start.tv_nsec);"
+        get_output.puts "  printf(\":end: %ld\\n\",(int64_t)_boast_params._boast_timer.stop.tv_sec * 1000000000ll+_boast_params._boast_timer.stop.tv_nsec);"
+      end
     end
 
   end

@@ -111,7 +111,7 @@ EOF
               ev_set.destroy
             end
           end
-          results = { :start => start, :stop => stop, :duration => stop - start, :return => ret }
+          results = { :start => start, :end => stop, :duration => stop - start, :return => ret }
           results[:PAPI] = Hash[[options[:PAPI]].flatten.zip(counters)] if ev_set
           if r_args.length > 0 then
             ref_return = {}

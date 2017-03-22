@@ -36,8 +36,8 @@ static int _boast_affinity_setup( VALUE _boast_rb_opts, cpu_set_t * _boast_affin
       for( _boast_affinity_counter = 0; _boast_affinity_counter < _boast_affinity_cpu_number; _boast_affinity_counter++ ) {
         CPU_SET(FIX2INT(rb_ary_entry(_boast_affinity_rb_ptr,_boast_affinity_counter)), &_boast_affinity_mask);
       }
-      sched_getaffinity(getpid(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
-      if( sched_setaffinity(getpid(), sizeof(_boast_affinity_mask), &_boast_affinity_mask) != 0) {
+      pthread_getaffinity_np(pthread_self(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
+      if( pthread_setaffinity_np(pthread_self(), sizeof(_boast_affinity_mask), &_boast_affinity_mask) != 0) {
         rb_raise(rb_eArgError, "Invalid affinity list provided!");
       }
       return 1;
@@ -49,7 +49,7 @@ static int _boast_affinity_setup( VALUE _boast_rb_opts, cpu_set_t * _boast_affin
 static int _boast_restore_affinity( int _boast_affinity_set, cpu_set_t * _boast_affinity_mask_old );
 static int _boast_restore_affinity( int _boast_affinity_set, cpu_set_t * _boast_affinity_mask_old ){
   if ( _boast_affinity_set == 1 ) {
-    sched_setaffinity(getpid(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
+    pthread_setaffinity_np(pthread_self(), sizeof(*_boast_affinity_mask_old), _boast_affinity_mask_old);
   }
   return 0;
 }
