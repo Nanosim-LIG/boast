@@ -29,6 +29,9 @@ k2 = p.ckernel
 k1.build
 k2.build
 
+cpu_aff1 = HwlocProbe::topology.cores.first.cpuset
+cpu_aff2 = HwlocProbe::topology.cores.last.cpuset
+
 optimizer.each { |config|
   p config
   ah1.random!(100)
@@ -42,12 +45,12 @@ optimizer.each { |config|
     a2_out_ref = ah2 + 2 * (repeat*2)
   end
 
-  res1 = k1.run( size, ah1, 3, :repeat => repeat, :cpu_affinity => [0])
-  res2 = k2.run( size, ah2, 2, :repeat => repeat, :cpu_affinity => [1])
+  res1 = k1.run( size, ah1, 3, :repeat => repeat, :cpu_affinity => cpu_aff1)
+  res2 = k2.run( size, ah2, 2, :repeat => repeat, :cpu_affinity => cpu_aff2)
 
   puts "sequential: #{res1[:duration]} + #{res2[:duration]} = #{res1[:duration]+res2[:duration]}"
 
-  res = CKernel::coexecute([ [k1, [size, ah1, 3, {:cpu_affinity => [0], :repeat => repeat}]], [k2, [size, ah2, 2,{:cpu_affinity => [1], :repeat => repeat}]] ])
+  res = CKernel::coexecute([ [k1, [size, ah1, 3, {:cpu_affinity => cpu_aff1, :repeat => repeat}]], [k2, [size, ah2, 2,{:cpu_affinity => cpu_aff2, :repeat => repeat}]] ])
   dates = [[0, :start, res[0][:start]], [1, :start, res[1][:start]], [0, :end, res[0][:end]], [1, :end, res[1][:end]]]
   dates.sort! { |e1,e2| e1[2] <=> e2[2] }
 #  p dates

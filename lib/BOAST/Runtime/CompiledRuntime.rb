@@ -224,37 +224,13 @@ static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 void Init_#{module_name}();
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
-  rb_define_method(#{module_name}, "run", method_run, -1);
+  rb_define_method(#{module_name}, "__run", method_run, -1);
 }
 
 static VALUE _boast_check_get_options(int _boast_argc, VALUE *_boast_argv);
 static VALUE _boast_check_get_options(int _boast_argc, VALUE *_boast_argv) {
   VALUE _boast_rb_opts = Qnil;
-  if( _boast_argc < #{@procedure.parameters.length} || _boast_argc > #{@procedure.parameters.length + 1} ) {
-    rb_raise(rb_eArgError, "Wrong number of arguments for #{@procedure.name} (%d for #{@procedure.parameters.length})!", _boast_argc);
-  }
-  if( _boast_argc == #{@procedure.parameters.length + 1} ) {
-    _boast_rb_opts = _boast_argv[_boast_argc -1];
-    if ( _boast_rb_opts != Qnil ) {
-      if (TYPE(_boast_rb_opts) != T_HASH) {
-        rb_raise(rb_eArgError, "Options should be passed as a hash");
-      }
-    }
-  }
-  return _boast_rb_opts;
-}
-
-static VALUE _boast_merge_config(VALUE _boast_rb_opts);
-static VALUE _boast_merge_config(VALUE _boast_rb_opts) {
-  VALUE _boast_run_opts;
-  _boast_run_opts = rb_const_get(rb_cObject, rb_intern("BOAST"));
-  _boast_run_opts = rb_funcall(_boast_run_opts, rb_intern("get_run_config"), 0);
-  if ( NUM2UINT(rb_funcall(_boast_run_opts, rb_intern("size"), 0)) > 0 ) {
-    if ( _boast_rb_opts != Qnil ) {
-      rb_funcall(_boast_run_opts, rb_intern("update"), 1, _boast_rb_opts);
-    }
-    _boast_rb_opts = _boast_run_opts;
-  }
+  _boast_rb_opts = _boast_argv[_boast_argc -1];
   return _boast_rb_opts;
 }
 
@@ -334,7 +310,6 @@ EOF
 
     def add_run_options
       get_output.print <<EOF
-  _boast_rb_opts = _boast_merge_config(_boast_rb_opts);
   _boast_params._boast_repeat = _boast_get_repeat( _boast_rb_opts );
 EOF
       get_output.puts "  _boast_params._boast_coexecute = _boast_get_coexecute( _boast_rb_opts, &_boast_params._boast_synchro );" unless executable?
@@ -718,17 +693,17 @@ EOF
 
       add_run_options
 
-      @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:decl)
+      @probes.reject{ |e| e == TimerProbe }.reverse.map(&:decl)
 
       get_params_value
 
       @probes.map(&:configure)
 
-      @probes.reject{ |e| e ==TimerProbe }.reverse.map(&:start)
+      @probes.reject{ |e| e == TimerProbe }.reverse.map(&:start)
 
       create_procedure_call
 
-      @probes.reject{ |e| e ==TimerProbe }.map(&:stop)
+      @probes.reject{ |e| e == TimerProbe }.map(&:stop)
 
       get_results
 
@@ -905,6 +880,27 @@ EOF
       cleanup(kernel_files) unless keep_temp
 
       eval "self.extend(#{module_name})"
+
+      define_singleton_method(:run) { |*args, **options, &block|
+        raise "Wrong number of arguments for #{@procedure.name} (#{args.length} for #{@procedure.parameters.length})" if args.length != @procedure.parameters.length
+        config = BOAST::get_run_config
+        config.update(options)
+        res = nil
+        if AffinityProbe == HwlocProbe and config[:cpu_affinity] then
+          affinity = config[:cpu_affinity]
+          if affinity.kind_of?(Array) then
+            cpuset = Hwloc::Cpuset::new( affinity )
+          elsif affinity.kind_of?(Hwloc::Bitmap) then
+            cpuset = affinity
+          end
+          AffinityProbe.topology.set_cpubind(cpuset, Hwloc::CPUBIND_THREAD | Hwloc::CPUBIND_STRICT) {
+            res = __run(*args, config, &block)
+          }
+        else
+          res = __run(*args, config, &block)
+        end
+        res
+      }
 
       return self
     end
