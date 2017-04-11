@@ -1,7 +1,59 @@
 module BOAST
 
   # @private
-  module AffinityProbe
+  module HwlocProbe
+    extend PrivateStateAccessor
+
+    class << self
+      attr_accessor :topology
+    end
+    @topology = nil
+
+    begin
+      require 'hwloc'
+      @topology = Hwloc::Topology::new
+      @topology.load
+    rescue
+    end
+
+    module_function
+
+    def cflags
+    end
+
+    def header
+    end
+
+    def preamble
+    end
+
+
+    def decl
+    end
+
+    def configure
+    end
+
+    def start
+    end
+
+    def stop
+    end
+
+    def compute
+    end
+
+    def store
+    end
+
+    def is_available?
+      return  !@topology.nil?
+    end
+
+  end
+
+  # @private
+  module PthreadAffinityProbe
     extend PrivateStateAccessor
 
     module_function
@@ -83,6 +135,19 @@ EOF
     def store
     end
 
+    def is_available?
+      return false if OS.mac?
+      return true
+    end
+
+  end
+
+  if HwlocProbe.is_available?
+    AffinityProbe = HwlocProbe
+  elsif PthreadAffinityProbe.is_available?
+    AffinityProbe = PthreadAffinityProbe
+  else
+    AffinityProbe = nil
   end
 
 end

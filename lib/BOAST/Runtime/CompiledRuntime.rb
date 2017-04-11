@@ -878,7 +878,7 @@ EOF
       elsif get_lang != CUDA then
         @probes = [TimerProbe, PAPIProbe]
         @probes.push EnergyProbe if EnergyProbe
-        @probes.push AffinityProbe unless OS.mac?
+        @probes.push AffinityProbe if AffinityProbe
       end
       @probes = [MPPAProbe] if @architecture == MPPA
       linker, ldshared, ldshared_flags, ldflags = setup_compilers(@probes, compiler_options)
