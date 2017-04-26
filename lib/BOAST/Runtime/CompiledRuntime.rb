@@ -886,6 +886,13 @@ EOF
         config = BOAST::get_run_config
         config.update(options)
         res = nil
+        if get_lang != CUDA and config[:PAPI] then
+          require 'PAPI'
+          PAPI.init
+          if config[:coexecute] then
+            PAPI.thread_init
+          end
+        end
         if AffinityProbe == HwlocProbe and config[:cpu_affinity] then
           affinity = config[:cpu_affinity]
           if affinity.kind_of?(Array) then

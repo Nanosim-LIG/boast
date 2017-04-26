@@ -168,7 +168,6 @@ static void _boast_get_papi_envent_set( VALUE _boast_rb_opts, struct _boast_papi
     if( _boast_PAPI_rb_ptr != Qnil ) {
       VALUE _boast_PAPI = Qnil;
       VALUE _boast_EventSet = Qnil;
-      rb_eval_string("require 'PAPI'");
       _boast_PAPI =  rb_const_get(rb_cObject, rb_intern("PAPI"));
       _boast_EventSet =  rb_const_get(_boast_PAPI, rb_intern("EventSet"));
       _boast_event_set = rb_funcall(_boast_EventSet, rb_intern("new"), 0);
@@ -187,6 +186,8 @@ static void _boast_store_papi_results( struct _boast_papi_struct *_boast_papi, V
     _boast_papi_stats = rb_funcall(_boast_papi_stats, rb_intern("zip"), 1, _boast_papi->results);
     _boast_papi->results = rb_funcall(rb_const_get(rb_cObject, rb_intern("Hash")), rb_intern("send"), 2, ID2SYM(rb_intern("[]")), _boast_papi_stats );
     rb_hash_aset(_boast_stats, ID2SYM(rb_intern(\"PAPI\")), _boast_papi->results);
+    rb_funcall(_boast_papi->event_set, rb_intern("cleanup"), 0);
+    rb_funcall(_boast_papi->event_set, rb_intern("destroy"), 0);
   }
 }
 
