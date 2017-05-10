@@ -13,7 +13,7 @@ module BOAST
       require 'hwloc'
       @topology = Hwloc::Topology::new
       @topology.load
-    rescue
+    rescue LoadError => e
     end
 
     module_function
