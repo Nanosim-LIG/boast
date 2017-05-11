@@ -21,7 +21,7 @@ module BOAST
       begin
         attach_function 'pthread_spin_init', [ :spin, :int ], :int
         attach_function 'pthread_spin_destroy', [ :spin ], :int
-      rescue NotFoundError => e
+      rescue FFI::NotFoundError => e
         warn "spin functions not found"
       end
     end
