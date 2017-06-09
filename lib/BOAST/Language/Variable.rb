@@ -150,7 +150,7 @@ module BOAST
     ANNOTATIONS = [ :name, :type, :dimension ]
 
     def method_missing(m, *a, &b)
-      if @type.methods.include?(:members) and @type.members[m.to_s] then
+      if @type.kind_of?(CStruct) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
       elsif __vector? and m.to_s[0] == 's' and lang != CUDA then
         required_set = m.to_s[1..-1].chars.to_a
