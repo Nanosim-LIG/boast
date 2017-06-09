@@ -48,7 +48,7 @@ module BOAST
         return "#{get_array_start}:#{@size-(1+get_array_start)}"
       else
         return @size.to_s
-      end 
+      end
     end
 
     # Returns the start of the {Dimension} as given at initialization or as computed {BOAST.get_array_start}.
@@ -111,16 +111,16 @@ module BOAST
       arr = flatten
       s = ""
       return s if arr.first.nil?
-      s += "reshape(" if @shape
-      s += "(/ &\n"
-      s += arr.first.to_s
-      s += @type.suffix if @type
+      s << "reshape(" if @shape
+      s << "(/ &\n"
+      s << arr.first.to_s
+      s << @type.suffix if @type
       arr[1..-1].each { |v|
-        s += ", &\n"+v.to_s
-        s += @type.suffix if @type
+        s << ", &\n"+v.to_s
+        s << @type.suffix if @type
       }
-      s += " /)"
-      s += ", shape(#{@shape}))" if @shape
+      s << " /)"
+      s << ", shape(#{@shape}))" if @shape
       return s
     end
 
@@ -128,14 +128,14 @@ module BOAST
       arr = flatten
       s = ""
       return s if arr.first.nil?
-      s += "{\n"
-      s += arr.first.to_s
-      s += @type.suffix if @type 
+      s << "{\n"
+      s << arr.first.to_s
+      s << @type.suffix if @type
       arr[1..-1].each { |v|
-        s += ",\n"+v.to_s
-        s += @type.suffix if @type
+        s << ",\n"+v.to_s
+        s << @type.suffix if @type
       }
-      s += "}"
+      s << "}"
     end
 
   end
@@ -326,7 +326,7 @@ module BOAST
       hash[:dir] = nil
       return Variable::new(name, type.class, hash)
     end
-  
+
     def to_s
       if force_replace_constant? or ( ( replace_constant? or replace_constants? ) and constant? and not dimension? ) then
         s = @constant.to_s + @type.suffix
@@ -350,12 +350,12 @@ module BOAST
       return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [C, CL, CUDA].include?( lang )
       return Index::new(self, *(@dimension.collect { |d| d.start } ) ) if lang == FORTRAN
     end
-   
+
     def struct_reference(x)
       return x.copy(name+"."+x.name) if [C, CL, CUDA].include?( lang )
       return x.copy(name+"%"+x.name) if lang == FORTRAN
     end
- 
+
     def inc
       return Expression::new("++",self,nil)
     end
@@ -378,23 +378,23 @@ module BOAST
         return Index::new(self, *args)
       end
     end
- 
+
     def boast_header(lang=C)
       return decl_texture_s if texture?
       s = ""
-      s += "const " if constant? or @direction == :in
-      s += @type.decl
+      s << "const " if constant? or @direction == :in
+      s << @type.decl
       if dimension? then
-        s += " *" unless (use_vla? and lang != FORTRAN)
+        s << " *" unless (use_vla? and lang != FORTRAN)
       end
       if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout or @reference ) then
-        s += " *"
+        s << " *"
       end
-      s += " #{@name}"
+      s << " #{@name}"
       if dimension? and use_vla? and lang != FORTRAN  then
-        s += "["
-        s += @dimension.reverse.collect(&:to_s).join("][")
-        s += "]"
+        s << "["
+        s << @dimension.reverse.collect(&:to_s).join("][")
+        s << "]"
       end
       return s
     end
@@ -491,41 +491,41 @@ module BOAST
     def decl_c_s(device = false)
       return decl_texture_s if texture?
       s = ""
-      s += "const " if __const?
-      s += "__global " if __global?
-      s += "__local " if __local?
-      s += "__shared__ " if __shared?(device)
-      s += @type.decl
+      s << "const " if __const?
+      s << "__global " if __global?
+      s << "__local " if __local?
+      s << "__shared__ " if __shared?(device)
+      s << @type.decl
       if __vla_array? then
-        s += " #{@name}["
-        s += "__restrict__ " if __restrict?
-        s += @dimension.reverse.collect(&:to_s).join("][")
-        s += "]"
+        s << " #{@name}["
+        s << "__restrict__ " if __restrict?
+        s << @dimension.reverse.collect(&:to_s).join("][")
+        s << "]"
       else
-        s += " *" if __pointer?(device)
+        s << " *" if __pointer?(device)
         if __pointer_array?(device) and __restrict? then
           if lang == CL
-            s += " restrict"
+            s << " restrict"
           else
-            s += " __restrict__" unless use_vla?
+            s << " __restrict__" unless use_vla?
           end
         end
-        s += " #{@name}"
+        s << " #{@name}"
         if dimension? and constant? then
-          s += "[]"
+          s << "[]"
         end
         if __dimension?(device) then
-          s +="[("
-          s += @dimension.collect(&:to_s).reverse.join(")*(")
-          s +=")]"
-        end 
+          s << "[("
+          s << @dimension.collect(&:to_s).reverse.join(")*(")
+          s << ")]"
+        end
       end
       if __align? and lang != CUDA then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
-        s+= " __attribute((aligned(#{a})))"
+        s << " __attribute((aligned(#{a})))"
       end
-      s += " = #{@constant}" if constant?
+      s << " = #{@constant}" if constant?
       return s
     end
 
@@ -539,24 +539,24 @@ module BOAST
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
       s = ""
       if lang == CL then
-        s += "__read_only "
+        s << "__read_only "
         if dim_number < 3 then
-          s += "image2d_t " #from OCL 1.2+ image1d_t is defined
+          s << "image2d_t " #from OCL 1.2+ image1d_t is defined
         else
-          s += "image3d_t "
+          s << "image3d_t "
         end
       else
-        s += "texture<#{@type.decl}, cudaTextureType#{dim_number}D, cudaReadModeElementType> "
+        s << "texture<#{@type.decl}, cudaTextureType#{dim_number}D, cudaReadModeElementType> "
       end
-      s += @name
+      s << @name
       return s
     end
 
     def decl_c
       s = ""
-      s += indent
-      s += decl_c_s
-      s += finalize
+      s << indent
+      s << decl_c_s
+      s << finalize
       output.print s
       return self
     end
@@ -595,42 +595,42 @@ module BOAST
 
     def decl_fortran
       s = ""
-      s += indent
-      s += @type.decl
-      s += ", intent(#{@direction})" if @direction
-      s += ", optional" if optional?
-      s += ", allocatable" if allocate? and @allocate == :heap
-      s += ", parameter" if constant?
+      s << indent
+      s << @type.decl
+      s << ", intent(#{@direction})" if @direction
+      s << ", optional" if optional?
+      s << ", allocatable" if allocate? and @allocate == :heap
+      s << ", parameter" if constant?
       if dimension? or __vector? then
-        s += ", dimension("
+        s << ", dimension("
         if __vector? then
-          s += "#{@type.vector_length}"
-          s += ", " if dimension?
+          s << "#{@type.vector_length}"
+          s << ", " if dimension?
         end
-        s += @dimension.collect { |d|
+        s << @dimension.collect { |d|
           if deferred_shape? or ( allocate? and @allocate == :heap )
             ":"
           else
             d.to_s
           end
         }.join(", ") if dimension?
-        s += ")"
+        s << ")"
       end
-      s += " :: #{@name}"
+      s << " :: #{@name}"
       if constant? then
         @constant.shape = self if dimension? and @constant.kind_of?(ConstArray)
-        s += " = #{@constant}"
-        s += @type.suffix if not dimension? and @type
+        s << " = #{@constant}"
+        s << @type.suffix if not dimension? and @type
       end
-      s += finalize
+      s << finalize
       output.print s
       if ( dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) ) or ( vector? and not @direction ) then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
-        s += indent
-        s += "!DIR$ ATTRIBUTES ALIGN: #{a}:: #{name}"
-        s += finalize
+        s << indent
+        s << "!DIR$ ATTRIBUTES ALIGN: #{a}:: #{name}"
+        s << finalize
         output.print s
       end
       return self
@@ -638,8 +638,8 @@ module BOAST
 
     def finalize
        s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
+       s << ";" if [C, CL, CUDA].include?( lang )
+       s << "\n"
        return s
     end
 

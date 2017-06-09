@@ -127,9 +127,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -189,8 +189,8 @@ module BOAST
           start = Expression::new(Subtraction, slice.first, dims[indx].start)
           s = "#{start}"
           if not slice.scalar? then
-            s += ":#{slice.length}"
-#           s += ":#{slice.step}" if slice.step
+            s << ":#{slice.length}"
+#           s << ":#{slice.step}" if slice.step
             raise "Slice don't support step in C!" if slice.step
           end
           s
@@ -206,8 +206,8 @@ module BOAST
         else
           s = "#{slice.first}"
           if not slice.scalar? then
-            s += ":#{slice.last}"
-            s += ":#{slice.step}" if slice.step
+            s << ":#{slice.last}"
+            s << ":#{slice.step}" if slice.step
           end
           s
         end

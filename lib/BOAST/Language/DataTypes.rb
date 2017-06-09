@@ -137,9 +137,9 @@ module BOAST
     def suffix
       s = ""
       if [C, CL, CUDA].include?( lang ) then
-        s += "f" if @size == 4
+        s << "f" if @size == 4
       elsif lang == FORTRAN then
-        s += "_wp" if @size == 8
+        s << "_wp" if @size == 8
       end
       return s
     end
@@ -208,7 +208,7 @@ module BOAST
       if lang == C then
         if @vector_length == 1 then
           s = ""
-          s += "u" if not @signed
+          s << "u" if not @signed
           return s+"int#{8*@size}_t" if @size
           return s+"int"
         elsif @vector_length > 1 then
@@ -216,33 +216,33 @@ module BOAST
         end
       else
         s =""
-        s += "u" if not @signed
-        s += "nsigned " if not @signed and lang == CUDA and @vector_length == 1
+        s << "u" if not @signed
+        s << "nsigned " if not @signed and lang == CUDA and @vector_length == 1
         case @size
         when 1
-          s += "char"
+          s << "char"
         when 2
-          s += "short"
+          s << "short"
         when 4
-          s += "int"
+          s << "int"
         when 8
           if lang == CUDA
             case @vector_length
             when 1
-              s += "long long"
+              s << "long long"
             else
-              s += "longlong"
+              s << "longlong"
             end
           else
-            s += "long"
+            s << "long"
           end
         when nil
-          s += "int"
+          s << "int"
         else
           raise "Unsupported integer size!"
         end
         if @vector_length > 1 then
-          s += "#{@vector_length}"
+          s << "#{@vector_length}"
         end
         return s
       end
@@ -250,9 +250,9 @@ module BOAST
 
     def decl_ffi
       t = ""
-      t += "u" if not @signed
-      t += "int"
-      t += "#{@size*8}" if @size
+      t << "u" if not @signed
+      t << "int"
+      t << "#{@size*8}" if @size
       return t.to_sym
     end
 
@@ -307,7 +307,7 @@ module BOAST
 
     def define_c
       s = indent
-      s += decl_c + " {"
+      s << decl_c + " {"
       output.puts s
       increment_indent_level
       @members_array.each { |value|
@@ -315,15 +315,15 @@ module BOAST
       }
       decrement_indent_level
       s = indent
-      s += "}"
-      s += finalize
+      s << "}"
+      s << finalize
       output.print s
       return self
     end
     
     def define_fortran
       s = indent
-      s += "TYPE :: #{@name}\n"
+      s << "TYPE :: #{@name}\n"
       output.puts s
       increment_indent_level
       @members_array.each { |value|
@@ -331,16 +331,16 @@ module BOAST
       }
       decrement_indent_level
       s = indent
-      s += "END TYPE #{@name}"
-      s += finalize
+      s << "END TYPE #{@name}"
+      s << finalize
       output.print s
       return self
     end
 
     def finalize
        s = ""
-       s += ";" if [C, CL, CUDA].include?( lang )
-       s+="\n"
+       s << ";" if [C, CL, CUDA].include?( lang )
+       s << "\n"
        return s
     end
 

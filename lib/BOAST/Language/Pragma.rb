@@ -17,19 +17,19 @@ module BOAST
     def to_s
       s = ""
       if lang == FORTRAN then
-        s += "!#{@name}$"
+        s << "!#{@name}$"
       else
-        s += "#pragma #{name}"
+        s << "#pragma #{name}"
       end
       @options.each{ |opt|
-        s += " #{opt}"
+        s << " #{opt}"
       }
       return s
     end
 
     def pr
       s=""
-      s += to_s
+      s << to_s
       output.puts s
       return self
     end

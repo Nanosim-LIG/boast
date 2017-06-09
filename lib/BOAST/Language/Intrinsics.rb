@@ -82,11 +82,11 @@ module BOAST
       if not supported then
         required = ""
         INSTRUCTIONS[get_architecture][instruction.to_s].each { |cpuid|
-          required += " or " if required != ""
+          required << " or " if required != ""
           if cpuid.kind_of?( Array ) then
-            required += "( #{cpuid.join(" and ")} )"
+            required << "( #{cpuid.join(" and ")} )"
           else
-            required += "#{cpuid}"
+            required << "#{cpuid}"
           end
         }
         raise IntrinsicsError, "Unsupported operation #{intr_symbol} for #{type}#{type2 ? " and #{type2}" : ""} on #{get_model}! (requires #{required})"
@@ -116,10 +116,10 @@ module BOAST
       case data_type
       when Int
         raise IntrinsicsError, "Unsupported data size for int vector on X86: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
-        return s+= "#{data_type.total_size*8>64 ? "i" : ""}"
+        return s << "#{data_type.total_size*8>64 ? "i" : ""}"
       when Real
         return s if data_type.size == 4
-        return s += "d" if data_type.size == 8
+        return s << "d" if data_type.size == 8
         raise IntrinsicsError, "Unsupported data size for real vector on X86: #{data_type.size*8}!"
       else
         raise IntrinsicsError, "Unsupported data type #{data_type} for vector on X86!"
@@ -161,15 +161,15 @@ module BOAST
       s = ""
       case type
       when Int
-        s += "u" unless type.signed?
-        s += "int"
+        s << "u" unless type.signed?
+        s << "int"
       when Real
-        s += "float"
+        s << "float"
       else
         raise InternalIntrinsicsError, "Undefined vector type!"
       end
-      s += "#{type.size*8}"
-      s += "x#{type.vector_length}_t"
+      s << "#{type.size*8}"
+      s << "x#{type.vector_length}_t"
       return s.to_sym
     end
 
@@ -181,19 +181,19 @@ module BOAST
       when :int
         case sign
         when :signed
-          s += "int"
+          s << "int"
         when :unsigned
-          s += "uint"
+          s << "uint"
         else
           raise InternalIntrinsicsError, "Invalid sign!"
         end
       when :float
-        s += "float"
+        s << "float"
       else
         raise InternalIntrinsicsError, "Invalid type!"
       end
-      s += "#{size}"
-      s += "x#{vector_size/size}_t"
+      s << "#{size}"
+      s << "x#{vector_size/size}_t"
       return s.to_sym
     end
 
@@ -205,18 +205,18 @@ module BOAST
       when :int
         case sign
         when :signed
-          s += "s"
+          s << "s"
         when :unsigned
-          s += "u"
+          s << "u"
         else
           raise InternalIntrinsicsError, "Invalid sign!"
         end
       when :float
-        s += "f"
+        s << "f"
       else
         raise InternalIntrinsicsError, "Invalid type!"
       end
-      s += "#{size}"
+      s << "#{size}"
       return s
     end
 
@@ -227,23 +227,23 @@ module BOAST
       case type
       when :int
         e = ( vector_size > 64 ? "e" : "" )
-        s += "#{e}p"
+        s << "#{e}p"
         case sign
         when :signed
-          s += "i"
+          s << "i"
         when :unsigned
-          s += "u"
+          s << "u"
         else
           raise InternalIntrinsicsError, "Invalid sign!"
         end
-        s += "#{size}"
+        s << "#{size}"
       when :float
-        s += "p"
+        s << "p"
         case size
         when 32
-          s += "s"
+          s << "s"
         when 64
-          s += "d"
+          s << "d"
         else
           raise InternalIntrinsicsError, "Invalid size!"
         end

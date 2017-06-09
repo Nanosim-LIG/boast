@@ -47,23 +47,23 @@ module BOAST
 
     def to_s_fortran
       s = ""
-      s += @prefix if @prefix
-      s += "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
+      s << @prefix if @prefix
+      s << "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
     end
 
     def to_s_c
       s = ""
-      s += @prefix if @prefix
-      s += "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
+      s << @prefix if @prefix
+      s << "#{func_name}(#{@args.collect(&:to_s).join(", ")})"
     end
 
     private :to_s_fortran, :to_s_c
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end

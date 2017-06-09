@@ -39,14 +39,14 @@ module BOAST
     # @private
     def boast_header(lang=C)
       s = boast_header_s(lang)
-      s += ";\n"
+      s << ";\n"
       output.print s
       return self
     end
 
     def call(*parameters)
       prefix = ""
-      prefix += "call " if lang==FORTRAN and @properties[:return].nil?
+      prefix << "call " if lang==FORTRAN and @properties[:return].nil?
       f = FuncCall::new(@name, *parameters, :return => @properties[:return] )
       f.prefix = prefix
       return f
@@ -114,50 +114,50 @@ module BOAST
       s = ""
       if lang == CL then
         if @properties[:local] then
-          s += "#if __OPENCL_C_VERSION__ && __OPENCL_C_VERSION__ >= 120\n"
-          s += "static\n"
-          s += "#endif\n"
+          s << "#if __OPENCL_C_VERSION__ && __OPENCL_C_VERSION__ >= 120\n"
+          s << "static\n"
+          s << "#endif\n"
         else
-          s += "__kernel "
+          s << "__kernel "
           wgs = @properties[:reqd_work_group_size]
           if wgs then
-            s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+            s << "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
           end
         end
       elsif lang == CUDA then
         if @properties[:local] then
-          s += "static __device__ "
+          s << "static __device__ "
         else
-          s += "__global__ "
+          s << "__global__ "
           wgs = @properties[:reqd_work_group_size]
           if wgs then
-            s += "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
+            s << "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
           end
         end
       elsif lang == C then
         if @properties[:local] then
-          s += "static "
+          s << "static "
         end
         if @properties[:inline] then
-          s+= "inline "
+          s << "inline "
         end
       end
       if @properties[:qualifiers] then
-        s += "#{@properties[:qualifiers]} "
+        s << "#{@properties[:qualifiers]} "
       end
       if @properties[:return] then
-        s += "#{@properties[:return].type.decl} "
+        s << "#{@properties[:return].type.decl} "
       else
-        s += "void "
+        s << "void "
       end
-      s += "#{@name}("
+      s << "#{@name}("
       if @parameters.first then
-        s += @parameters.first.send(:decl_c_s, @properties[:local])
+        s << @parameters.first.send(:decl_c_s, @properties[:local])
         @parameters[1..-1].each { |p|
-          s += ", "+p.send(:decl_c_s, @properties[:local])
+          s << ", "+p.send(:decl_c_s, @properties[:local])
         }
       end
-      s += ")"
+      s << ")"
       return s
     end
 
@@ -170,13 +170,13 @@ module BOAST
     def to_s_fortran
       s = ""
       if @properties[:return] then
-        s += "#{@properties[:return].type.decl} FUNCTION "
+        s << "#{@properties[:return].type.decl} FUNCTION "
       else
-        s += "SUBROUTINE "
+        s << "SUBROUTINE "
       end
-      s += "#{@name}("
-      s += @parameters.collect(&:name).join(", ")
-      s += ")"
+      s << "#{@name}("
+      s << @parameters.collect(&:name).join(", ")
+      s << ")"
     end
 
     def open_c
@@ -205,7 +205,7 @@ module BOAST
 
     def open_fortran
       s = indent + to_s_fortran
-      s += "\n"
+      s << "\n"
       increment_indent_level
       tmp_buff = StringIO::new
       push_env( :output => tmp_buff ) {
@@ -214,8 +214,8 @@ module BOAST
         }
       }
       tmp_buff.rewind
-      s += tmp_buff.read
-      s += indent + "integer, parameter :: wp=kind(1.0d0)"
+      s << tmp_buff.read
+      s << indent + "integer, parameter :: wp=kind(1.0d0)"
       output.puts s
       @constants.each { |c|
         BOAST::decl c
@@ -247,9 +247,9 @@ module BOAST
 
     def close_c
       s = ""
-      s += indent + "return #{@properties[:return]};\n" if @properties[:return]
+      s << indent + "return #{@properties[:return]};\n" if @properties[:return]
       decrement_indent_level
-      s += indent + "}"
+      s << indent + "}"
       output.puts s
       return self
     end
@@ -257,12 +257,12 @@ module BOAST
     def close_fortran
       s = ""
       if @properties[:return] then
-        s += indent + "#{@name} = #{@properties[:return]}\n"
+        s << indent + "#{@name} = #{@properties[:return]}\n"
         decrement_indent_level
-        s += indent + "END FUNCTION #{@name}"
+        s << indent + "END FUNCTION #{@name}"
       else
         decrement_indent_level
-        s += indent + "END SUBROUTINE #{@name}"
+        s << indent + "END SUBROUTINE #{@name}"
       end
       output.puts s
       return self
@@ -271,38 +271,38 @@ module BOAST
     def boast_header_s( lang=C )
       s = ""
       headers.each { |h|
-        s += "#include <#{h}>\n"
+        s << "#include <#{h}>\n"
       }
       if lang == CL then
-        s += "__kernel "
+        s << "__kernel "
         wgs = @properties[:reqd_work_group_size]
         if wgs then
-          s += "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
+          s << "__attribute__((reqd_work_group_size(#{wgs[0]},#{wgs[1]},#{wgs[2]}))) "
         end
       end
       trailer = ""
-      trailer += "_" if lang == FORTRAN
-      trailer += "_wrapper" if lang == CUDA
+      trailer << "_" if lang == FORTRAN
+      trailer << "_wrapper" if lang == CUDA
       if @properties[:return] then
-        s += "#{@properties[:return].type.decl} "
+        s << "#{@properties[:return].type.decl} "
       elsif lang == CUDA
-        s += "unsigned long long int "
+        s << "unsigned long long int "
       else
-        s += "void "
+        s << "void "
       end
-      s += "#{@name}#{trailer}("
+      s << "#{@name}#{trailer}("
       if @parameters.first then
-        s += @parameters.first.boast_header(lang)
+        s << @parameters.first.boast_header(lang)
         @parameters[1..-1].each { |p|
-          s += ", "
-          s += p.boast_header(lang)
+          s << ", "
+          s << p.boast_header(lang)
         }
       end
       if lang == CUDA then
-        s += ", " if parameters.first
-        s += "size_t *_boast_block_number, size_t *_boast_block_size, int _boast_repeat"
+        s << ", " if parameters.first
+        s << "size_t *_boast_block_number, size_t *_boast_block_size, int _boast_repeat"
       end
-      s += ")"
+      s << ")"
       return s
     end
 

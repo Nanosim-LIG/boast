@@ -159,8 +159,8 @@ module BOAST
     def open
       @openmp.open if @openmp
       s=""
-      s += indent
-      s += to_s
+      s << indent
+      s << to_s
       output.puts s
       increment_indent_level      
       return self
@@ -188,8 +188,8 @@ module BOAST
     def close
       decrement_indent_level      
       s = ""
-      s += indent
-      s += end_string
+      s << indent
+      s << end_string
       output.puts s
       @openmp.close if @openmp
       return self

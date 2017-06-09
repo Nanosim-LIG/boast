@@ -26,13 +26,13 @@ module BOAST
 
     def to_s_fortran
       s = ""
-      @comment.each_line { |l| s += "! #{l}" }
+      @comment.each_line { |l| s << "! #{l}" }
       return s
     end
 
     def to_s_c
       s = ""
-      @comment.each_line { |l| s += "/* #{l.delete("\n")} */\n" }
+      @comment.each_line { |l| s << "/* #{l.delete("\n")} */\n" }
       return s
     end
 

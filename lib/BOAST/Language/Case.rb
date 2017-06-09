@@ -35,17 +35,17 @@ module BOAST
     def to_s
       s = ""
       if @constants then
-        s += case_string(@constants)
+        s << case_string(@constants)
       else
-        s += default_string
+        s << default_string
       end
       return s
     end
 
     def open
       s = ""
-      s += indent
-      s += to_s
+      s << indent
+      s << to_s
       output.puts s
       increment_indent_level
       return self
@@ -54,8 +54,8 @@ module BOAST
     def close
       if @constants and break_string then
         s = ""
-        s += indent
-        s += break_string
+        s << indent
+        s << break_string
         output.puts s
       end
       decrement_indent_level
@@ -117,14 +117,14 @@ module BOAST
 
     def to_s
       s = ""
-      s += switch_string(@expression)
+      s << switch_string(@expression)
       return s
     end
 
     def open
       s = ""
-      s += indent
-      s += to_s
+      s << indent
+      s << to_s
       output.puts s
       increment_indent_level
       return self
@@ -145,8 +145,8 @@ module BOAST
     def close
       decrement_indent_level
       s = ""
-      s += indent
-      s += end_string
+      s << indent
+      s << end_string
       output.puts s
       return self
     end

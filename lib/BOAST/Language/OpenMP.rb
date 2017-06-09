@@ -7,9 +7,9 @@ module BOAST
       def openmp_pragma_to_s
         s = ""
         if lang == FORTRAN then
-          s += "!$omp"
+          s << "!$omp"
         elsif lang == C then
-          s += "#pragma omp"
+          s << "#pragma omp"
         else
           raise LanguageError, "Language does not support OpenMP!"
         end
@@ -23,37 +23,37 @@ module BOAST
 EOF
         case arg_type
         when :none
-          s += <<EOF
+          s << <<EOF
         return " #{name}"
 EOF
         when :option
-          s += <<EOF
+          s << <<EOF
         return " \#{c}"
 EOF
         when :option_list
-          s += <<EOF
+          s << <<EOF
         return " (\#{[c].flatten.collect(&:to_s).join(", ")})"
 EOF
         when :simple
-          s += <<EOF
+          s << <<EOF
         return " #{name}(\#{c})"
 EOF
         when :list
-s += <<EOF
+s << <<EOF
         return " #{name}(\#{[c].flatten.collect(&:to_s).join(", ")})"
 EOF
         when :multilist
-s += <<EOF
+s << <<EOF
         s = ""
         c.each { |id, list|
-          s += " #{name}(\#{id}: \#{[list].flatten.collect(&:to_s).join(", ")})"
+          s << " #{name}(\#{id}: \#{[list].flatten.collect(&:to_s).join(", ")})"
         }
         return s
 EOF
         else
           raise "Unknown argument type!"
         end
-        s += <<EOF
+        s << <<EOF
       end
 EOF
         eval s
@@ -96,11 +96,11 @@ EOF
       def openmp_open_clauses_to_s
         s = ""
         get_open_clauses.each { |c|
-          s += self.send( "openmp_clause_#{c}", @openmp_clauses[c] ) if @openmp_clauses[c]
+          s << self.send( "openmp_clause_#{c}", @openmp_clauses[c] ) if @openmp_clauses[c]
         }
         if lang == C then
           get_end_clauses.each { |c|
-            s += self.send( c, @openmp_clauses[c] ) if @openmp_clauses[c]
+            s << self.send( c, @openmp_clauses[c] ) if @openmp_clauses[c]
           }
         end
         return s
@@ -110,7 +110,7 @@ EOF
         s = ""
         if lang == FORTRAN then
           get_end_clauses.each { |c|
-            s += self.send( c, @openmp_clauses[c] ) if @openmp_clauses[c]
+            s << self.send( c, @openmp_clauses[c] ) if @openmp_clauses[c]
           }
         end
         return s
@@ -206,30 +206,30 @@ EOF
         return { :begin => '"#pragma omp #{c_name} #{ open_clauses.length + end_clauses.length > 0 ? "\#{c}" : "" }#{ options[:block] ? "\\n{" : "" }"',
 EOF
       if options[:c_end] then
-        s += <<EOF
+        s << <<EOF
                  :end => '"#pragma omp end #{c_name}"' }
 EOF
       else
-        s += <<EOF
+        s << <<EOF
                  :end => '"#{ options[:block] ? "}" : "" }"' }
 EOF
       end
-        s += <<EOF
+        s << <<EOF
       end
 
       def get_fortran_strings
         return { :begin => '"!$omp #{fortran_name}#{ open_clauses.length > 0 ? " \#{c}" : "" }#{ options[:fortran_block] ? "(" : "" }"',
 EOF
       if options[:fortran_no_end] then
-        s += <<EOF
+        s << <<EOF
                  :end => '"#{ options[:fortran_block] ? ")" : "" }"' }
 EOF
       else
-        s += <<EOF
+        s << <<EOF
                  :end => '"!$omp end #{fortran_name} #{ end_clauses.length > 0 ? "\#{c}" : "" }"' }
 EOF
       end
-        s += <<EOF
+        s << <<EOF
       end
 
       def self.get_open_clauses

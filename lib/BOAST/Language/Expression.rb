@@ -56,23 +56,23 @@ module BOAST
       return oper.string(op1, op2, return_type) unless oper.kind_of?(String)
       s = ""
       if op1 then
-        s += "(" if (oper == "*" or oper == "/") 
-        s += op1.to_s
-        s += ")" if (oper == "*" or oper == "/") 
-      end        
-      s += " " unless oper == "++" or oper == "."
-      s += oper unless ( oper == "&" and lang == FORTRAN )
-      s += " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
+        s << "(" if (oper == "*" or oper == "/")
+        s << op1.to_s
+        s << ")" if (oper == "*" or oper == "/")
+      end
+      s << " " unless oper == "++" or oper == "."
+      s << oper unless ( oper == "&" and lang == FORTRAN )
+      s << " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
       if op2 then
-        s += "(" if (oper == "*" or oper == "/" or oper == "-") 
-        s += op2.to_s
-        s += ")" if (oper == "*" or oper == "/" or oper == "-") 
+        s << "(" if (oper == "*" or oper == "/" or oper == "-")
+        s << op2.to_s
+        s << ")" if (oper == "*" or oper == "/" or oper == "-")
       end
       return s
     end
 
     private :to_s_base
-      
+
     def to_var
       op1 = nil
       op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
@@ -93,7 +93,7 @@ module BOAST
         return Variable::new(res_exp, get_default_type)
       end
     end
- 
+
     def to_s
       op1 = nil
       op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
@@ -114,9 +114,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang ) 
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end

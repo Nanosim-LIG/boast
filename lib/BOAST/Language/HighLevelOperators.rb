@@ -68,9 +68,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -126,9 +126,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end

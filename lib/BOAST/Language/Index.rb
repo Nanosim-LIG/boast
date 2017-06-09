@@ -68,7 +68,7 @@ module BOAST
           (0...dims.length).each { |indx|
             dim = dims[indx]
             s = "#{indxs[indx]}"
-            s += " - (#{dim.start})" unless 0.equal?(dim.start)
+            s << " - (#{dim.start})" unless 0.equal?(dim.start)
             ind = Empty.empty_binding.eval(s)
             ind = ind.to_i
             const = const[ind]
@@ -83,9 +83,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -102,7 +102,7 @@ module BOAST
         end
       }
       s = ""
-      s += "#{@source}(#{@source.vector? ? (@vector_index ? "#{@vector_index+1}, " : ":, ") : "" }#{indexes_dup.join(", ")})"
+      s << "#{@source}(#{@source.vector? ? (@vector_index ? "#{@vector_index+1}, " : ":, ") : "" }#{indexes_dup.join(", ")})"
       return s
     end
 
@@ -116,38 +116,38 @@ module BOAST
       raise "Unsupported number of dimension: #{dim_number}!" if dim_number > 3
       s = ""
       if lang == CL then
-        s += "as_#{@source.type.decl}("
-        s += "read_imageui(#{@source}, #{@source.sampler}, "
+        s << "as_#{@source.type.decl}("
+        s << "read_imageui(#{@source}, #{@source.sampler}, "
         if dim_number == 1 then
-          s += "int2(#{@indexes[0]},0)"
+          s << "int2(#{@indexes[0]},0)"
         else
           if dim_number == 2 then
-            s += "int2("
+            s << "int2("
           else
-            s += "int3("
+            s << "int3("
           end
-          s += "#{@indexes.join(", ")})"
+          s << "#{@indexes.join(", ")})"
         end
-        s += ")"
+        s << ")"
         if @source.type.size == 4 then
-          s += ".x"
+          s << ".x"
         elsif @source.type.size == 8 then
-          s += ".xy"
+          s << ".xy"
         end
-        s += ")"
+        s << ")"
       else
-        s += "tex#{dim_number}Dfetch(#{@source},"
+        s << "tex#{dim_number}Dfetch(#{@source},"
         if dim_number == 1 then
-          s += "#{@indexes[0]}"
+          s << "#{@indexes[0]}"
         else
           if dim_number == 2 then
-            s += "int2("
+            s << "int2("
           else
-            s += "int3("
+            s << "int3("
           end
-          s += "#{@indexes.join(", ")})"
+          s << "#{@indexes.join(", ")})"
         end
-        s += ")"
+        s << ")"
       end
       return s
     end
@@ -158,7 +158,7 @@ module BOAST
       t = (0...dims.length).collect { |indx|
         s = "#{indxs[indx]}"
         dim = dims[indx]
-        s += " - (#{dim.start})" unless 0.equal?(dim.start)
+        s << " - (#{dim.start})" unless 0.equal?(dim.start)
         s
       }
       return t.join("][")
@@ -171,15 +171,15 @@ module BOAST
       (0...dims.length).each { |indx|
         s = ""
         dim = dims[indx]
-        s += "#{indxs[indx]}"
-        s += " - (#{dim.start})" unless 0.equal?(dim.start)
+        s << "#{indxs[indx]}"
+        s << " - (#{dim.start})" unless 0.equal?(dim.start)
         if ss then
           if dim.size then
-            s += " + (#{dim.size}) * "
+            s << " + (#{dim.size}) * "
           else
             raise "Unkwown dimension size!"
           end
-          s += "(#{ss})"
+          s << "(#{ss})"
         end
         ss = s
       }
@@ -195,7 +195,7 @@ module BOAST
       end
       s = "#{@source}[" + sub + "]"
       if @vector_index then
-        s += "[#{@vector_index}]"
+        s << "[#{@vector_index}]"
       end
       return s
     end

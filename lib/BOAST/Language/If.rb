@@ -61,12 +61,12 @@ module BOAST
     def to_s(condition_number = 0)
       s = ""
       if condition_number == 0 then
-        s += if_string(@conditions.first)
+        s << if_string(@conditions.first)
       else
         if @conditions[condition_number] then
-          s += elsif_string(@conditions[condition_number])
+          s << elsif_string(@conditions[condition_number])
         else
-          s += else_string
+          s << else_string
         end
       end
       return s
@@ -78,8 +78,8 @@ module BOAST
     def open(condition_number = 0)
       decrement_indent_level if condition_number > 0
       s = ""
-      s += indent
-      s += to_s(condition_number)
+      s << indent
+      s << to_s(condition_number)
       output.puts s
       increment_indent_level
       return self
@@ -108,8 +108,8 @@ module BOAST
     def close
       decrement_indent_level
       s = ""
-      s += indent
-      s += end_string
+      s << indent
+      s << end_string
       output.puts s
       return self
     end

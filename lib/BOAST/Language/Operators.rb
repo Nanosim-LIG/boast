@@ -357,7 +357,7 @@ module BOAST
       elsif values.kind_of?(Array) then
         raise OperatorError, "Wrong number of mask values (#{values.length} for #{length})!" if length and values.length != length
         s = "0x"
-        s += values.collect { |v| v != 0 ? 1 : 0 }.reverse.join
+        s << values.collect { |v| v != 0 ? 1 : 0 }.reverse.join
         @value = Int( s, :signed => false, :size => values.length / 8 + ( values.length % 8 > 0 ? 1 : 0 ), :constant => s )
         @length = values.length
         @pos_values = values.reject { |e| e == 0 }.length
@@ -464,9 +464,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -517,9 +517,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -574,14 +574,14 @@ module BOAST
             if mask and not mask.full? then
               return Set(0, @return_type) if @zero and mask.empty?
               return @return_type if mask.empty?
-              sym += "MASK"
-              sym += "Z" if @zero
-              sym += "_"
+              sym << "MASK"
+              sym << "Z" if @zero
+              sym << "_"
             end
             if src_var.alignment and @return_type.type.total_size and ( src_var.alignment % @return_type.type.total_size ) == 0 then
-              sym += "LOADA"
+              sym << "LOADA"
             else
-              sym += "LOAD"
+              sym << "LOAD"
             end
             instruction = intrinsics( sym.to_sym, @return_type.type)
             if mask and not mask.full? then
@@ -613,9 +613,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -667,7 +667,7 @@ module BOAST
         src = src[1..-1]
       end
       p_type = type.copy(:vector_length => 1)
-      s += "#{instruction}( (#{p_type.decl} * ) #{src}, #{get_mask} )"
+      s << "#{instruction}( (#{p_type.decl} * ) #{src}, #{get_mask} )"
       return @return_type.copy( s, DISCARD_OPTIONS)
     end
 
@@ -677,9 +677,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -725,11 +725,11 @@ module BOAST
         mask = nil
         mask = Mask(@mask, :length => @store_type.type.vector_length) if @mask
         return "" if mask and mask.empty?
-        sym += "MASK_" if mask and not mask.full?
+        sym << "MASK_" if mask and not mask.full?
         if @dest.alignment and type.total_size and ( @dest.alignment % type.total_size ) == 0 then
-          sym += "STOREA"
+          sym << "STOREA"
         else
-          sym += "STORE"
+          sym << "STORE"
         end
         instruction = intrinsics(sym.to_sym, type)
         p_type = type.copy(:vector_length => 1)
@@ -746,9 +746,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -799,16 +799,16 @@ module BOAST
         dst = dst[1..-1]
       end
       p_type = type.copy(:vector_length => 1)
-      return s += "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, type)} )"
+      return s << "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, type)} )"
     end
 
     def pr
       ss = to_s
       if ss then
         s=""
-        s += indent
-        s += ss
-        s += ";" if [C, CL, CUDA].include?( lang )
+        s << indent
+        s << ss
+        s << ";" if [C, CL, CUDA].include?( lang )
         output.puts s
       end
       return self
@@ -877,9 +877,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -948,9 +948,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -982,9 +982,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
@@ -1068,9 +1068,9 @@ module BOAST
 
     def pr
       s=""
-      s += indent
-      s += to_s
-      s += ";" if [C, CL, CUDA].include?( lang )
+      s << indent
+      s << to_s
+      s << ";" if [C, CL, CUDA].include?( lang )
       output.puts s
       return self
     end
