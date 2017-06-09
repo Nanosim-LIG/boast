@@ -38,7 +38,7 @@ module BOAST
   class BasicBinaryOperator < Operator
 
     def BasicBinaryOperator.string(arg1, arg2, return_type)
-      if lang == C and (arg1.class == Variable and arg2.class == Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+      if lang == C and (arg1.instance_of? Variable and arg2.instance_of? Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
         instruction = intrinsics(intr_symbol, return_type.type)
         a1 = convert(arg1, return_type.type)
         a2 = convert(arg2, return_type.type)
@@ -434,7 +434,7 @@ module BOAST
           if lang == CL then
             return @return_type.copy("(#{@return_type.type.decl})( #{eff_src} )", DISCARD_OPTIONS) if lang == CL
           end
-          if (@source.is_a?(Numeric) and @source == 0) or (@source.class == Variable and @source.constant == 0) then
+          if (@source.is_a?(Numeric) and @source == 0) or (@source.instance_of? Variable and @source.constant == 0) then
             begin
               instruction = intrinsics(:SETZERO, @return_type.type)
               return @return_type.copy("#{instruction}( )", DISCARD_OPTIONS) if instruction
@@ -500,9 +500,9 @@ module BOAST
       tar = @target.to_var if @target.respond_to?(:to_var)
       src = @source
       src = @source.to_var if @source.respond_to?(:to_var)
-      if tar.class == Variable and tar.type.vector_length > 1 then
+      if tar.instance_of? Variable and tar.type.vector_length > 1 then
         return @target.copy("#{@target} = #{Load(@source, @target, @options)}", DISCARD_OPTIONS)
-      elsif src.class == Variable and src.type.vector_length > 1 then
+      elsif src.instance_of? Variable and src.type.vector_length > 1 then
         r_t, _ = transition(tar, src, Affectation)
         opts = @options.clone
         opts[:store_type] = r_t
@@ -555,7 +555,7 @@ module BOAST
       if lang == C or lang == CL then
         if @source.kind_of?(Array) then
           return Set(@source, @return_type).to_var
-        elsif @source.class == Variable or @source.respond_to?(:to_var) then
+        elsif @source.instance_of? Variable or @source.respond_to?(:to_var) then
           src_var = source.to_var
           if src_var.type == @return_type.type then
             return src_var
@@ -596,7 +596,7 @@ module BOAST
       elsif lang == FORTRAN then
         if @source.kind_of?(Array) then
           return Set(@source, @return_type).to_var
-        elsif @source.class == Variable or @source.respond_to?(:to_var) then
+        elsif @source.instance_of? Variable or @source.respond_to?(:to_var) then
           if @source.to_var.type == @return_type.type then
             return @source.to_var
           elsif @source.kind_of?(Index) and @return_type.type.vector_length > 1 then
