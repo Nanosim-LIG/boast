@@ -264,17 +264,10 @@ module BOAST
     # @option properties [Boolean] :optional for Fortran interface generation mainly see Fortran documentation
     def initialize(name, type, properties={})
       @name = name.to_s
-      @direction = properties[:direction]
-      @direction = properties[:dir] unless @direction
-
-      @constant = properties[:constant]
-      @constant = properties[:const] unless @constant
-
-      @dimension = properties[:dimension]
-      @dimension = properties[:dim] unless @dimension
-
-      @local = properties[:local]
-      @local = properties[:shared] unless @local
+      @direction = properties[:direction] or @direction = properties[:dir]
+      @constant = properties[:constant] or @constant = properties[:const]
+      @dimension = properties[:dimension] or @dimension = properties[:dim]
+      @local = properties[:local] or @local = properties[:shared]
 
       @texture = properties[:texture]
       @allocate = properties[:allocate]
