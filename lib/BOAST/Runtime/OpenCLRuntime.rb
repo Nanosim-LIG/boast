@@ -139,7 +139,7 @@ def self.run(*args)
     @kernel.set_arg(i, params[i])
   }
   gws = opts[:global_work_size]
-  if not gws then
+  unless gws then
     raise ":global_work_size or :block_number are required to run OpenCL kernels!" unless opts[:block_number]
     gws = []
     opts[:block_number].each_index { |i|
@@ -148,7 +148,7 @@ def self.run(*args)
     }
   end
   lws = opts[:local_work_size]
-  if not lws then
+  unless lws then
     lws = opts[:block_size]
   end
   event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)

@@ -42,7 +42,7 @@ module BOAST
         return FuncCall::new("get_global_size", dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_GRIDDIM.#{d}*CUDA_BLOCKDIM.#{d}"
       else
         raise "Unsupported language!"
@@ -54,7 +54,7 @@ module BOAST
         return FuncCall::new("get_global_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_THREADIDX.#{d}+CUDA_BLOCKIDX.#{d}*CUDA_BLOCKDIM.#{d}"
       else
         raise "Unsupported language!"
@@ -66,7 +66,7 @@ module BOAST
         return FuncCall::new("get_local_size",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_BLOCKDIM.#{d}"
       else
         raise "Unsupported language!"
@@ -78,7 +78,7 @@ module BOAST
         return FuncCall::new("get_local_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_THREADIDX.#{d}"
       else
         raise "Unsupported language!"
@@ -90,7 +90,7 @@ module BOAST
         return FuncCall::new("get_num_groups",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_GRIDDIM.#{d}"
       else
         raise "Unsupported language!"
@@ -102,7 +102,7 @@ module BOAST
         return FuncCall::new("get_group_id",dim, :return => Sizet)
       elsif lang == CUDA then
         d = OCL_CUDA_DIM_ASSOC[dim]
-        raise "Unsupported dimension!" if not d
+        raise "Unsupported dimension!" unless d
         return eval "CUDA_BLOCKIDX.#{d}"
       else
         raise "Unsupported language!"

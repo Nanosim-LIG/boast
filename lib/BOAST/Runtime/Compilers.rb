@@ -11,7 +11,7 @@ module BOAST
 
     def get_openmp_flags(compiler)
       openmp_flags = BOAST::get_openmp_flags[compiler]
-      if not openmp_flags then
+      unless openmp_flags then
         keys = BOAST::get_openmp_flags.keys
         keys.each { |k|
           openmp_flags = BOAST::get_openmp_flags[k] if compiler.match(k)
@@ -33,7 +33,7 @@ module BOAST
       begin
         spec = Gem::Specification::find_by_name('narray')
         narray_path = spec.require_path
-        if not File.exist?(narray_path+"/narray.h") then
+        unless File.exist?(narray_path+"/narray.h") then
           narray_path = spec.full_gem_path
         end
       rescue Gem::LoadError => e
@@ -42,7 +42,7 @@ module BOAST
         if spec then
           require 'narray'
           narray_path = Gem.loaded_specs['narray'].require_path
-          if not File.exist?(narray_path+"/narray.h") then
+          unless File.exist?(narray_path+"/narray.h") then
             narray_path = Gem.loaded_specs['narray'].full_gem_path
           end
         end
@@ -64,7 +64,7 @@ module BOAST
       objext = RbConfig::CONFIG["OBJEXT"]
       if (options[:openmp] or options[:OPENMP]) and @lang == C and not disable_openmp then
           openmp_cflags = get_openmp_flags(c_compiler)
-          raise "unkwown openmp flags for: #{c_compiler}" if not openmp_cflags
+          raise "unkwown openmp flags for: #{c_compiler}" unless openmp_cflags
           cflags += " #{openmp_cflags}"
       end
 
@@ -99,7 +99,7 @@ module BOAST
       cxxflags += " -fPIC #{includes}"
       if (options[:openmp] or options[:OPENMP]) and @lang == C and not disable_openmp then
           openmp_cxxflags = get_openmp_flags(cxx_compiler)
-          raise "unkwown openmp flags for: #{cxx_compiler}" if not openmp_cxxflags
+          raise "unkwown openmp flags for: #{cxx_compiler}" unless openmp_cxxflags
           cxxflags += " #{openmp_cxxflags}"
       end
 
@@ -124,7 +124,7 @@ module BOAST
       fcflags += " -fno-second-underscore" if f_compiler == 'g95'
       if (options[:openmp] or options[:OPENMP]) and @lang == FORTRAN and not disable_openmp then
           openmp_fcflags = get_openmp_flags(f_compiler)
-          raise "unkwown openmp flags for: #{f_compiler}" if not openmp_fcflags
+          raise "unkwown openmp flags for: #{f_compiler}" unless openmp_fcflags
           fcflags += " #{openmp_fcflags}"
       end
 
@@ -188,12 +188,12 @@ module BOAST
       ldflags += " -L/usr/local/k1tools/lib64 -lmppaipc -lpcie -lz -lelf -lmppa_multiloader" if @architecture == MPPA
       ldflags += " -lmppamon -lmppabm -lm -lmppalock" if @architecture == MPPA
       c_compiler = options[:CC]
-      c_compiler = "cc" if not c_compiler
+      c_compiler = "cc" unless c_compiler
       linker = options[:LD]
-      linker = c_compiler if not linker
+      linker = c_compiler unless linker
       if (options[:openmp] or options[:OPENMP]) and not disable_openmp then
         openmp_ldflags = get_openmp_flags(linker)
-        raise "unknown openmp flags for: #{linker}" if not openmp_ldflags
+        raise "unknown openmp flags for: #{linker}" unless openmp_ldflags
         ldflags += " #{openmp_ldflags}"
       end
 
@@ -211,7 +211,7 @@ module BOAST
     def setup_compilers(probes, options = {})
       Rake::Task::clear
       verbose = options[:VERBOSE]
-      verbose = get_verbose if not verbose
+      verbose = get_verbose unless verbose
       Rake::verbose(verbose)
       Rake::FileUtilsExt.verbose_flag=verbose
 
@@ -223,7 +223,7 @@ module BOAST
           sh call_string
         else
           status, _, stderr = systemu call_string
-          if not status.success? then
+          unless status.success? then
             puts stderr
             fail "#{t.source}: compilation failed"
           end

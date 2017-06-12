@@ -1002,7 +1002,7 @@ module BOAST
     def to_s_fortran
       op1, op2 = op_to_var
       if @return_type and @return_type.type.kind_of?(Real) and ( not op1.type.kind_of?(Real) or not op2.type.kind_of?(Real) ) then
-        return "modulo(real(#{op1}, #{@return_type.type.size}), #{op2})" if not op1.type.kind_of?(Real)
+        return "modulo(real(#{op1}, #{@return_type.type.size}), #{op2})" unless op1.type.kind_of?(Real)
         return "modulo(#{op1}, real(#{op2}, #{@return_type.type.size}))"
       else
         return "modulo(#{op1}, #{op2})"

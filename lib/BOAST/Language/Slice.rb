@@ -63,7 +63,7 @@ module BOAST
           else
             @first = Expression::new(Addition, s.first, @first )
           end
-          if not scalar? then
+          unless scalar? then
             if s.step then
               if @step then
                 @step = Expression::new(Multiplication, @step, s.step)
@@ -92,7 +92,7 @@ module BOAST
     attr_accessor :alignment
 
     def initialize(source, *slices)
-      raise "Cannot slice a non array Variable!" if not source.dimension?
+      raise "Cannot slice a non array Variable!" unless source.dimension?
       raise "Invalid slice!" if slices.length != source.dimension.length
       @source = source
       @slices = slices.collect{ |s| SliceItem::new(s) }
@@ -105,7 +105,7 @@ module BOAST
     def dimension
       dims = []
       slices.each_with_index { |slice, i|
-        if not slice.scalar? then
+        unless slice.scalar? then
           if slice.all? then
             if source.dimension[i].size then
               dims.push Dimension::new( source.dimension[i].size )
@@ -162,7 +162,7 @@ module BOAST
       }
       new_args = []
       slices.each_with_index { |s, i|
-        if not s.scalar?
+        unless s.scalar?
           raise "Invalid slice!" if args.length == 0
           new_arg = SliceItem::new(args.shift)
           new_arg.recurse!(s, @source.dimension[i])
@@ -188,7 +188,7 @@ module BOAST
         else
           start = Expression::new(Subtraction, slice.first, dims[indx].start)
           s = "#{start}"
-          if not slice.scalar? then
+          unless slice.scalar? then
             s << ":#{slice.length}"
 #           s << ":#{slice.step}" if slice.step
             raise "Slice don't support step in C!" if slice.step
@@ -205,7 +205,7 @@ module BOAST
           ":"
         else
           s = "#{slice.first}"
-          if not slice.scalar? then
+          unless slice.scalar? then
             s << ":#{slice.last}"
             s << ":#{slice.step}" if slice.step
           end

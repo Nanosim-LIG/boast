@@ -22,12 +22,12 @@ module BOAST
 
   def assert_boast_config_dir
     home_config_dir = ENV["XDG_CONFIG_HOME"]
-    home_config_dir = "#{Dir.home}/.config" if not home_config_dir
-    Dir.mkdir( home_config_dir ) if not File::exist?( home_config_dir )
-    return nil if not File::directory?(home_config_dir)
+    home_config_dir = "#{Dir.home}/.config" unless home_config_dir
+    Dir.mkdir( home_config_dir ) unless File::exist?( home_config_dir )
+    return nil unless File::directory?(home_config_dir)
     boast_config_dir = "#{home_config_dir}/BOAST"
-    Dir.mkdir( boast_config_dir ) if not File::exist?( boast_config_dir )
-    return nil if not File::directory?(boast_config_dir)
+    Dir.mkdir( boast_config_dir ) unless File::exist?( boast_config_dir )
+    return nil unless File::directory?(boast_config_dir)
     return boast_config_dir
   end
 

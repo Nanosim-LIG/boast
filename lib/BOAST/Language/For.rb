@@ -132,7 +132,7 @@ module BOAST
           else
             step = @step.to_i
           end
-          raise "Invalid bounds (not constants)!" if not ( first and last and step )
+          raise "Invalid bounds (not constants)!" unless ( first and last and step )
         ensure
           pop_env( :replace_constants )
         end

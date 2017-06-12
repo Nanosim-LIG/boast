@@ -7,7 +7,7 @@ module BOAST
     def get_transition(type1, type2, operator)
       #STDERR.puts @@transitions.inspect
       ops = @@transitions[[type1,type2]]
-      raise "Types #{[type1,type2]} have no relation!" if not ops
+      raise "Types #{[type1,type2]} have no relation!" unless ops
       t = ops[operator]
       return [t,operator] if t
       t = ops[:default]

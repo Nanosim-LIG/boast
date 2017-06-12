@@ -44,7 +44,7 @@ module BOAST
 
     def decl
       return "integer(kind=#{get_default_int_size})" if lang == FORTRAN
-      if not @signed then
+      unless @signed then
         return "size_t" if [C, CL, CUDA].include?( lang )
       else
         return "ptrdiff_t" if [C, CL, CUDA].include?( lang )
@@ -177,7 +177,7 @@ module BOAST
       end
       if hash[:vector_length] and hash[:vector_length] > 1 then
         @vector_length = hash[:vector_length]
-        raise "Vectors need to have their element size specified!" if not @size
+        raise "Vectors need to have their element size specified!" unless @size
       else
         @vector_length = 1
       end
@@ -208,7 +208,7 @@ module BOAST
       if lang == C then
         if @vector_length == 1 then
           s = ""
-          s << "u" if not @signed
+          s << "u" unless @signed
           return s+"int#{8*@size}_t" if @size
           return s+"int"
         elsif @vector_length > 1 then
@@ -216,8 +216,10 @@ module BOAST
         end
       else
         s =""
-        s << "u" if not @signed
-        s << "nsigned " if not @signed and lang == CUDA and @vector_length == 1
+        unless @signed then
+          s << "u"
+          s << "nsigned " if lang == CUDA and @vector_length == 1
+        end
         case @size
         when 1
           s << "char"
@@ -250,7 +252,7 @@ module BOAST
 
     def decl_ffi
       t = ""
-      t << "u" if not @signed
+      t << "u" unless @signed
       t << "int"
       t << "#{@size*8}" if @size
       return t.to_sym

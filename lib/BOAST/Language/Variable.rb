@@ -304,7 +304,7 @@ module BOAST
     end
 
     def copy(name=nil,properties={})
-      name = @name if not name
+      name = @name unless name
       h = @properties.clone
       properties.each { |k,v|
         h[k] = v
@@ -530,8 +530,8 @@ module BOAST
     end
 
     def decl_texture_s
-      raise LanguageError, "Unsupported language #{lang} for texture!" if not [CL, CUDA].include?( lang )
-      raise "Write is unsupported for textures!" if not (constant? or @direction == :in)
+      raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA].include?( lang )
+      raise "Write is unsupported for textures!" unless (constant? or @direction == :in)
       dim_number = 1
       if dimension? then
         dim_number == @dimension.size

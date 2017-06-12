@@ -79,7 +79,7 @@ module BOAST
         end
       }
 #      supported = (INSTRUCTIONS[instruction.to_s] & MODELS[get_model.to_s]).size > 0
-      if not supported then
+      unless supported then
         required = ""
         INSTRUCTIONS[get_architecture][instruction.to_s].each { |cpuid|
           required << " or " if required != ""

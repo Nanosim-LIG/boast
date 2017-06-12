@@ -107,8 +107,8 @@ module BOAST
     end
 
     def to_s_texture
-      raise LanguageError, "Unsupported language #{lang} for texture!" if not [CL, CUDA].include?( lang )
-      raise "Write is unsupported for textures!" if not ( @source.constant or @source.direction == :in )
+      raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA].include?( lang )
+      raise "Write is unsupported for textures!" unless ( @source.constant or @source.direction == :in )
       dim_number = 1
       if @source.dimension then
         dim_number == @source.dimension.size

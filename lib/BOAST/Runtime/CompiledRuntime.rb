@@ -388,10 +388,10 @@ EOF
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
           par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-          if not param.dimension? and not param.vector? then
-            copy_scalar_param_from_ruby(par, param, argv[i])
-          else
+          if param.dimension? or param.vector? then
             copy_array_param_from_ruby(par, param, argv[i])
+          else
+            copy_scalar_param_from_ruby(par, param, argv[i])
           end
         end
       }
@@ -473,8 +473,11 @@ EOF
       if param.scalar_output? then
         case param.type
         when Int
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{str_par}));" if param.type.signed?
-          get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{str_par}));" if not param.type.signed?
+          if param.type.signed?
+            get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((long long)#{str_par}));"
+          else
+            get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_int_new((unsigned long long)#{str_par}));"
+          end
         when Real
           get_output.puts "  rb_hash_aset(_boast_refs, ID2SYM(rb_intern(\"#{param}\")),rb_float_new((double)#{str_par}));"
         end
@@ -540,10 +543,10 @@ EOF
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
           par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-          if not param.dimension then
-            copy_scalar_param_to_ruby(par, param, argv[i])
-          else
+          if param.dimension then
             copy_array_param_to_ruby(par, param, argv[i])
+          else
+            copy_scalar_param_to_ruby(par, param, argv[i])
           end
         end
       }
@@ -562,10 +565,10 @@ EOF
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
           par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-          if not param.dimension? then
-            copy_scalar_param_from_file(par, param, base_path)
-          else
+          if param.dimension? then
             copy_array_param_from_file(par, param, base_path)
+          else
+            copy_scalar_param_from_file(par, param, base_path)
           end
         end
       }
@@ -575,10 +578,10 @@ EOF
       push_env(:decl_module => true) {
         @procedure.parameters.each do |param|
           par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-          if not param.dimension then
-            copy_scalar_param_to_file(par, param, base_path)
-          else
+          if param.dimension then
             copy_array_param_to_file(par, param, base_path)
+          else
+            copy_scalar_param_to_file(par, param, base_path)
           end
         end
       }
