@@ -13,7 +13,7 @@ module BOAST
 
     # returns the Boolean evaluation of the unroll attribute.
     def unroll?
-      return !!@unroll
+      return @unroll
     end
 
     # Sets the unroll attribute to val.

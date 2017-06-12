@@ -32,7 +32,7 @@ module BOAST
     end
 
     def align?
-      return !!@alignment
+      return @alignment
     end
 
     def set_align(align)

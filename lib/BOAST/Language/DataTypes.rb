@@ -56,7 +56,7 @@ module BOAST
     end
 
     def signed?
-      return !!signed
+      return signed
     end
 
     def suffix
@@ -101,7 +101,7 @@ module BOAST
     end
 
     def signed?
-      return !!signed
+      return signed
     end
 
     def to_hash
@@ -197,7 +197,7 @@ module BOAST
     end
 
     def signed?
-      return !!@signed
+      return @signed
     end
 
     def decl

@@ -64,7 +64,7 @@ EOF
   module_function
 
   def #{state}?
-    !!@@#{state}
+    @@#{state}
   end
 EOF
     eval s
