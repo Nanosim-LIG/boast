@@ -94,6 +94,7 @@ EOF
           results = {}
           counters = nil
           ev_set.start if ev_set
+          ret = nil
           begin
             if options[:repeat] then
               start = Time::new

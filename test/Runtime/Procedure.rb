@@ -80,6 +80,8 @@ class TestProcedure < Minitest::Test
       k = p.ckernel
       r = k.run(10, 5)
       assert_equal(5, r[:return])
+      r = k.run(10, 5, repeat: 2)
+      assert_equal(5, r[:return])
     }
   end
 
