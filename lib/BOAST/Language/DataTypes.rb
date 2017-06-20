@@ -130,8 +130,11 @@ module BOAST
     end
 
     def decl_ffi
-      return :float if @size == 4
-      return :double if @size == 8
+      t = ""
+      t << "float" if @size == 4
+      t << "double" if @size == 8
+      t << "x#{@vector_length}" if @vector_length > 1
+      return t.to_sym
     end
 
     def suffix
@@ -255,6 +258,7 @@ module BOAST
       t << "u" unless @signed
       t << "int"
       t << "#{@size*8}" if @size
+      t << "x#{@vector_length}" if @vector_length > 1
       return t.to_sym
     end
 
