@@ -70,6 +70,23 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_procedure_meta_vector
+    skip if get_architecture == ARM
+    n = Int(:a, :dir => :in)
+    b = Real( :b, :dir => :in, :vector_length => n )
+    c = Real( :c, :dir => :out, :vector_length => n, :dim => Dim(4) )
+    p = Procedure("vector_copy", [n, b,c]) { pr c[1] === b }
+    b_a = ANArray.float( 16, 2 ).random!
+    c_a = ANArray.float( 16, 2, 4 )
+    [FORTRAN].each { |l|
+      c_a.random!
+      set_lang(l)
+      k = p.ckernel( :includes => "immintrin.h")
+      k.run(2, b_a, c_a)
+      assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
+    }
+  end
+
   def test_function
     a = Int( :a, :dir => :in )
     b = Int( :b, :dir => :in )

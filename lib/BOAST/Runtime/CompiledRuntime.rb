@@ -315,11 +315,16 @@ EOF
       get_output.puts "  _boast_params._boast_coexecute = _boast_get_coexecute( _boast_rb_opts, &_boast_params._boast_synchro );" unless executable?
     end
 
-    def fill_param_struct
+    def collect_kernel_params
       pars = @procedure.parameters.collect { |param|
         param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
       }
       pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
+      pars
+    end
+
+    def fill_param_struct
+      pars = collect_kernel_params
       pars.push Int("_boast_repeat")
       pars.push Int("_boast_coexecute")
       pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)

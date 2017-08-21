@@ -44,10 +44,39 @@ module BOAST
       end
     end
 
+    def copy_array_param_from_ruby(str_par, param, ruby_param )
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if (TYPE(_boast_rb_ptr) == T_STRING) {
+    #{str_par} = (void *)RSTRING_PTR(_boast_rb_ptr);
+  } else if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    #{str_par} = (void *) _boast_n_ary->ptr;
+  } else {
+    rb_raise(rb_eArgError, "Wrong type of argument for #{param}, expecting array!");
+  }
+EOF
+    end
+
+
+    def collect_kernel_params
+      pars = @procedure.parameters.collect { |param|
+        if param.vector? and not param.dimension? then
+          param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil, :dim => Dim() )
+        else
+          param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
+        end
+      }
+      pars.push @procedure.properties[:return].copy("_boast_ret") if @procedure.properties[:return]
+      pars
+    end
+
     def create_procedure_indirect_call_parameters
       return @procedure.parameters.collect { |param|
         par = "#{param_struct.struct_reference(param_struct.type.members[param.name.to_s])}".gsub("_boast_params.","_boast_params->")
-        if param.dimension then
+        if param.dimension or param.vector? then
           "#{par}"
         else
           "&#{par}"
@@ -58,7 +87,7 @@ module BOAST
     def create_procedure_call_parameters
       return @procedure.parameters.collect { |param|
         par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-        if param.dimension then
+        if param.dimension or param.vector? then
           "#{par}"
         else
           "&#{par}"
