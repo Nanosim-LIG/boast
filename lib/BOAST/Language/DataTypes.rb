@@ -130,6 +130,9 @@ module BOAST
     end
 
     def decl_ffi
+      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) or @vector_length > 1 )
+        return :pointer
+      end
       t = ""
       t << "float" if @size == 4
       t << "double" if @size == 8
@@ -254,6 +257,9 @@ module BOAST
     end
 
     def decl_ffi
+      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) or @vector_length > 1 )
+        return :pointer
+      end
       t = ""
       t << "u" unless @signed
       t << "int"

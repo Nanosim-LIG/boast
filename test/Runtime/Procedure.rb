@@ -65,8 +65,14 @@ class TestProcedure < Minitest::Test
       c_a.random!
       set_lang(l)
       k = p.ckernel( :includes => "immintrin.h")
-      k.run(b_a, c_a)
-      assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
+      if ffi? and l == C
+        assert_raises(TypeError,"unable to resolve type 'doublex2'") {
+          k.run(b_a, c_a)
+        }
+      else
+        k.run(b_a, c_a)
+        assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
+      end
     }
   end
 
