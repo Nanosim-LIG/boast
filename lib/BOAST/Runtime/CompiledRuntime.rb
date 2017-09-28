@@ -849,6 +849,38 @@ EOF
 
     end
 
+    def define_run_method
+
+      define_singleton_method(:run) { |*args, **options, &block|
+        raise "Wrong number of arguments for #{@procedure.name} (#{args.length} for #{@procedure.parameters.length})" if args.length != @procedure.parameters.length
+        config = BOAST::get_run_config
+        config.update(options)
+        res = nil
+        if get_lang != CUDA and config[:PAPI] then
+          require 'PAPI'
+          PAPI.init
+          if config[:coexecute] then
+            PAPI.thread_init
+          end
+        end
+        if AffinityProbe == HwlocProbe and config[:cpu_affinity] then
+          affinity = config[:cpu_affinity]
+          if affinity.kind_of?(Array) then
+            cpuset = Hwloc::Cpuset::new( affinity )
+          elsif affinity.kind_of?(Hwloc::Bitmap) then
+            cpuset = affinity
+          end
+          AffinityProbe.topology.set_cpubind(cpuset, Hwloc::CPUBIND_THREAD | Hwloc::CPUBIND_STRICT) {
+            res = __run(*args, config, &block)
+          }
+        else
+          res = __run(*args, config, &block)
+        end
+        res
+      }
+
+    end
+
     public
 
     def build(options={})
@@ -889,33 +921,7 @@ EOF
 
       eval "self.extend(#{module_name})"
 
-      define_singleton_method(:run) { |*args, **options, &block|
-        raise "Wrong number of arguments for #{@procedure.name} (#{args.length} for #{@procedure.parameters.length})" if args.length != @procedure.parameters.length
-        config = BOAST::get_run_config
-        config.update(options)
-        res = nil
-        if get_lang != CUDA and config[:PAPI] then
-          require 'PAPI'
-          PAPI.init
-          if config[:coexecute] then
-            PAPI.thread_init
-          end
-        end
-        if AffinityProbe == HwlocProbe and config[:cpu_affinity] then
-          affinity = config[:cpu_affinity]
-          if affinity.kind_of?(Array) then
-            cpuset = Hwloc::Cpuset::new( affinity )
-          elsif affinity.kind_of?(Hwloc::Bitmap) then
-            cpuset = affinity
-          end
-          AffinityProbe.topology.set_cpubind(cpuset, Hwloc::CPUBIND_THREAD | Hwloc::CPUBIND_STRICT) {
-            res = __run(*args, config, &block)
-          }
-        else
-          res = __run(*args, config, &block)
-        end
-        res
-      }
+      define_run_method
 
       return self
     end
