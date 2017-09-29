@@ -22,7 +22,6 @@ module BOAST
     def transition(var1, var2, operator)
       signed = false
       size = nil
-      vector_length = 1
       t1 = var1.type.class
       t2 = var2.type.class
       t1 = var1.type.name if t1 == CustomType
@@ -33,7 +32,10 @@ module BOAST
         signed = (signed or var1.type.signed)
         signed = (signed or var2.type.signed)
         size = [var1.type.size, var2.type.size].max
-        vector_length = [var1.type.vector_length, var2.type.vector_length].max
+        v1 = var1.type.vector_length
+        v2 = var2.type.vector_length
+        vector_length = [v1 ? v1 : 1, v2 ? v2 : 1 ].max
+        vector_length = (vector_length == 1 ? nil : vector_length)
         return [Variable::new("dummy", return_type, :size => size, :signed => signed, :vector_length => vector_length), operator]
       elsif var1.type.class == return_type then
         return [var1, operator]

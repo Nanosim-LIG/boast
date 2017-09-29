@@ -16,7 +16,7 @@ module BOAST
     def Operator.convert(arg, type)
       return "#{arg}" if get_vector_name(arg.type) == get_vector_name(type) or lang == CUDA
 
-      if arg.type.vector_length == 1 and type.vector_length > 1 then
+      if arg.type.scalar? && type.vector? then
         return "#{Set::new( arg, Variable::new(:dummy, type.class, type.to_hash) )}"
       end
 
@@ -38,7 +38,7 @@ module BOAST
   class BasicBinaryOperator < Operator
 
     def BasicBinaryOperator.string(arg1, arg2, return_type)
-      if lang == C and (arg1.instance_of? Variable and arg2.instance_of? Variable) and (arg1.type.vector_length > 1 or arg2.type.vector_length > 1) then
+      if lang == C and (arg1.instance_of? Variable and arg2.instance_of? Variable) and (arg1.type.vector? or arg2.type.vector?) then
         instruction = intrinsics(intr_symbol, return_type.type)
         a1 = convert(arg1, return_type.type)
         a2 = convert(arg2, return_type.type)
@@ -400,7 +400,7 @@ module BOAST
     end
 
     def to_var
-      if lang == C or lang == CL and @return_type.type.vector_length > 1 then
+      if (lang == C || lang == CL) && @return_type.type.vector? then
         if @source.kind_of?( Array ) then
           raise OperatorError,  "Invalid array length!" unless @source.length == @return_type.type.vector_length
           return @return_type.copy("(#{@return_type.type.decl})( #{@source.join(", ")} )", DISCARD_OPTIONS) if lang == CL
@@ -427,7 +427,7 @@ module BOAST
             }
             return @return_type.copy(s, DISCARD_OPTIONS)
           end
-        elsif @source.class != Variable or @source.type.vector_length == 1 then
+        elsif @source.class != Variable || @source.type.scalar? then
           eff_src = nil
           eff_src = @source.to_var if @source.respond_to?(:to_var)
           eff_src = @source unless eff_src
@@ -446,7 +446,7 @@ module BOAST
         elsif @return_type.type != @source.type
           return @return_type.copy("#{Operator.convert(@source, @return_type.type)}", DISCARD_OPTIONS)
         end
-      elsif lang == FORTRAN and @return_type.type.vector_length > 1 then
+      elsif lang == FORTRAN and @return_type.type.vector? then
         if @source.kind_of?( Array ) then
           raise OperatorError,  "Invalid array length!" unless @source.length == @return_type.type.vector_length
           return "(/#{@source.join(", ")}/)"
@@ -500,9 +500,9 @@ module BOAST
       tar = @target.to_var if @target.respond_to?(:to_var)
       src = @source
       src = @source.to_var if @source.respond_to?(:to_var)
-      if tar.instance_of? Variable and tar.type.vector_length > 1 then
+      if tar.instance_of? Variable and tar.type.vector? then
         return @target.copy("#{@target} = #{Load(@source, @target, @options)}", DISCARD_OPTIONS)
-      elsif src.instance_of? Variable and src.type.vector_length > 1 then
+      elsif src.instance_of? Variable and src.type.vector? then
         r_t, _ = transition(tar, src, Affectation)
         opts = @options.clone
         opts[:store_type] = r_t
@@ -559,7 +559,7 @@ module BOAST
           src_var = source.to_var
           if src_var.type == @return_type.type then
             return src_var
-          elsif src_var.type.vector_length == 1 then
+          elsif src_var.type.scalar? then
             a2 = "#{src_var}"
             if a2[0] != "*" then
               a2 = "&" + a2
@@ -599,7 +599,7 @@ module BOAST
         elsif @source.instance_of? Variable or @source.respond_to?(:to_var) then
           if @source.to_var.type == @return_type.type then
             return @source.to_var
-          elsif @source.kind_of?(Index) and @return_type.type.vector_length > 1 then
+          elsif @source.kind_of?(Index) and @return_type.type.vector? then
             return @return_type.copy("#{Slice::new(@source.source, [@source.indexes[0], @source.indexes[0] + @return_type.type.vector_length - 1], *@source.indexes[1..-1])}", DISCARD_OPTIONS)
           end
         end
@@ -666,7 +666,7 @@ module BOAST
       else
         src = src[1..-1]
       end
-      p_type = type.copy(:vector_length => 1)
+      p_type = type.copy(:vector_length => nil)
       s << "#{instruction}( (#{p_type.decl} * ) #{src}, #{get_mask} )"
       return @return_type.copy( s, DISCARD_OPTIONS)
     end
@@ -732,12 +732,12 @@ module BOAST
           sym << "STORE"
         end
         instruction = intrinsics(sym.to_sym, type)
-        p_type = type.copy(:vector_length => 1)
+        p_type = type.copy(:vector_length => nil)
         p_type = type if get_architecture == X86 and type.kind_of?(Int)
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, (#{mask.value.type.decl})#{mask}, #{@source} )" if mask and not mask.full?
         return "#{instruction}( (#{p_type.decl} * ) #{dst}, #{@source} )"
       elsif lang == FORTRAN
-        if @store_type.type.vector_length > 1 and @dest.kind_of?(Index) then
+        if @store_type.type.vector? and @dest.kind_of?(Index) then
           return "#{Slice::new(@dest.source, [@dest.indexes[0], @dest.indexes[0] + @store_type.type.vector_length - 1], *@dest.indexes[1..-1])} = #{@source}"
         end
       end
@@ -798,7 +798,7 @@ module BOAST
       else
         dst = dst[1..-1]
       end
-      p_type = type.copy(:vector_length => 1)
+      p_type = type.copy(:vector_length => nil)
       return s << "#{instruction}( (#{p_type.decl} * ) #{dst}, #{get_mask}, #{Operator.convert(@source, type)} )"
     end
 

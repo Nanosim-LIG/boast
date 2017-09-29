@@ -10,7 +10,19 @@ module BOAST
     end
 
     def vector?
-      return @vector_length
+      return @vector_length && ( @vector_length.kind_of?(Variable) || @vector_length > 1 )
+    end
+
+    def scalar?
+      return !vector?
+    end
+
+    def vector_scalar?
+      return @vector_length && !@vector_length.kind_of?(Variable) && @vector_length == 1
+    end
+
+    def meta_vector?
+      return @vector_length && @vector_length.kind_of?(Variable)
     end
 
   end
@@ -27,7 +39,7 @@ module BOAST
         @signed = hash[:signed]
       end
       @size = nil
-      @vector_length = 1
+      @vector_length = nil
     end
 
     def to_hash
@@ -77,7 +89,11 @@ module BOAST
     attr_reader :setters
 
     def ==(t)
-      return true if t.class == self.class and t.size == size and t.vector_length == vector_length
+      vlt = t.vector_length
+      vlt = ( vlt ? vlt : 1 )
+      vl = vector_length
+      vl = ( vl ? vl : 1 )
+      return true if t.class == self.class and t.size == size and vlt == vl
       return false
     end
 
@@ -91,12 +107,12 @@ module BOAST
       else
         @size = get_default_real_size
       end
-      if hash[:vector_length] and hash[:vector_length] > 1 then
-        @vector_length = hash[:vector_length]
+      @vector_length = hash[:vector_length]
+      if @vector_length
+        @total_size = @size*@vector_length
       else
-        @vector_length = 1
+        @total_size = @size
       end
-      @total_size = @size*@vector_length
       @signed = true
     end
 
@@ -118,25 +134,26 @@ module BOAST
 
     def decl
       return "real(kind=#{@size})" if lang == FORTRAN
-      if [C, CL, CUDA].include?( lang ) and @vector_length == 1 then
-        return "float" if @size == 4
-        return "double" if @size == 8
-      elsif lang == C and @vector_length > 1 then
-        return get_vector_decl(self)
-      elsif [CL, CUDA].include?( lang ) and @vector_length > 1 then
-        return "float#{@vector_length}" if @size == 4
-        return "double#{@vector_length}" if @size == 8
+      if vector? && !meta_vector?
+        if [CL, CUDA].include?( lang ) then
+          return "float#{@vector_length}" if @size == 4
+          return "double#{@vector_length}" if @size == 8
+        elsif lang == C then
+          return get_vector_decl(self)
+        end
       end
+      return "float" if @size == 4
+      return "double" if @size == 8
     end
 
     def decl_ffi
-      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) or @vector_length > 1 )
+      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) || vector? )
         return :pointer
       end
       t = ""
       t << "float" if @size == 4
       t << "double" if @size == 8
-      t << "x#{@vector_length}" if @vector_length > 1
+      t << "x#{@vector_length}" if vector?
       return t.to_sym
     end
 
@@ -161,7 +178,11 @@ module BOAST
     attr_reader :total_size
 
     def ==(t)
-      return true if t.class == self.class and t.signed == signed and t.size == size and t.vector_length == vector_length
+      vlt = t.vector_length
+      vlt = ( vlt ? vlt : 1 )
+      vl = vector_length
+      vl = ( vl ? vl : 1 )
+      return true if t.class == self.class && t.signed == signed && t.size == size && vlt == vl
       return false
     end
 
@@ -181,13 +202,12 @@ module BOAST
       else
         @signed = get_default_int_signed
       end
-      if hash[:vector_length] and hash[:vector_length] > 1 then
-        @vector_length = hash[:vector_length]
-        raise "Vectors need to have their element size specified!" unless @size
+      @vector_length = hash[:vector_length]
+      if @vector_length
+        @total_size = @size*@vector_length
       else
-        @vector_length = 1
+        @total_size = @size
       end
-      @total_size = @size*@vector_length
     end
 
     def to_hash
@@ -212,19 +232,19 @@ module BOAST
         return "integer"
       end
       if lang == C then
-        if @vector_length == 1 then
+        if vector? && !meta_vector? then
+          return get_vector_decl(self)
+        else
           s = ""
           s << "u" unless @signed
           return s+"int#{8*@size}_t" if @size
           return s+"int"
-        elsif @vector_length > 1 then
-          return get_vector_decl(self)
         end
       else
         s =""
         unless @signed then
           s << "u"
-          s << "nsigned " if lang == CUDA and @vector_length == 1
+          s << "nsigned " if lang == CUDA && !@vector_length
         end
         case @size
         when 1
@@ -236,7 +256,7 @@ module BOAST
         when 8
           if lang == CUDA
             case @vector_length
-            when 1
+            when 1, nil
               s << "long long"
             else
               s << "longlong"
@@ -249,7 +269,7 @@ module BOAST
         else
           raise "Unsupported integer size!"
         end
-        if @vector_length > 1 then
+        if vector? then
           s << "#{@vector_length}"
         end
         return s
@@ -257,14 +277,14 @@ module BOAST
     end
 
     def decl_ffi
-      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) or @vector_length > 1 )
+      if lang == FORTRAN && ( @vector_length.kind_of?(Variable) || vector? )
         return :pointer
       end
       t = ""
       t << "u" unless @signed
       t << "int"
       t << "#{@size*8}" if @size
-      t << "x#{@vector_length}" if @vector_length > 1
+      t << "x#{@vector_length}" if vector?
       return t.to_sym
     end
 
@@ -367,8 +387,11 @@ module BOAST
       @size = hash[:size]
       @size = 0 if @size.nil?
       @vector_length = hash[:vector_length]
-      @vector_length = 1 if @vector_length.nil?
-      @total_size = @vector_length*@size
+      if @vector_length
+        @total_size = @size*@vector_length
+      else
+        @total_size = @size
+      end
     end
 
     def decl

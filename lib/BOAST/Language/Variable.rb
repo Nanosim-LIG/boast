@@ -152,13 +152,13 @@ module BOAST
     def method_missing(m, *a, &b)
       if @type.kind_of?(CStruct) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
-      elsif __vector? and m.to_s[0] == 's' and lang != CUDA then
+      elsif vector? and m.to_s[0] == 's' and lang != CUDA then
         required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(@type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
           return copy(name+"."+m.to_s, :vector_length => m.to_s[1..-1].length) if lang == CL
-          return copy("#{name}(#{existing_set.index(required_set[0])+1})", :vector_length => 1) if lang == FORTRAN
-          return copy("#{name}[#{existing_set.index(required_set[0])}]", :vector_length => 1) if lang == C
+          return copy("#{name}(#{existing_set.index(required_set[0])+1})", :vector_length => nil) if lang == FORTRAN
+          return copy("#{name}[#{existing_set.index(required_set[0])}]", :vector_length => nil) if lang == C
           return super
         else
           return super
@@ -186,7 +186,7 @@ module BOAST
     attr_accessor :force_replace_constant
 
     def alignment
-      return @type.total_size if __vector? and lang == FORTRAN and not @alignment
+      return @type.total_size if vector? and lang == FORTRAN and not @alignment
       return @alignment
     end
 
@@ -243,7 +243,11 @@ module BOAST
     end
 
     def vector?
-      __vector?
+      @type.vector?
+    end
+
+    def meta_vector?
+      @type.meta_vector?
     end
 
     # Creates a new {Variable}
@@ -363,7 +367,7 @@ module BOAST
     def [](*args)
       slice = false
       args.each { |a|
-        slice = true if a.kind_of?(Range) or a.kind_of?(Array) or a.kind_of?(Symbol) or a.nil?
+        slice = true if a.kind_of?(Range) || a.kind_of?(Array) || a.kind_of?(Symbol) || a.nil?
       }
       if slice then
         return Slice::new(self, *args)
@@ -375,16 +379,16 @@ module BOAST
     def boast_header(lang=C)
       return decl_texture_s if texture?
       s = ""
-      s << "const " if constant? or @direction == :in
+      s << "const " if constant? || @direction == :in
       s << @type.decl
       if dimension? then
-        s << " *" unless (use_vla? and lang != FORTRAN)
+        s << " *" unless (use_vla? && lang != FORTRAN)
       end
-      if not dimension? and ( lang == FORTRAN or @direction == :out or @direction == :inout or @reference ) then
+      if !dimension? && ( lang == FORTRAN || @direction == :out || @direction == :inout || @reference ) then
         s << " *"
       end
       s << " #{@name}"
-      if dimension? and use_vla? and lang != FORTRAN  then
+      if dimension? && use_vla? && lang != FORTRAN  then
         s << "["
         s << @dimension.reverse.collect(&:to_s).join("][")
         s << "]"
@@ -393,9 +397,9 @@ module BOAST
     end
 
     def decl_ffi(alloc, lang)
-      return :pointer if lang == FORTRAN and not alloc
+      return :pointer if lang == FORTRAN && !alloc
       return :pointer if dimension?
-      return :pointer if @direction == :out or @direction == :inout or @reference and not alloc
+      return :pointer if (@direction == :out || @direction == :inout ||  @reference) && !alloc
       return @type.decl_ffi
     end
 
@@ -406,7 +410,7 @@ module BOAST
 
     def align
       if dimension? then
-        if align? or default_align > 1 then
+        if align? || default_align > 1 then
           a = ( align? ? alignment : 1 )
           a = ( a >= default_align ? a : default_align )
           return align_c(a) if lang == C
@@ -434,51 +438,47 @@ module BOAST
     private
 
     def __const?
-      return ( constant? or @direction == :in )
+      return ( constant? || @direction == :in )
     end
 
     def __global?
-      return ( lang == CL and @direction and dimension? and not (@properties[:register] or @properties[:private] or local?) )
+      return ( lang == CL && @direction && dimension? && !(@properties[:register] || @properties[:private] || local?) )
     end
 
     def __local?
-      return ( lang == CL and local? )
+      return ( lang == CL && local? )
     end
 
     def __shared?(device = false)
-      return ( lang == CUDA and local? and not device )
+      return ( lang == CUDA && local? && !device )
     end
 
     def __vla_array?
-      return ( use_vla? and dimension? and not decl_module? )
+      return ( use_vla? && dimension? && !decl_module? )
     end
 
     def __pointer_array?(device = false)
-      return ( dimension? and not constant? and not ( allocate? and @allocate != :heap ) and (not local? or (local? and device)) )
+      return ( dimension? && !constant? && !( allocate? && @allocate != :heap ) && (!local? || (local? && device)) )
     end
 
     def __pointer?(device = false)
-      return ( ( not dimension? and ( @direction == :out or @direction == :inout or @reference ) ) or __pointer_array?(device) )
+      return ( ( !dimension? && ( @direction == :out || @direction == :inout || @reference ) ) || __pointer_array?(device) )
     end
 
     def __restrict?
-      return ( restrict? and not decl_module? )
+      return ( restrict? && !decl_module? )
     end
 
     def __dimension?(device = false)
-      return ( dimension? and ((local? and not device) or ( ( allocate? and @allocate != :heap ) and not constant?)) )
+      return ( dimension? && ((local? && !device) || ( ( allocate? && @allocate != :heap ) && !constant?)) )
     end
 
     def __align?
-      return ( dimension? and (align? or default_align > 1) and (constant? or (allocate? and @allocate != :heap ) ) )
-    end
-
-    def __vector?
-      return ( @type.vector? and @type.vector_length > 1 )
+      return ( dimension? && (align? || default_align > 1) && (constant? || (allocate? && @allocate != :heap ) ) )
     end
 
     def __attr_align?
-      return ( __align? or ( vector? and not @direction ) )
+      return ( __align? || ( vector? && !@direction ) )
     end
 
     def decl_c_s(device = false)
@@ -496,7 +496,7 @@ module BOAST
         s << "]"
       else
         s << " *" if __pointer?(device)
-        if __pointer_array?(device) and __restrict? then
+        if __pointer_array?(device) && __restrict? then
           if lang == CL
             s << " restrict"
           else
@@ -504,7 +504,7 @@ module BOAST
           end
         end
         s << " #{@name}"
-        if dimension? and constant? then
+        if dimension? && constant? then
           s << "[]"
         end
         if __dimension?(device) then
@@ -513,7 +513,7 @@ module BOAST
           s << ")]"
         end
       end
-      if __align? and lang != CUDA then
+      if __align? && lang != CUDA then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s << " __attribute((aligned(#{a})))"
@@ -524,7 +524,7 @@ module BOAST
 
     def decl_texture_s
       raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA].include?( lang )
-      raise "Write is unsupported for textures!" unless (constant? or @direction == :in)
+      raise "Write is unsupported for textures!" unless (constant? || @direction == :in)
       dim_number = 1
       if dimension? then
         dim_number == @dimension.size
@@ -563,7 +563,7 @@ module BOAST
     end
 
     def alloc_fortran( dims )
-      dims.unshift( @type.vector_length ) if __vector?
+      dims.unshift( @type.vector_length ) if vector?
       return FuncCall::new(:allocate, FuncCall(name, * dims ) )
     end
 
@@ -592,16 +592,16 @@ module BOAST
       s << @type.decl
       s << ", intent(#{@direction})" if @direction
       s << ", optional" if optional?
-      s << ", allocatable" if allocate? and @allocate == :heap
+      s << ", allocatable" if allocate? && @allocate == :heap
       s << ", parameter" if constant?
-      if dimension? or __vector? then
+      if dimension? || vector? then
         s << ", dimension("
-        if __vector? then
+        if vector? then
           s << "#{@type.vector_length}"
           s << ", " if dimension?
         end
         s << @dimension.collect { |d|
-          if deferred_shape? or ( allocate? and @allocate == :heap )
+          if deferred_shape? || ( allocate? && @allocate == :heap )
             ":"
           else
             d.to_s
@@ -611,13 +611,13 @@ module BOAST
       end
       s << " :: #{@name}"
       if constant? then
-        @constant.shape = self if dimension? and @constant.kind_of?(ConstArray)
+        @constant.shape = self if dimension? && @constant.kind_of?(ConstArray)
         s << " = #{@constant}"
-        s << @type.suffix if not dimension? and @type
+        s << @type.suffix if !dimension? && @type
       end
       s << finalize
       output.print s
-      if ( dimension? and (align? or default_align > 1) and (constant? or ( allocate? and @allocate != :heap ) ) ) or ( vector? and not @direction ) then
+      if ( dimension? && (align? || default_align > 1) && (constant? || ( allocate? && @allocate != :heap ) ) ) || ( vector? && !@direction ) then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s = ""
