@@ -246,6 +246,10 @@ module BOAST
       @type.vector?
     end
 
+    def vector_scalar?
+      @type.vector_scalar?
+    end
+
     def meta_vector?
       @type.meta_vector?
     end

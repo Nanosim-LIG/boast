@@ -366,8 +366,10 @@ EOF
     #{
   if param.dimension then
     "#{str_par} = (void *)RSTRING_PTR(_boast_rb_ptr)"
+  elsif param.vector_scalar? then
+    (str_par === param.copy("*(#{param.type.decl} *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => nil)).to_s
   else
-    (str_par === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => 1)).to_s
+    (str_par === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => nil)).to_s
   end
     };
   } else if ( IsNArray(_boast_rb_ptr) ) {
@@ -376,8 +378,10 @@ EOF
     #{
   if param.dimension then
     "#{str_par} = (void *) _boast_n_ary->ptr"
+  elsif param.vector_scalar? then
+    (str_par === param.copy("*(#{param.type.decl} *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => nil)).to_s
   else
-    (str_par === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => 1)).to_s
+    (str_par === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => nil)).to_s
   end
     };
   } else {
@@ -393,7 +397,7 @@ EOF
         @procedure.parameters.each_index do |i|
           param = @procedure.parameters[i]
           par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-          if param.dimension? or param.vector? then
+          if param.dimension? or param.vector? or param.vector_scalar? then
             copy_array_param_from_ruby(par, param, argv[i])
           else
             copy_scalar_param_from_ruby(par, param, argv[i])

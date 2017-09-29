@@ -54,6 +54,30 @@ class TestProcedure < Minitest::Test
     }
   end
 
+  def test_procedure_vector_1
+    skip if get_architecture == ARM
+    [1,2,4].each { |i|
+      b = Real( :b, :dir => :in, :vector_length => i )
+      c = Real( :c, :dir => :out, :vector_length => i, :dim => Dim(4) )
+      p = Procedure("vector_copy", [b,c]) { pr c[1] === b }
+      b_a = ANArray.float( 8*i, i ).random!
+      c_a = ANArray.float( 8*i, i, 4 )
+      [FORTRAN, C].each { |l|
+        c_a.random!
+        set_lang(l)
+        k = p.ckernel( :includes => "immintrin.h")
+        if ffi? and l == C
+          assert_raises(TypeError,"unable to resolve type 'doublex2'") {
+            k.run(b_a, c_a)
+          }
+        else
+          k.run(b_a, c_a)
+          assert_equal(0.0, (b_a[true] - c_a[true, 0]).abs.max)
+        end
+      }
+  }
+  end
+
   def test_procedure_vector
     skip if get_architecture == ARM
     b = Real( :b, :dir => :in, :vector_length => 2 )
@@ -71,7 +95,7 @@ class TestProcedure < Minitest::Test
         }
       else
         k.run(b_a, c_a)
-        assert_equal(0.0, (b_a[0..1] - c_a[0..1]).abs.max)
+        assert_equal(0.0, (b_a[true] - c_a[true, 0]).abs.max)
       end
     }
   end

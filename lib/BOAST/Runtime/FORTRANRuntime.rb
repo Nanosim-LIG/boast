@@ -63,7 +63,7 @@ EOF
 
     def collect_kernel_params
       pars = @procedure.parameters.collect { |param|
-        if param.vector? and not param.dimension? then
+        if (param.vector? || param.vector_scalar?) && !param.dimension? then
           param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil, :dim => Dim() )
         else
           param.copy(param.name, :const => nil, :constant => nil, :dir => nil, :direction => nil, :reference => nil )
@@ -76,7 +76,7 @@ EOF
     def create_procedure_indirect_call_parameters
       return @procedure.parameters.collect { |param|
         par = "#{param_struct.struct_reference(param_struct.type.members[param.name.to_s])}".gsub("_boast_params.","_boast_params->")
-        if param.dimension or param.vector? then
+        if param.dimension || param.vector? || param.vector_scalar? then
           "#{par}"
         else
           "&#{par}"
@@ -87,7 +87,7 @@ EOF
     def create_procedure_call_parameters
       return @procedure.parameters.collect { |param|
         par = param_struct.struct_reference(param_struct.type.members[param.name.to_s])
-        if param.dimension or param.vector? then
+        if param.dimension || param.vector? || param.vector_scalar? then
           "#{par}"
         else
           "&#{par}"
