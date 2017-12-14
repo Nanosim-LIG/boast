@@ -121,6 +121,19 @@ module BOAST
       return self
     end
 
+    def [](*args)
+      slice = false
+      args.each { |a|
+        slice = true if a.kind_of?(Range) || a.kind_of?(Array) || a.kind_of?(Symbol) || a.nil?
+      }
+      if slice then
+        return Slice::new(self, *args)
+      else
+        return Index::new(self, *args)
+      end
+    end
+
+
   end
 
 end
