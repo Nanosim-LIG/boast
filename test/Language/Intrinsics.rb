@@ -315,17 +315,27 @@ EOF
       b = Real :b, :vector_length => 4
       c = Real :c, :vector_length => 4
       block = lambda { pr FMA(a,b,c) }
+      block2 = lambda { pr FMA(a,b,1.5) }
       assert_subprocess_output( <<EOF, "", &block )
 _mm_add_ps( c, _mm_mul_ps( a, b ) );
+EOF
+      assert_subprocess_output( <<EOF, "", &block2 )
+_mm_add_ps( _mm_set1_ps( 1.5f ), _mm_mul_ps( a, b ) );
 EOF
       push_env( :model => :haswell ) {
         assert_subprocess_output( <<EOF, "", &block )
 _mm_fmadd_ps( a, b, c );
 EOF
+        assert_subprocess_output( <<EOF, "", &block2 )
+_mm_fmadd_ps( a, b, _mm_set1_ps( 1.5f ) );
+EOF
       }
       push_env( :architecture => ARM, :model => "armv7-a" ) {
         assert_subprocess_output( <<EOF, "", &block )
 vmlaq_f32( c, a, b );
+EOF
+        assert_subprocess_output( <<EOF, "", &block2 )
+vmlaq_f32( vdupq_n_f32( 1.5f ), a, b );
 EOF
       }
     }

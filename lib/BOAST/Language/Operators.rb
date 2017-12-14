@@ -833,7 +833,12 @@ module BOAST
       @operand1 = a
       @operand2 = b
       @operand3 = c
-      @return_type = @operand3.to_var
+      op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
+      op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
+      r_t, _ = transition(op1, op2, Multiplication)
+      op3 = @operand3.to_var if @operand3.respond_to?(:to_var)
+      r_t, _ = transition(r_t, op3, Addition)
+      @return_type = r_t
     end
 
     def convert_operand(op)
@@ -903,7 +908,12 @@ module BOAST
       @operand1 = a
       @operand2 = b
       @operand3 = c
-      @return_type = @operand3.to_var
+      op1 = @operand1.to_var if @operand1.respond_to?(:to_var)
+      op2 = @operand2.to_var if @operand2.respond_to?(:to_var)
+      r_t, _ = transition(op1, op2, Multiplication)
+      op3 = @operand3.to_var if @operand3.respond_to?(:to_var)
+      r_t, _ = transition(r_t, op3, Addition)
+      @return_type = r_t
     end
 
     def convert_operand(op)
