@@ -6,37 +6,27 @@ require 'systemu'
 require 'pathname'
 require 'os'
 
-class Dir
-  module Tmpname
-    class << self
-      undef_method :make_tmpname
-    end
-
-    undef_method :make_tmpname
-
-    def make_tmpname(prefix_suffix, n)
-      case prefix_suffix
-      when String
-        prefix = prefix_suffix
-        suffix = ""
-      when Array
-        prefix = prefix_suffix[0]
-        suffix = prefix_suffix[1]
-      else
-        raise ArgumentError, "unexpected prefix_suffix: #{prefix_suffix.inspect}"
-      end
-      t = Time.now.strftime("%Y%m%d")
-      path = "#{prefix}#{t}_#{$$}_#{rand(0x100000000).to_s(36)}"
-      path << "_#{n}" if n
-      path << suffix
-    end
-
-    module_function :make_tmpname
-
-  end
-end
-
 module BOAST
+
+  def make_tmpname(prefix_suffix, n=nil)
+    case prefix_suffix
+    when String
+      prefix = prefix_suffix
+      suffix = ""
+    when Array
+      prefix = prefix_suffix[0]
+      suffix = prefix_suffix[1]
+    else
+      raise ArgumentError, "unexpected prefix_suffix: #{prefix_suffix.inspect}"
+    end
+    t = Time.now.strftime("%Y%m%d")
+    path = "#{prefix}#{t}_#{$$}_#{rand(0x100000000).to_s(36)}"
+    path << "_#{n}" if n
+    path << suffix
+  end
+
+  module_function :make_tmpname
+
 
   module CompiledRuntime
     attr_accessor :binary
@@ -177,7 +167,11 @@ module BOAST
     def get_sub_kernels
       kernel_files = []
       @kernels.each { |kernel|
-        kernel_file = Tempfile::new([kernel.procedure.name,".#{RbConfig::CONFIG["OBJEXT"]}"])
+        f_name = File.join( Dir::tmpdir, BOAST::make_tmpname([kernel.procedure.name,".#{RbConfig::CONFIG["OBJEXT"]}"]) )
+        while File.exist?(f_name) do
+          f_name = File.join( Dir::tmpdir, BOAST::make_tmpname([kernel.procedure.name,".#{RbConfig::CONFIG["OBJEXT"]}"]) )
+        end
+        kernel_file = File::new( f_name, "w+", 0600 )
         kernel.binary.rewind
         kernel_file.write( kernel.binary.read )
         kernel_file.close
@@ -824,10 +818,12 @@ EOF
       linker, _, _, ldflags = setup_compilers(@probes, compiler_options)
       @compiler_options = compiler_options
 
-      @marker = Tempfile::new([@procedure.name,""])
-      Dir::mktmpdir { |dir|
-        @tmp_dir = "#{dir}"
-      }
+      marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+      while File.exist?(marker_name) do
+        marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+      end
+      @marker = File::new( marker_name, "w+", 0600 )
+      @tmp_dir = File.join( Dir::tmpdir, BOAST::make_tmpname )
 
       kernel_files = get_sub_kernels
 
@@ -903,7 +899,11 @@ EOF
       linker, ldshared, ldshared_flags, ldflags = setup_compilers(@probes, compiler_options)
       @compiler_options = compiler_options
 
-      @marker = Tempfile::new([@procedure.name,""])
+      marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+      while File.exist?(marker_name) do
+        marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+      end
+      @marker = File::new( marker_name, "w+", 0600 )
 
       extend MAQAO if @compiler_options[:MAQAO_PASS]
 

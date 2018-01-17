@@ -10,7 +10,11 @@ module BOAST
       return "#{options[:library_path]}"
     end
 EOF
-        @marker = Tempfile::new([@procedure.name,""])
+        marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+        while File.exist?(marker_name) do
+          marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
+        end
+        @marker = File::new( marker_name, "w+", 0600 )
         create_ffi_module
         eval "self.extend(#{module_name})"
         define_run_method
