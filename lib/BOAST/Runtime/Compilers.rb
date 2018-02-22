@@ -57,7 +57,11 @@ module BOAST
       probes.each { |p|
         cflags += " #{p.cflags}" if p.respond_to?(:cflags)
       }
-      cflags += " -march=#{get_model}"
+      if RUBY_PLATFORM == "sparc64-linux" then
+        cflags += " -mcpu=#{get_model}"
+      else
+        cflags += " -march=#{get_model}"
+      end if
       cflags += " -fPIC #{includes}"
       cflags += " -DHAVE_NARRAY_H" if narray_path
       cflags += " -I/usr/local/k1tools/include" if @architecture == MPPA
@@ -119,7 +123,11 @@ module BOAST
     def setup_fortran_compiler(options, runner, probes)
       f_compiler = options[:FC]
       fcflags = options[:FCFLAGS]
-      fcflags += " -march=#{get_model}"
+      if RUBY_PLATFORM == "sparc64-linux" then
+        fcflags += " -mcpu=#{get_model}"
+      else
+        fcflags += " -march=#{get_model}"
+      end if
       fcflags += " -fPIC"
       fcflags += " -fno-second-underscore" if f_compiler == 'g95'
       if (options[:openmp] or options[:OPENMP]) and @lang == FORTRAN and not disable_openmp then
@@ -174,7 +182,11 @@ module BOAST
 
     def setup_linker(options, probes)
       ldflags = options[:LDFLAGS]
-      ldflags += " -march=#{get_model}"
+      if RUBY_PLATFORM == "sparc64-linux" then
+        ldflags += " -mcpu=#{get_model}"
+      else
+        ldflags += " -march=#{get_model}"
+      end if
       ldflags += " -L#{RbConfig::CONFIG["libdir"]}"
       if RbConfig::CONFIG["ENABLE_SHARED"] != "no" then
         ldflags += " #{RbConfig::CONFIG["LIBRUBYARG"]}"
@@ -200,6 +212,9 @@ module BOAST
       if OS.mac? then
         ldshared = "-dynamic -bundle"
         ldshared_flags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress"
+      elsif RUBY_PLATFORM == "sparc64-linux" then
+        ldshared = "-shared"
+        ldshared_flags = "-Wl,-Bsymbolic -Wl,-z,relro -rdynamic -Wl,-export-dynamic"
       else
         ldshared = "-shared"
         ldshared_flags = "-Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic"
