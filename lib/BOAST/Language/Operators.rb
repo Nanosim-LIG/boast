@@ -1033,13 +1033,13 @@ module BOAST
         test_op2 = true
         test_op2 = false if op2.respond_to?(:type) and op2.type.respond_to?(:signed?) and not op2.type.signed?
         if test_op1 and test_op2 then
-          return "((#{op1} < 0) ^ (#{op2} < 0) ? (#{op1} % #{op2}) + #{op2} : #{op1} % #{op2})"
+          return "((#{op1} < 0) ^ (#{op2} < 0) ? ((#{op1}) % (#{op2})) + #{op2} : (#{op1}) % (#{op2}))"
         elsif test_op1 then
-          return "( (#{op1} < 0) ? (#{op1} % #{op2.cast(op1)}) + #{op2} : #{op1} % #{op2})"
+          return "( (#{op1} < 0) ? ((#{op1}) % (#{op2.cast(op1)})) + #{op2} : (#{op1}) % (#{op2}))"
         elsif test_op2 then
-          return "( (#{op2} < 0) ? (#{op1.cast(op2)} % #{op2}) + #{op2} : #{op1} % #{op2})"
+          return "( (#{op2} < 0) ? ((#{op1.cast(op2)}) % (#{op2})) + #{op2} : (#{op1}) % (#{op2}))"
         else
-          return "(#{op1} % #{op2})"
+          return "((#{op1}) % (#{op2}))"
         end
       end
     end
