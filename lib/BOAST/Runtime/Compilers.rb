@@ -214,7 +214,7 @@ module BOAST
         ldshared_flags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress"
       elsif RUBY_PLATFORM == "sparc64-linux" then
         ldshared = "-shared"
-        ldshared_flags = "-Wl,-Bsymbolic -Wl,-z,relro -rdynamic -Wl,-export-dynamic"
+        ldshared_flags = "-Wl,-Bsymbolic -Wl,-z,relro -Wl,-export-dynamic"
       else
         ldshared = "-shared"
         ldshared_flags = "-Wl,-Bsymbolic-functions -Wl,-z,relro -rdynamic -Wl,-export-dynamic"
