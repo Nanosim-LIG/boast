@@ -56,9 +56,9 @@ module BOAST
       return oper.string(op1, op2, return_type) unless oper.kind_of?(String)
       s = ""
       if op1 then
-        s << "(" if (oper == "*" or oper == "/" or true)
+        s << "(" if (oper == "*" or oper == "/")
         s << op1.to_s
-        s << ")" if (oper == "*" or oper == "/" or true)
+        s << ")" if (oper == "*" or oper == "/")
       end
       s << " " unless oper == "++" or oper == "."
       s << oper unless ( oper == "&" and lang == FORTRAN )
