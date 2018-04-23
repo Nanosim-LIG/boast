@@ -57,7 +57,7 @@ module BOAST
       probes.each { |p|
         cflags += " #{p.cflags}" if p.respond_to?(:cflags)
       }
-      if RUBY_PLATFORM == "sparc64-linux" then
+      if @architecture == SPARC then
         cflags += " -mcpu=#{get_model}"
       else
         cflags += " -march=#{get_model}"
@@ -123,7 +123,7 @@ module BOAST
     def setup_fortran_compiler(options, runner, probes)
       f_compiler = options[:FC]
       fcflags = options[:FCFLAGS]
-      if RUBY_PLATFORM == "sparc64-linux" then
+      if @architecture == SPARC then
         fcflags += " -mcpu=#{get_model}"
       else
         fcflags += " -march=#{get_model}"
@@ -182,7 +182,7 @@ module BOAST
 
     def setup_linker(options, probes)
       ldflags = options[:LDFLAGS]
-      if RUBY_PLATFORM == "sparc64-linux" then
+      if @architecture == SPARC then
         ldflags += " -mcpu=#{get_model}"
       else
         ldflags += " -march=#{get_model}"
@@ -212,7 +212,7 @@ module BOAST
       if OS.mac? then
         ldshared = "-dynamic -bundle"
         ldshared_flags = "-Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress"
-      elsif RUBY_PLATFORM == "sparc64-linux" then
+      elsif @architecture == SPARC then
         ldshared = "-shared"
         ldshared_flags = "-Wl,-Bsymbolic -Wl,-z,relro -Wl,-export-dynamic"
       else
