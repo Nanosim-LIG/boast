@@ -76,6 +76,7 @@ module BOAST
     private_boolean_state_accessor :annotate
     private_boolean_state_accessor :optimizer_log
     private_boolean_state_accessor :disable_openmp
+    private_boolean_state_accessor :force_nesting
 
   end
 
@@ -106,6 +107,7 @@ module BOAST
   boolean_state_accessor :optimizer_log
   boolean_state_accessor :disable_openmp
   boolean_state_accessor :boast_inspect
+  boolean_state_accessor :force_nesting
 
 
   default_state_getter :address_size,          OS.bits/8
@@ -128,7 +130,8 @@ module BOAST
   default_state_getter :optimizer_log,         false
   default_state_getter :optimizer_log_file,    nil
   default_state_getter :disable_openmp,        false
-  default_state_getter :boast_inspect, false, nil, :INSPECT
+  default_state_getter :boast_inspect,         false, nil, :INSPECT
+  default_state_getter :force_nesting,         false
 
   class << self
     alias use_vla_old? use_vla?
@@ -180,5 +183,9 @@ module BOAST
   end
 
   @@architecture = get_default_architecture
+
+  if @@architecture == SPARC
+    set_force_nesting( true )
+  end
 
 end

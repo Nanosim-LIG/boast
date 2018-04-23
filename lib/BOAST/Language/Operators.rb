@@ -61,7 +61,8 @@ module BOAST
   class Plus < Operator
 
     def Plus.string(arg1, arg2, return_type)
-      return " +(#{arg2})"
+      return " +(#{arg2})" if force_nesting
+      return " +#{arg2}"
     end
 
   end
@@ -245,7 +246,8 @@ module BOAST
       end
   
       def basic_usage(arg1, arg2)
-        return "#{arg1} + (#{arg2})" 
+        return "#{arg1} + (#{arg2})" if force_nesting
+        return "#{arg1} + #{arg2}"
       end
   
     end
