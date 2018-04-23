@@ -64,9 +64,9 @@ module BOAST
       s << oper unless ( oper == "&" and lang == FORTRAN )
       s << " " unless oper == "." or oper == "&" or ( oper == "*" and op1.nil? )
       if op2 then
-        s << "(" if (oper == "*" or oper == "/" or oper == "-" or true)
+        s << "(" if (oper == "*" or oper == "/" or oper == "-")
         s << op2.to_s
-        s << ")" if (oper == "*" or oper == "/" or oper == "-" or true)
+        s << ")" if (oper == "*" or oper == "/" or oper == "-")
       end
       return s
     end
