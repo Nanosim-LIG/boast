@@ -32,7 +32,10 @@ module BOAST
     "gfortran" => "-fopenmp",
     "ifort" => "-openmp",
     "g++" => "-fopenmp",
-    "icpc" => "-openmp"
+    "icpc" => "-openmp",
+    "frt" => "-Kopenmp",
+    "fcc" => "-Kopenmp",
+    "FCC" => "-Kopenmp"
   }
 
   @@run_options = [
