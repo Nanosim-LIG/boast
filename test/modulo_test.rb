@@ -20,6 +20,13 @@ def test_modulo(a, b)
   puts "C:       #{$kern_c.run(a,b)[:return]}"
 end
 
+def test_modulo_div_2(a, b)
+  puts "a: #{a} b: #{b}"
+  puts "Ruby:    #{a % (b / 2)}"
+  puts "FORTRAN: #{$kern_f.run(a,b)[:return]}"
+  puts "C:       #{$kern_c.run(a,b)[:return]}"
+end
+
 $kern_c = modulo_kernel( lang: C )
 puts $kern_c
 $kern_f = modulo_kernel( lang: FORTRAN )
@@ -67,6 +74,25 @@ puts $kern_f
 
 test_modulo( 16, 5 )
 test_modulo( 16, -5 )
+
+def modulo_kernel(options = {})
+  set_lang(options[:lang])
+  a = Int :a, :dir => :in
+  b = Int :b, :dir => :in
+  c = Int :c
+  p = Procedure( :test_mod, [a,b], :return => c) {
+    pr c === Modulo(a, b/2)
+  }
+  return p.ckernel
+end
+
+$kern_c = modulo_kernel( lang: C )
+puts $kern_c
+$kern_f = modulo_kernel( lang: FORTRAN )
+puts $kern_f
+
+test_modulo_div_2( 7, 6 )
+test_modulo_div_2( -7, 6 )
 
 def modulo_kernel(options = {})
   set_lang(options[:lang])
