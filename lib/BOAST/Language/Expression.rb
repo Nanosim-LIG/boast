@@ -47,7 +47,7 @@ module BOAST
       @operand1 = operand1
       @operand2 = operand2
       if @operand1.nil? and @operand2.nil?
-        STDERR.puts "#{@operand1} #{@operand2}"
+        $stderr.puts "#{@operand1} #{@operand2}"
         raise "Expression on no operand!"
       end
     end

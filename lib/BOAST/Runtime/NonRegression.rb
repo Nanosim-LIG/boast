@@ -54,7 +54,7 @@ module BOAST
         when 8
           type = NArray::FLOAT
         else
-          STDERR::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if debug?
+          $stderr::puts "Unsupported Float size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
         end
       elsif param.type.class == Int then
@@ -66,11 +66,11 @@ module BOAST
         when 4
           type = NArray::INT
         else
-          STDERR::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if debug?
+          $stderr::puts "Unsupported Int size for NArray: #{param.type.size}, defaulting to byte" if debug?
           type = NArray::BYTE
         end
       else
-        STDERR::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if debug?
+        $stderr::puts "Unkown array type for NArray: #{param.type}, defaulting to byte" if debug?
         type = NArray::BYTE
       end
       return type

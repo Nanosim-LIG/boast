@@ -66,7 +66,7 @@ module BOAST
     return LANGUAGES[lang]
   end
 
-  @@output = STDOUT
+  @@output = $stdout
   @@chain_code = false
   @@decl_module = false
   @@annotate_numbers = Hash::new { |h,k| h[k] = 0 }
