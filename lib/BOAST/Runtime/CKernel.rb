@@ -40,6 +40,7 @@ module BOAST
       else
         @code = StringIO::new
       end
+      backup_output = get_output
       set_output(@code)
       if options[:kernels] then
         @kernels = options[:kernels]
@@ -75,6 +76,10 @@ module BOAST
           extend CRuntime
           extend FFIRuntime if ffi?
         end
+      end
+      if block_given?
+        yield
+        set_output(backup_output)
       end
     end
 
