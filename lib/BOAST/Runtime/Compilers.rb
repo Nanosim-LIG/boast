@@ -234,16 +234,16 @@ module BOAST
       includes = get_includes(narray_path)
 
       runner = lambda { |t, call_string|
-        if verbose then
-          sh call_string
-        else
-          status, _, stderr = systemu call_string
-          unless status.success? then
-            puts stderr.force_encoding("UTF-8")
-            fail "#{t.source}: compilation failed"
-          end
-          status.success?
+        status, stdout, stderr = systemu call_string
+        if get_verbose
+          puts stdout.force_encoding("UTF-8") if stdout != ""
+          puts stderr.force_encoding("UTF-8") if stderr != ""
         end
+        unless status.success? then
+          puts stderr.force_encoding("UTF-8") unless get_verbose
+          fail "#{t.source}: compilation failed"
+        end
+        status.success?
       }
 
       setup_c_compiler(options, includes, narray_path, runner, probes)
