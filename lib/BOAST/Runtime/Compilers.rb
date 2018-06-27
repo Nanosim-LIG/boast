@@ -239,7 +239,7 @@ module BOAST
         else
           status, _, stderr = systemu call_string
           unless status.success? then
-            puts stderr
+            puts stderr.force_encoding("UTF-8")
             fail "#{t.source}: compilation failed"
           end
           status.success?
