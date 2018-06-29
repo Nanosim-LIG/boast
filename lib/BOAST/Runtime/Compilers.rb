@@ -225,15 +225,12 @@ module BOAST
 
     def setup_compilers(probes, options = {})
       Rake::Task::clear
-      verbose = options[:VERBOSE]
-      verbose = get_verbose unless verbose
-      Rake::verbose(verbose)
-      Rake::FileUtilsExt.verbose_flag=verbose
 
       narray_path = get_narray_path
       includes = get_includes(narray_path)
 
       runner = lambda { |t, call_string|
+        puts call_string if get_verbose
         status, stdout, stderr = systemu call_string
         if get_verbose
           puts stdout.force_encoding("UTF-8") if stdout != ""
