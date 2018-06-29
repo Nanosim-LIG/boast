@@ -147,15 +147,36 @@ module BOAST
 
     def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files)
       file target => target_depends do
-        #puts "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
-        sh "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
+        link_string = "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
+        puts link_string if get_verbose
+        status, stdout, stderr = systemu link_string
+        if get_verbose
+          puts stdout.force_encoding("UTF-8") if stdout != ""
+          puts stderr.force_encoding("UTF-8") if stderr != ""
+        end
+        unless status.success? then
+          puts stderr.force_encoding("UTF-8") unless get_verbose
+          fail "linking failed"
+        end
+        status.success?
       end
       Rake::Task[target].invoke
     end
 
     def create_executable_target( linker, ldflags, kernel_files)
       file target_executable => target_executable_depends do
-        sh "#{linker} -o #{target_executable} #{target_executable_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+        link_string = "#{linker} -o #{target_executable} #{target_executable_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldflags}"
+        puts link_string if get_verbose
+        status, stdout, stderr = systemu link_string
+        if get_verbose
+          puts stdout.force_encoding("UTF-8") if stdout != ""
+          puts stderr.force_encoding("UTF-8") if stderr != ""
+        end
+        unless status.success? then
+          puts stderr.force_encoding("UTF-8") unless get_verbose
+          fail "linking failed"
+        end
+        status.success?
       end
       Rake::Task[target_executable].invoke
     end
