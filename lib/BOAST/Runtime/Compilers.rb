@@ -225,6 +225,8 @@ module BOAST
 
     def setup_compilers(probes, options = {})
       Rake::Task::clear
+      Rake::verbose(false)
+      Rake::FileUtilsExt.verbose_flag=false
 
       narray_path = get_narray_path
       includes = get_includes(narray_path)
