@@ -445,6 +445,10 @@ module BOAST
       return ( constant? || @direction == :in )
     end
 
+    def __register?
+      return @properties[:register]
+    end
+
     def __global?
       return ( lang == CL && @direction && dimension? && !(@properties[:register] || @properties[:private] || local?) )
     end
@@ -492,6 +496,9 @@ module BOAST
       s << "__global " if __global?
       s << "__local " if __local?
       s << "__shared__ " if __shared?(device)
+      if lang == C && __register? && !dimension?
+         s << "register "
+      end
       s << @type.decl
       if __vla_array? then
         s << " #{@name}["
