@@ -1,0 +1,8 @@
+ruby
+ruby-dev
+jupyter-notebook
+libtool
+libffi-dev
+make
+libzmq3-dev
+libczmq-dev
