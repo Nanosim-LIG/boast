@@ -1,5 +1,5 @@
 #!/bin/bash
 gem install --user-install cztop iruby
-.gem/ruby/2.5.0/iruby register --force
+.gem/ruby/2.5.0/bin/iruby register --force
 gem build BOAST.gemspec
-gem install --user-install BOAST-2.1.0
+gem install --user-install BOAST-2.1.0.gem
