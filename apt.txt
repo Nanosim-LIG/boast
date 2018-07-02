@@ -6,3 +6,4 @@ libffi-dev
 make
 libzmq3-dev
 libczmq-dev
+gfortran
