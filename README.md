@@ -8,6 +8,15 @@ Documentation can be found here:
 http://www.rubydoc.info/github/Nanosim-LIG/boast/master
 .
 
+Testing
+-------
+
+Test BOAST right away by looking at the interactive tutorials:
+
+[Simple Tutorial](https://mybinder.org/v2/gh/Nanosim-LIG/boast/binder?filepath=tutorial%2Ftuto-start.ipynb)
+
+[Advanced Tutorial](https://mybinder.org/v2/gh/Nanosim-LIG/boast/binder?filepath=tutorial%2FBOAST.ipynb)
+
 Installation
 ------------
 
