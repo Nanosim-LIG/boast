@@ -8,4 +8,5 @@ libzmq3-dev
 libczmq-dev
 gfortran
 ocl-icd-libopencl1
+ocl-icd-opencl-dev
 pocl-opencl-icd
