@@ -7,3 +7,5 @@ make
 libzmq3-dev
 libczmq-dev
 gfortran
+ocl-icd-libopencl1
+pocl-opencl-icd
