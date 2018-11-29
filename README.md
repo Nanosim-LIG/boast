@@ -294,6 +294,11 @@ Communication:
 * ANNOTATE_LEVEL: level of recursivity for annotations
 * ANNOTATE_INDEPTH_LIST: coma separated white list of control structure to recursively annotate (For by default)
 
+Reference
+---------
+
+[Brice Videau, Kevin Pouget, Luigi Genovese, Thierry Deutsch, Dimitri Komatitsch, Frédéric Desprez, Jean-François Méhaut. BOAST: A metaprogramming framework to produce portable and efficient computing kernels for HPC applications. International Journal of High Performance Computing Applications, SAGE Publications, 2018, 32 (1), pp.28-44. ](https://journals.sagepub.com/doi/abs/10.1177/1094342017718068)
+
 Acknowledgment
 --------------
 
