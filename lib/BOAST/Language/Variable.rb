@@ -184,6 +184,7 @@ module BOAST
     attr_writer :alignment
     attr_accessor :replace_constant
     attr_accessor :force_replace_constant
+    attr_reader :comment
 
     def alignment
       return @type.total_size if vector? and lang == FORTRAN and not @alignment
@@ -270,6 +271,7 @@ module BOAST
     # @option properties [Boolean] :replace_constant specifies that for scalar constants this variable should be replaced by its constant value. For constant arrays, the value of the array will be replaced if the index can be determined at evaluation.
     # @option properties [Boolean] :deferred_shape for Fortran interface generation mainly see Fortran documentation
     # @option properties [Boolean] :optional for Fortran interface generation mainly see Fortran documentation
+    # @option properties [#to_s] :comment text comment to print with autodocumentation format
     def initialize(name, type, properties={})
       @name = name.to_s
       @direction = properties[:direction] or @direction = properties[:dir]
@@ -286,6 +288,7 @@ module BOAST
       @reference = properties[:reference]
       @force_replace_constant = false
       @replace_constant = properties[:replace_constant]
+      @comment = properties[:comment]
 
       if @texture and lang == CL then
         @sampler = Variable::new("sampler_#{name}", CustomType,:type_name => "sampler_t" ,:replace_constant => false, :constant => "CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST")
@@ -625,6 +628,9 @@ module BOAST
         @constant.shape = self if dimension? && @constant.kind_of?(ConstArray)
         s << " = #{@constant}"
         s << @type.suffix if !dimension? && @type
+      end
+      if @properties[:comment] and comment_type == "SPHINX" then
+          s << " ! #{@comment}"
       end
       s << finalize
       output.print s
