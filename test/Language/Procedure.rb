@@ -159,4 +159,74 @@ int32_t minimum(const int32_t a, const int32_t b){
 EOF
   end
 
+  def test_doc
+    a = Int( :a, :dir => :in, :comment => "This is an input value" )
+    b = Int( :b, :dir => :inout, :comment => "This is an inout value" )
+    c = Int( :c , :comment => "This is a returned value")
+    p = Procedure("minimum", [a,b], :return => c, :comment => ["This is a procedure", "with two comments"]) { pr c === Ternary( a < b, a, b) }
+    block = lambda { pr p }
+    set_comment_type("DOXYGEN")
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+!> \\brief This is a procedure
+!! with two comments
+!! \\param [in] a This is an input value
+!! \\param [in,out] b This is an inout value
+!! \\return c This is a returned value
+integer(kind=4) FUNCTION minimum(a, b)
+  integer, parameter :: wp=kind(1.0d0)
+  integer(kind=4), intent(in) :: a
+  integer(kind=4), intent(inout) :: b
+  integer(kind=4) :: c
+  c = merge(a, b, a < b)
+  minimum = c
+END FUNCTION minimum
+EOF
+    set_lang(C)
+    assert_subprocess_output( <<EOF, "", &block )
+/**
+ *  \\brief This is a procedure
+ *  with two comments
+ *  \\param [in] a This is an input value
+ *  \\param [in,out] b This is an inout value
+ *  \\return c This is a returned value
+ */
+int32_t minimum(const int32_t a, int32_t * b){
+  int32_t c;
+  c = (a < (*b) ? a : (*b));
+  return c;
+}
+EOF
+    set_comment_type("SPHINX")
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+integer(kind=4) FUNCTION minimum(a, b)
+  !> This is a procedure
+  !> with two comments
+  integer, parameter :: wp=kind(1.0d0)
+  integer(kind=4), intent(in) :: a ! This is an input value
+  integer(kind=4), intent(inout) :: b ! This is an inout value
+  integer(kind=4) :: c ! This is a returned value
+  c = merge(a, b, a < b)
+  minimum = c
+END FUNCTION minimum
+EOF
+#for now C+Sphinx = Doxygen, to be postprocessed with Breathe
+    set_lang(C)
+    assert_subprocess_output( <<EOF, "", &block )
+/**
+ *  \\brief This is a procedure
+ *  with two comments
+ *  \\param [in] a This is an input value
+ *  \\param [in,out] b This is an inout value
+ *  \\return c This is a returned value
+ */
+int32_t minimum(const int32_t a, int32_t * b){
+  int32_t c;
+  c = (a < (*b) ? a : (*b));
+  return c;
+}
+EOF
+  end
+
 end
