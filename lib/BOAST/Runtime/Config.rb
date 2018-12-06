@@ -53,6 +53,7 @@ module BOAST
     private_boolean_state_accessor :executable
     private_boolean_state_accessor :keep_temp
     private_state_accessor :fortran_line_length
+    private_state_accessor :comment_type
     private_state_accessor :synchro
   end
 
@@ -63,6 +64,7 @@ module BOAST
   boolean_state_accessor :executable
   boolean_state_accessor :keep_temp
   state_accessor         :fortran_line_length
+  state_accessor         :comment_type
   state_accessor :synchro
   default_state_getter :verbose,             false
   default_state_getter :debug_source,        false
@@ -71,6 +73,7 @@ module BOAST
   default_state_getter :executable,          false
   default_state_getter :keep_temp,           false
   default_state_getter :fortran_line_length, 72
+  default_state_getter :comment_type,        "DOXYGEN"
   default_state_getter :synchro,             "MUTEX"
 
   module_function

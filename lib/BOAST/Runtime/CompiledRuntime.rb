@@ -844,6 +844,10 @@ EOF
         marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
       end
       @marker = File::new( marker_name, "w+", 0600 )
+      @marker.close
+      at_exit {
+        File::unlink(marker_name)
+      }
       @tmp_dir = File.join( Dir::tmpdir, BOAST::make_tmpname )
 
       kernel_files = get_sub_kernels
@@ -925,6 +929,10 @@ EOF
         marker_name = File.join( Dir::tmpdir, BOAST::make_tmpname([@procedure.name,""]) )
       end
       @marker = File::new( marker_name, "w+", 0600 )
+      @marker.close
+      at_exit {
+        File::unlink(marker_name)
+      }
 
       extend MAQAO if @compiler_options[:MAQAO_PASS]
 

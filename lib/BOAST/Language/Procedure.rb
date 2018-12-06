@@ -14,6 +14,7 @@ module BOAST
     attr_reader :locals
     attr_reader :properties
     attr_reader :headers
+    attr_reader :comment
 
     # Creates a new Procedure
     # @param [#to_s] name Procedure identifier
@@ -23,6 +24,7 @@ module BOAST
     # @option properties [Array<#to_s>] :headers list of headers that need to be included in order to compile the Procedure
     # @option properties [Variable] :return a Variable that will be returned. Procedure becomes a function, return type is the same as the returned variable. The variable will be declared at the start of the procedure.
     # @option properties [Procedure] :functions sub functions used by this Procedure (FORTRAN return type of functions are problematic)
+    # @option properties [Array<#to_s>] :comment text comments to print with autodocumentation format
     def initialize(name, parameters=[], properties={}, &block)
       @name = name
       @parameters = parameters
@@ -34,6 +36,8 @@ module BOAST
       @properties = properties
       @headers = properties[:headers]
       @headers = [] unless @headers
+      @comment = properties[:comment]
+      @comment =  [] unless @comment
     end
 
     # @private
@@ -180,6 +184,7 @@ module BOAST
     end
 
     def open_c
+      print_comments_doxygen if @properties[:comment]
       s = indent + decl_c_s + "{"
       output.puts s
       increment_indent_level
@@ -204,9 +209,18 @@ module BOAST
     end
 
     def open_fortran
-      s = indent + to_s_fortran
+      s=""
+      if comment_type == "DOXYGEN" and @properties[:comment] then
+        print_comments_doxygen
+      end
+      s << indent + to_s_fortran
       s << "\n"
       increment_indent_level
+      if comment_type == "SPHINX" and @properties[:comment] then
+        @comment.each{|com|
+          s << indent + "!> #{com}" + "\n"
+        }
+      end
       tmp_buff = StringIO::new
       push_env( :output => tmp_buff ) {
         @parameters.each { |p|
@@ -304,6 +318,43 @@ module BOAST
       end
       s << ")"
       return s
+    end
+
+    def print_comments_doxygen
+      if lang == FORTRAN
+        start_line = "!! "
+        open_comment = "!> "
+        close_comment = ""
+      else
+        start_line = " *  "
+        open_comment = "/**\n" + start_line
+        close_comment = " */\n"
+      end
+      s = open_comment
+      @comment.each_with_index{|com,i|
+        s << start_line if i != 0
+        s << "\\brief " if i == 0
+        s << "#{com}\n"
+      }
+      @parameters.each { |p|
+        if p.direction == :in then
+          dir="[in] "
+        elsif p.direction == :inout then
+          dir="[in,out] "
+        elsif p.direction == :out then
+          dir="[out] "
+        end
+        s << start_line + "\\param "+ dir + p.name
+        s << " "+p.comment if p.comment != nil
+        s << "\n"
+      }
+      if @properties[:return] then
+        s << start_line + "\\return "+@properties[:return].name
+        s << +" "+@properties[:return].comment if @properties[:return].comment != nil
+        s << "\n"
+      end
+      s << close_comment
+      output.puts s
     end
 
   end
