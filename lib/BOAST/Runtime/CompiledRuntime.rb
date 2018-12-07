@@ -748,7 +748,7 @@ EOF
 
     def create_module_file_source
       f = File::open(module_file_source, "w+")
-      push_env(:output => f, :lang => C) {
+      push_env(output: f, lang: C, use_vla: false) {
         fill_module_file_source
 
         if debug_source? then
