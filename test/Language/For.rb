@@ -220,6 +220,36 @@ EOF
     }
   end
 
+  def test_for_unroll_integer
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    f = For(i, 1, n) { pr a[i] === i }
+    block = lambda { pr f.unroll(2) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+do i = 1, n - (1), 2
+  a(i + 0) = i + 0
+  a(i + 1) = i + 1
+end do
+do i = 1 + ((n + 0) / (2)) * (2), n, 1
+  a(i) = i
+end do
+EOF
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
+for (i = 1; i <= n - (1); i += 2) {
+  a[i + 0 - (1)] = i + 0;
+  a[i + 1 - (1)] = i + 1;
+}
+for (i = 1 + ((n + 0) / (2)) * (2); i <= n; i += 1) {
+  a[i - (1)] = i;
+}
+EOF
+    }
+  end
+
   def test_for_unroll_block
     i = Int("i")
     a = Int("a", :dim => Dim(3))
@@ -242,6 +272,37 @@ EOF
     }
   end
 
+  def test_for_unroll_integer_block
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    f = For(i, 1, n)
+    l = lambda { pr a[i] === i }
+    block = lambda { pr f.unroll(2), &l }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+do i = 1, n - (1), 2
+  a(i + 0) = i + 0
+  a(i + 1) = i + 1
+end do
+do i = 1 + ((n + 0) / (2)) * (2), n, 1
+  a(i) = i
+end do
+EOF
+    [C, CL, CUDA].each { |lg|
+      set_lang(lg)
+      assert_subprocess_output( <<EOF, "", &block )
+for (i = 1; i <= n - (1); i += 2) {
+  a[i + 0 - (1)] = i + 0;
+  a[i + 1 - (1)] = i + 1;
+}
+for (i = 1 + ((n + 0) / (2)) * (2); i <= n; i += 1) {
+  a[i - (1)] = i;
+}
+EOF
+    }
+  end
+
   def test_for_unroll_args
     i = Int("i")
     a = Int("a", :dim => Dim(3))
@@ -259,6 +320,36 @@ EOF
 a[1 - (1)] = (1) * (2);
 a[2 - (1)] = (2) * (2);
 a[3 - (1)] = (3) * (2);
+EOF
+    }
+  end
+
+  def test_for_unroll_integer_args
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    f = For(i, 1, n) { |x| pr a[i] === i * x }
+    block = lambda { pr f.unroll(2)[3] }
+    set_lang(FORTRAN)
+    assert_subprocess_output( <<EOF, "", &block )
+do i = 1, n - (1), 2
+  a(i + 0) = (i + 0) * (3)
+  a(i + 1) = (i + 1) * (3)
+end do
+do i = 1 + ((n + 0) / (2)) * (2), n, 1
+  a(i) = (i) * (3)
+end do
+EOF
+    [C, CL, CUDA].each { |l|
+      set_lang(l)
+      assert_subprocess_output( <<EOF, "", &block )
+for (i = 1; i <= n - (1); i += 2) {
+  a[i + 0 - (1)] = (i + 0) * (3);
+  a[i + 1 - (1)] = (i + 1) * (3);
+}
+for (i = 1 + ((n + 0) / (2)) * (2); i <= n; i += 1) {
+  a[i - (1)] = (i) * (3);
+}
 EOF
     }
   end

@@ -29,7 +29,7 @@ module BOAST
     # @param [Proc,nil] block if given, will be evaluated when {pr} is called
     # @option options [#to_s] :step spcifies the increment in the for loop
     # @option options [Boolean,Hash] :openmp specifies if an OpenMP For pragma has to be generated. If a Hash is specified it conatins the OpenMP clauses and their values.
-    # @option options [Boolean] :unroll specifies if {pr} must try to unroll the loop
+    # @option options [Boolean, Integer] :unroll specifies if {pr} must try to unroll the loop
     # @option options [Array<Object>] :args arguments to be passed to the block. Will be superseded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
       super()
@@ -94,9 +94,9 @@ module BOAST
 
     # Creates a copy of this For construct with the unroll option set and returns it if it is different from the current unroll flag.
     # @return [For]
-    # @param [Boolean] flag specifying if the For should be unrolled or not
+    # @param [Boolean, Integer] flag specifying if the For should be unrolled or not
     def unroll( flag = true )
-      if flag ^ @unroll then
+      if flag != @unroll then
         opts = @options.clone
         opts[:unroll] = flag
         return For::new(@iterator, @first, @last, opts, &block)
@@ -105,9 +105,7 @@ module BOAST
       end
     end
 
-    def pr_unroll(*args, &block)
-      block = @block unless block
-      raise "Block not given!" unless block
+    def pr_unroll_true(*args, &block)
       begin
         begin
           push_env( :replace_constants => true )
@@ -150,6 +148,45 @@ module BOAST
       }
       @iterator.force_replace_constant = false
       @iterator.constant = nil
+    end
+
+    def pr_unroll_integer(*args, &block)
+      raise "Invalid unroll factor: #{@unroll}!" if @unroll < 1
+      old_step = @step
+      old_last = @last
+      @last = @last - (@unroll-1) * @step
+      @step = @step * @unroll
+      open
+      @step = old_step
+      @last = old_last
+      it = "#{@iterator}"
+      @iterator.force_replace_constant = true
+      @unroll.times { |k|
+        @iterator.constant = Int(it) + k * @step
+        block.call(*args)
+      }
+      @iterator.force_replace_constant = false
+      @iterator.constant = nil
+      close
+      old_first = @first
+      @first = @first + ((@last + (1 - @first))/(@step * @unroll))*( @step * @unroll )
+      open
+      @first = old_first
+      block.call(*args)
+      close
+    end
+
+    def pr_unroll(*args, &block)
+      block = @block unless block
+      raise "Block not given!" unless block
+      case @unroll
+      when TrueClass
+        pr_unroll_true(*args, &block)
+      when Integer
+        pr_unroll_integer(*args, &block)
+      else
+        raise "Invalid unroll factor: #{@unroll.inspect}!"
+      end
     end
 
     private :pr_unroll
