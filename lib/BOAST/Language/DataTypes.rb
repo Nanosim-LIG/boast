@@ -78,6 +78,59 @@ module BOAST
 
   end
  
+  # @!parse module VarFunctors; var_functorize Intptr; end
+  class Intptrt < DataType
+
+    attr_reader :signed
+    attr_reader :size
+    attr_reader :vector_length
+
+    def initialize(hash={})
+      if hash[:signed] != nil then
+        @signed = hash[:signed]
+      else
+        @signed = get_default_int_signed
+      end
+      @size = nil
+      @vector_length = nil
+    end
+
+    def to_hash
+      return { :signed => @signed }
+    end
+
+    def copy(options={})
+      hash = to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      return Sizet::new(hash)
+    end
+
+    def decl
+      return "integer(kind=#{get_default_int_size})" if lang == FORTRAN
+      unless @signed then
+        return "uintptr_t" if [C, CL, CUDA].include?( lang )
+      else
+        return "intptr_t" if [C, CL, CUDA].include?( lang )
+      end
+    end
+
+    def decl_ffi
+      return :intptr_t
+    end
+
+    def signed?
+      return signed
+    end
+
+    def suffix
+      s = ""
+      return s
+    end
+
+  end
+
   # @!parse module VarFunctors; var_functorize Real; end
   class Real < DataType
 

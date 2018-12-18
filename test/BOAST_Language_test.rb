@@ -45,6 +45,27 @@ class TestLanguage < Minitest::Test
     }
   end
 
+  def test_decl_intptr_t
+    block = lambda { decl Intptrt(:a) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
+    set_lang(C)
+    assert_subprocess_output( "intptr_t a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "intptr_t a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "intptr_t a;\n", "", &block )
+    block = lambda { decl Intptrt(:a, signed: false) }
+    set_lang(FORTRAN)
+    assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
+    set_lang(C)
+    assert_subprocess_output( "uintptr_t a;\n", "", &block )
+    set_lang(CUDA)
+    assert_subprocess_output( "uintptr_t a;\n", "", &block )
+    set_lang(CL)
+    assert_subprocess_output( "uintptr_t a;\n", "", &block )
+  end
+
   def test_puts_float_64
     block = lambda { puts 4.7.to_var }
     set_lang(FORTRAN)
