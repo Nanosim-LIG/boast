@@ -201,8 +201,8 @@ EOF
     set_lang(FORTRAN)
     assert_subprocess_output( <<EOF, "", &block )
 integer(kind=4) FUNCTION minimum(a, b)
-  !> This is a procedure
-  !> with two comments
+! | This is a procedure
+! | with two comments
   integer, parameter :: wp=kind(1.0d0)
   integer(kind=4), intent(in) :: a ! This is an input value
   integer(kind=4), intent(inout) :: b ! This is an inout value

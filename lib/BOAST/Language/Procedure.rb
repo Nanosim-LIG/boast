@@ -218,7 +218,7 @@ module BOAST
       increment_indent_level
       if comment_type == "SPHINX" and @properties[:comment] then
         @comment.each{|com|
-          s << indent + "!> #{com}" + "\n"
+          s << "! | #{com}" + "\n"
         }
       end
       tmp_buff = StringIO::new
