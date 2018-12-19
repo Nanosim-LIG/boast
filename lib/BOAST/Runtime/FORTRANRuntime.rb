@@ -25,11 +25,19 @@ module BOAST
             chunks = line.scan(/.{1,#{fortran_line_length-4}}/)
             s += chunks.join("&\n!$&") + "\n"
           end
-        elsif line.match(/^\s*!/) or line.match(/^\s*#include/) then
+        elsif line.length <= fortran_line_length-7 or line.match(/^\s*!/) or line.match(/^\s*#include/) then
           s += line
         else
           chunks = line.scan(/.{1,#{fortran_line_length-2}}/)
-          s += chunks.join("&\n&") + "\n"
+          sep = "&\n&"
+          chunks.each_with_index{|chunk,i|
+            if chunk.include?("!") then
+              sep = ""
+            end
+            s += chunk
+            s += sep if i < chunks.size - 1
+          }
+          s += "\n"
         end
       }
       return s
