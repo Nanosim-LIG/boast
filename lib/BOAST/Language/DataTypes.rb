@@ -131,6 +131,88 @@ module BOAST
 
   end
 
+  class Void < DataType
+
+    def initialize(hash={})
+    end
+
+    def to_hash
+      {}
+    end
+
+    def copy(hash={})
+      Void::new
+    end
+
+    def signed?
+      raise "Void cannot be completed!"
+    end
+
+    def decl
+      raise "Void is unsupported in Fortran!" if lang == FORTRAN
+      return "void" if [C, CL, CUDA].include?( lang )
+    end
+
+    def decl_ffi
+      raise "Void cannot be completed!"
+    end
+
+    def suffix
+      ""
+    end
+
+  end
+
+  # @!parse module VarFunctors; var_functorize Pointer; end
+  class Pointer < DataType
+    attr_reader :type
+    attr_reader :size
+    attr_reader :signed
+    attr_reader :vector_length
+
+    def initialize(hash={})
+      if hash[:type].nil?
+        @type = Void::new
+      else
+        if hash[:type].kind_of? Class
+          @type = hash[:type]::new
+        else
+          @type = hash[:type]
+        end
+      end
+    end
+
+    def to_hash
+      { type: @hash }
+    end
+
+    def copy(options={})
+      hash = to_hash
+      options.each { |k,v|
+        hash[k] = v
+      }
+      Pointer::new(hash)
+    end
+
+    def signed?
+    end
+
+    def decl
+#      return "#{@type.decl}, pointer" if lang == FORTRAN
+      raise "Pointers are unsupported in Fortran!" if lang == FORTRAN
+      return "#{@type.decl} *" if [C, CL, CUDA].include?( lang )
+    end
+
+    def decl_ffi
+      :pointer
+    end
+
+    def suffix
+      ""
+    end
+
+  end
+
   # @!parse module VarFunctors; var_functorize Real; end
   class Real < DataType
 

@@ -203,6 +203,18 @@ module BOAST
   set_transition(Sizet, Sizet, :default, Sizet)
   set_transition(Sizet, Int, :default, Sizet)
   set_transition(Int, Sizet, :default, Sizet)
+  set_transition(Int, Pointer, :default, Pointer)
+  set_transition(Pointer, Int, :default, Pointer)
+  set_transition(Pointer, Pointer, :default, Pointer)
+  set_transition(Sizet, Pointer, :default, Pointer)
+  set_transition(Pointer, Sizet, :default, Pointer)
+  set_transition(Sizet, Intptrt, :default, Intptrt)
+  set_transition(Intptrt, Sizet, :default, Intptrt)
+  set_transition(Intptrt, Intptrt, :default, Intptrt)
+  set_transition(Intptrt, Pointer, :default, Pointer)
+  set_transition(Pointer, Intptrt, :default, Pointer)
+  set_transition(Int, Intptrt, :default, Intptrt)
+  set_transition(Intptrt, Int, :default, Intptrt)
 
 end
 

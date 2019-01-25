@@ -49,21 +49,36 @@ class TestLanguage < Minitest::Test
     block = lambda { decl Intptrt(:a) }
     set_lang(FORTRAN)
     assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
-    set_lang(C)
-    assert_subprocess_output( "intptr_t a;\n", "", &block )
-    set_lang(CUDA)
-    assert_subprocess_output( "intptr_t a;\n", "", &block )
-    set_lang(CL)
-    assert_subprocess_output( "intptr_t a;\n", "", &block )
+    [C, CUDA, CL].each { |l|
+      set_lang l
+      assert_subprocess_output( "intptr_t a;\n", "", &block )
+    }
     block = lambda { decl Intptrt(:a, signed: false) }
     set_lang(FORTRAN)
     assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
-    set_lang(C)
-    assert_subprocess_output( "uintptr_t a;\n", "", &block )
-    set_lang(CUDA)
-    assert_subprocess_output( "uintptr_t a;\n", "", &block )
-    set_lang(CL)
-    assert_subprocess_output( "uintptr_t a;\n", "", &block )
+    [C, CUDA, CL].each { |l|
+      set_lang l
+      assert_subprocess_output( "uintptr_t a;\n", "", &block )
+    }
+  end
+
+  def test_decl_pointer
+    block = lambda { decl Pointer(:a ) }
+    [C, CUDA, CL].each { |l|
+      set_lang l
+      assert_subprocess_output( "void * a;\n", "", &block )
+    }
+    set_lang(FORTRAN)
+    assert_raises("Pointers are unsupported in Fortran!", &block )
+    push_env(:default_real_size => 8) {
+      block = lambda { decl Pointer(:a, type: Real ) }
+      [C, CUDA, CL].each { |l|
+        set_lang l
+        assert_subprocess_output( "double * a;\n", "", &block )
+      }
+      set_lang(FORTRAN)
+      assert_raises("Pointers are unsupported in Fortran!", &block )
+    }
   end
 
   def test_puts_float_64

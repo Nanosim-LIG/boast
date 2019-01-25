@@ -31,6 +31,32 @@ EOF
     end
   end
 
+  def test_pr_for_declit
+    i = Int("i")
+    n = Int("n")
+    a = Int("a", :dim => Dim(n))
+    f = For(i, 1, n, declit: true) { pr a[i] === i }
+    block = lambda { pr f }
+    begin
+      set_lang(C)
+      assert_subprocess_output( <<EOF, "", &block )
+for (int32_t i = 1; i <= n; i += 1) {
+  a[i - (1)] = i;
+}
+EOF
+      [CL, CUDA].each { |l|
+        set_lang(l)
+        assert_subprocess_output( <<EOF, "", &block )
+for (int i = 1; i <= n; i += 1) {
+  a[i - (1)] = i;
+}
+EOF
+      }
+    ensure
+      set_indent_level(0)
+    end
+  end
+
   def test_pr_block_for
     i = Int("i")
     n = Int("n")

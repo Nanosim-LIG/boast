@@ -300,7 +300,7 @@ module BOAST
       if @dimension then
         @dimension = [@dimension].flatten
       else
-        @scalar_output = true if @direction == :out or @direction == :inout
+        @scalar_output = true if (@direction == :out or @direction == :inout) and not type == Pointer
       end
 
       @type = type::new(properties)
@@ -509,7 +509,7 @@ module BOAST
         s << @dimension.reverse.collect(&:to_s).join("][")
         s << "]"
       else
-        s << " *" if __pointer?(device)
+        s << " *" if __pointer?(device) && ! @type.kind_of?(Pointer)
         if __pointer_array?(device) && __restrict? then
           if lang == CL
             s << " restrict"

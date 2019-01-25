@@ -33,7 +33,7 @@ module BOAST
     # @option options [Array<Object>] :args arguments to be passed to the block. Will be superseded by those provided by {pr}
     def initialize(iterator, first, last, options={}, &block)
       super()
-      default_options = {:step => 1}
+      default_options = {step: 1, declit: false}
       default_options.update( options )
       @options = options
       @iterator = iterator
@@ -45,6 +45,7 @@ module BOAST
       @openmp = default_options[:openmp]
       @unroll = default_options[:unroll]
       @args = default_options[:args]
+      @declit = default_options[:declit]
       if @openmp then
         if @openmp.kind_of?(Hash) then
           @openmp = OpenMP::For(@openmp)
@@ -52,24 +53,28 @@ module BOAST
           @openmp = OpenMP::For({})
         end
       end
-      push_env( :replace_constants => true ) {
-        begin
-          if @step.kind_of?(Variable) then
-            step = @step.constant
-          elsif @step.kind_of?(Expression) then
-            step = eval "#{@step}"
-          else
-            step = @step.to_i
+      unless default_options[:operator]
+        push_env( :replace_constants => true ) {
+          begin
+            if @step.kind_of?(Variable) then
+              step = @step.constant
+            elsif @step.kind_of?(Expression) then
+              step = eval "#{@step}"
+            else
+              step = @step.to_i
+            end
+            @operator = ">=" if step < 0
+          rescue
+            $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
           end
-          @operator = ">=" if step < 0
-        rescue
-          $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
-        end
-      }
+        }
+      else
+        @operator = default_options[:operator]
+      end
     end
 
     def get_c_strings
-      return { :for => '"for (#{i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
+      return { :for => '"for (#{@declit ? i.send(:decl_c_s) : i} = #{b}; #{i} #{o} #{e}; #{i} += #{s}) {"',
                :end => '"}"' }
     end
 

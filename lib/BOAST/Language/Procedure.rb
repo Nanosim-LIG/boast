@@ -151,6 +151,13 @@ module BOAST
       end
       if @properties[:return] then
         s << "#{@properties[:return].type.decl} "
+      elsif @properties[:return_type] then
+        t = @properties[:return_type]
+        if t.kind_of? Class
+          s << "#{t.new.decl} "
+        else
+          s << "#{t.decl} "
+        end
       else
         s << "void "
       end

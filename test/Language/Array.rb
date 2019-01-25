@@ -165,7 +165,7 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "deallocate(a)\n", "", &block3 )
     set_lang(C)
     assert_subprocess_output( "int32_t * a;\n", "", &block )
-    assert_subprocess_output( "a = (int32_t *)malloc((sizeof(int32_t)) * (n1)*(11));\n", "", &block2 )
+    assert_subprocess_output( "a = (int32_t *)(malloc((sizeof(int32_t)) * (n1)*(11)));\n", "", &block2 )
     assert_subprocess_output( "free(a);\n", "", &block3 )
   end
 
