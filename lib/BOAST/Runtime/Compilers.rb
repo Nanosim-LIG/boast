@@ -57,7 +57,7 @@ module BOAST
       probes.each { |p|
         cflags += " #{p.cflags}" if p.respond_to?(:cflags)
       }
-      if @architecture == SPARC || @architecture = PPC then
+      if @architecture == SPARC || @architecture == PPC then
         cflags += " -mcpu=#{get_model}"
       else
         cflags += " -march=#{get_model}"
@@ -123,7 +123,7 @@ module BOAST
     def setup_fortran_compiler(options, runner, probes)
       f_compiler = options[:FC]
       fcflags = options[:FCFLAGS]
-      if @architecture == SPARC || @architecture = PPC then
+      if @architecture == SPARC || @architecture == PPC then
         fcflags += " -mcpu=#{get_model}"
       else
         fcflags += " -march=#{get_model}"
@@ -182,7 +182,7 @@ module BOAST
 
     def setup_linker(options, probes)
       ldflags = options[:LDFLAGS]
-      if @architecture == SPARC || @architecture = PPC then
+      if @architecture == SPARC || @architecture == PPC then
         ldflags += " -mcpu=#{get_model}"
       else
         ldflags += " -march=#{get_model}"
