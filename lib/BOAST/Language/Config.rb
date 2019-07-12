@@ -4,7 +4,7 @@ require 'yaml'
 module BOAST
 
   LANGUAGES = ['FORTRAN', 'C', 'CL', 'CUDA']
-  ARCHITECTURES = ['X86', 'ARM', 'MPPA', 'SPARC']
+  ARCHITECTURES = ['X86', 'ARM', 'MPPA', 'SPARC', 'PPC']
 
   LANGUAGES.each_with_index { |l, i|
     const_set(l, i)
@@ -179,6 +179,7 @@ module BOAST
     return architecture if architecture
     return ARM if YAML::load( OS.report )["host_cpu"].match(/arm|aarch64/)
     return SPARC if YAML::load( OS.report )["host_cpu"].match(/sparc/)
+    return PPC if YAML::load( OS.report )["host_cpu"].match(/powerpc/)
     return X86
   end
 
