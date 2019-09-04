@@ -2,8 +2,16 @@ require 'BOAST'
 require 'narray_ffi'
 
 include BOAST
+
+real_size = 4
 BOAST.set_array_start(0)
-BOAST.set_default_real_size(4)
+BOAST.set_default_real_size(real_size)
+
+narra_types = {
+  8 => NArray::FLOAT,
+  4 => NArray::SFLOAT
+}
+
 
 BOAST.set_lang( BOAST::CL )
 def kernel_copy(vector_length: 2, block_size_x: 1)
@@ -26,20 +34,26 @@ def kernel_copy(vector_length: 2, block_size_x: 1)
   p.ckernel
 end
 
-n = 1<<23
+n = 1<<28
+n = 12_800_000/(real_size/4)
 
-a = ANArray.sfloat(32, n).random!
-b = ANArray.sfloat(32, n).random!
+a = ANArray.new(narra_types[real_size],32, n).random!
+b = ANArray.new(narra_types[real_size],32, n).random!
+
+vector_lengths = [1,2]
+vector_lengths.push 4 if real_size == 4
 
 opt_space = OptimizationSpace::new(
-  vector_length: [1,2,4,8,16],
+  vector_length: vector_lengths,
   local_work_size: [8, 16, 32, 64, 128, 256],
-  block_size_x: [1, 2, 4, 8, 16]
+  block_size_x: [1, 2, 4]
 )
 
 optimizer = BruteForceOptimizer::new(opt_space, :randomize => true)
 
-puts optimizer.optimize { |opt|
+repeat = 100
+
+config, time = optimizer.optimize { |opt|
   puts opt
   vector_length = opt[:vector_length]
   local_work_size = opt[:local_work_size]
@@ -56,11 +70,15 @@ puts optimizer.optimize { |opt|
   puts "Error: #{err.abs.max}"
  
   results = 5.times.collect { 
-    k.run(a, b, global_work_size: [n/(vector_length*block_size_x)], local_work_size: [local_work_size] )
+    k.run(a, b, global_work_size: [n/(vector_length*block_size_x)], local_work_size: [local_work_size], repeat: repeat )
   }
   results.sort! { |r1, r2| r1[:duration] <=> r2[:duration] }
   res = results.first
 
-  puts "Bandwidth = #{n*4*2/(res[:duration]*1e9)} GB/s"
+  puts "Bandwidth = #{n*real_size*2*repeat/(res[:duration]*1e9)} GB/s"
   res[:duration]
 }
+
+puts config
+puts "Bandwidth = #{n*real_size*2*repeat/(time*1e9)} GB/s"
+
