@@ -15,6 +15,19 @@ end
 
 class TestProcedure < Minitest::Test
 
+  def test_size_t
+    a = Int(:a, :dim => Dim(1), :size => 8, :dir => :inout)
+    b = Sizet(:b)
+    p = Procedure("inc", [a, b]) { pr a[1] === b  }
+    [C].each { |l|
+      ah = NArray::int(1).fill!(0)
+      set_lang(l)
+      k = p.ckernel
+      k.run(ah, 3)
+      assert_equal(3, ah[0])
+    }
+  end
+
   def test_repeat
     a = Int(:a, :dim => Dim(1), :dir => :inout)
     p = Procedure("inc", [a]) { pr a[1] === a[1] + 1 }

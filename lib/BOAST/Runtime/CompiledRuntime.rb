@@ -370,6 +370,10 @@ EOF
         (str_par === FuncCall::new("NUM2LONG", ruby_param)).pr if param.type.size == 8
       when Real
         (str_par === FuncCall::new("NUM2DBL", ruby_param)).pr
+      when Sizet
+        (str_par === Ternary::new(FuncCall::new("sizeof", "size_t") == 4, FuncCall::new("NUM2INT", ruby_param), FuncCall::new("NUM2LONG", ruby_param))).pr
+      else
+        raise "Unsupported type as kernel argument:#{param.type}!"
       end
     end
 
