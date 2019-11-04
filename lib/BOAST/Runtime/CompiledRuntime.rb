@@ -340,11 +340,11 @@ EOF
 
     def fill_param_struct
       pars = collect_kernel_params
-      pars.push Int("_boast_repeat")
-      pars.push Int("_boast_coexecute")
-      pars.push CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [Int(:dummy)]) if @probes.include?(TimerProbe)
-      pars.push CStruct("_boast_synchro", :type_name => "_boast_synchro_struct", :members => [Int(:dummy)]) unless executable?
-      @param_struct = CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
+      pars.push BOAST.Int("_boast_repeat")
+      pars.push BOAST.Int("_boast_coexecute")
+      pars.push BOAST.CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [BOAST.Int(:dummy)]) if @probes.include?(TimerProbe)
+      pars.push BOAST.CStruct("_boast_synchro", :type_name => "_boast_synchro_struct", :members => [BOAST.Int(:dummy)]) unless executable?
+      @param_struct = BOAST.CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
     end
 
     def fill_decl_module_params
@@ -382,9 +382,9 @@ EOF
   if param.dimension then
     "#{str_par} = (void *)RSTRING_PTR(_boast_rb_ptr)"
   elsif param.vector_scalar? then
-    (str_par === param.copy("*(#{param.type.decl} *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => nil)).to_s
+    (str_par === param.copy("*(#{param.type.decl} *)RSTRING_PTR(_boast_rb_ptr)", :dimension => BOAST.Dim(), :vector_length => nil)).to_s
   else
-    (str_par === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => Dim(), :vector_length => nil)).to_s
+    (str_par === param.copy("*(void *)RSTRING_PTR(_boast_rb_ptr)", :dimension => BOAST.Dim(), :vector_length => nil)).to_s
   end
     };
   } else if ( IsNArray(_boast_rb_ptr) ) {
@@ -394,9 +394,9 @@ EOF
   if param.dimension then
     "#{str_par} = (void *) _boast_n_ary->ptr"
   elsif param.vector_scalar? then
-    (str_par === param.copy("*(#{param.type.decl} *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => nil)).to_s
+    (str_par === param.copy("*(#{param.type.decl} *) _boast_n_ary->ptr", :dimension => BOAST.Dim(), :vector_length => nil)).to_s
   else
-    (str_par === param.copy("*(void *) _boast_n_ary->ptr", :dimension => Dim(), :vector_length => nil)).to_s
+    (str_par === param.copy("*(void *) _boast_n_ary->ptr", :dimension => BOAST.Dim(), :vector_length => nil)).to_s
   end
     };
   } else {
@@ -477,7 +477,7 @@ EOF
     end
 
     def create_procedure_call
-      If("_boast_params._boast_coexecute" => lambda {
+      BOAST.If("_boast_params._boast_coexecute" => lambda {
         create_procedure_wrapper_call
       }, :else => lambda {
         TimerProbe.start if @probes.include?(TimerProbe)
