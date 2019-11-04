@@ -6,7 +6,8 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/Nanosim-LIG/boast"
   s.summary = "BOAST is a computing kernel metaprogramming tool."
   s.description = "BOAST aims at providing a framework to metaprogram, benchmark and validate computing kernels"
-  s.files = Dir['BOAST.gemspec', 'LICENSE', 'README.md', 'lib/**/*']
+  s.files = Dir['BOAST.gemspec', 'LICENSE', 'README.md', 'lib/**/*', 'bin/kernel-replay']
+  s.executables << 'kernel-replay'
   s.has_rdoc = false
   s.license = 'BSD-2-Clause'
   s.required_ruby_version = '>= 2.0.0'

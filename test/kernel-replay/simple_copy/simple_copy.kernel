@@ -1,0 +1,20 @@
+---
+name: simple_copy
+arguments:
+ - name: n
+   type: size
+ - name: a
+   type: double
+   array: true
+   direction: in
+ - name: b
+   type: double
+   array: true
+   direction: out
+instances:
+ - language: C
+   file: simple_copy.c
+ - language: FORTRAN
+   file: simple_copy.f
+data_sets:
+ - ./data

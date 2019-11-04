@@ -1,0 +1,186 @@
+#!/usr/bin/env ruby
+require 'optparse'
+require 'yaml'
+require 'narray_ffi'
+require 'BOAST'
+
+BOAST.set_array_start(0)
+BOAST.set_default_int_size(8)
+
+module BOAST
+  module KernelReplay
+
+    TYPE_MAP = {
+      "double" => BOAST::Real::new(size: 8),
+      "float" => BOAST::Real::new(size: 4),
+      "size" => BOAST::Sizet::new(signed: false)
+    }
+
+    NARRAY_TYPE_MAP = {
+      "char" => NArray::BYTE,
+      "short" => NArray::SINT,
+      "int" => NArray::INT,
+      "float" => NArray::SFLOAT,
+      "double" => NArray::FLOAT
+    }
+
+    UNPACK_TYPE_MAP = {
+      "double" => "D",
+      "float" => "F",
+      "size" => "J"
+    }
+
+    def self.create_arguments(arguments)
+      arguments.collect { |arg|
+        options = {}
+        name = arg["name"]
+        array = arg["array"]
+        direction = arg["direction"]
+        type = TYPE_MAP[arg["type"]]
+        raise "Unknown type #{arg["type"]}!" unless type
+        options.merge! type.to_hash
+        options[:dim] = BOAST::Dimension::new() if array
+        if direction
+          options[:dir] = direction.to_sym
+        elsif array
+          options[:dir] = :inout
+        else
+          options[:dir] = :in
+        end
+        BOAST::Variable( name, type.class, **options)
+      }
+    end
+
+    def self.create_kernel(name, instance, arguments, returns: nil)
+      instance_arguments = arguments.dup
+      instance_arguments.merge! instance["arguments"] if instance["arguments"]
+      args = BOAST::KernelReplay::create_arguments(instance_arguments)
+      procedure = BOAST::Procedure::new( name, args, return: returns )
+      str = nil
+      File.open(instance["file"], "r") { |f| str = StringIO::new(f.read) }
+      k = BOAST::CKernel::new(code: str, lang: BOAST::const_get(instance["language"]))
+      k.procedure = procedure
+      k
+    end
+
+    def self.create_array_call_argument(arg, directory)
+      filename = File::join(directory, "#{arg["name"]}.in")
+      data = File::read(filename, mode: "rb")
+      if (type = NARRAY_TYPE_MAP[arg["type"]])
+        n_a = NArray::to_na(data, type)
+      else
+        data
+      end
+    end
+
+    def self.create_scalar_call_argument(arg, directory)
+      filename = File::join(directory, "#{arg["name"]}.in")
+      if (type = UNPACK_TYPE_MAP[arg["type"]])
+        File::read(filename, mode: "rb").unpack("#{type}").first
+      else
+        "Unsupported Scalar type: #{arg["type"]}!"
+      end
+    end
+
+    def self.create_array_output_argument(arg, directory)
+      if arg["direction"] == "in"
+        filename = File::join(directory, "#{arg["name"]}.in")
+      else
+        filename = File::join(directory, "#{arg["name"]}.out")
+      end
+      data = File::read(filename, mode: "rb")
+      if (type = NARRAY_TYPE_MAP[arg["type"]])
+        n_a = NArray::to_na(data, type)
+      else
+        data
+      end
+    end
+
+    def self.create_scalar_output_argument(arg, directory)
+      if ["inout", "out"].include? arg["direction"]
+        filename = File::join(directory, "#{arg["name"]}.out")
+      else
+        filename = File::join(directory, "#{arg["name"]}.in")
+      end
+      if (type = UNPACK_TYPE_MAP[arg["type"]])
+        File::read(filename, mode: "rb").unpack("#{type}").first
+      else
+        "Unsupported Scalar type: #{arg["type"]}!"
+      end
+    end
+
+    def self.create_call_arguments(arguments, directory)
+      arguments.collect { |arg|
+        array = arg["array"]
+        if array
+          create_array_call_argument(arg, directory)
+        else
+          create_scalar_call_argument(arg, directory)
+        end
+      }
+    end
+
+    def self.create_output_arguments(arguments, directory)
+      arguments.collect { |arg|
+        array = arg["array"]
+        if array
+          create_array_output_argument(arg, directory)
+        else
+          create_scalar_output_argument(arg, directory)
+        end
+      }
+    end
+
+    def self.compare_arguments(arguments, input, output)
+      arguments.each { |arg|
+        
+      }
+    end
+
+  end
+end
+
+$options = {}
+
+OptionParser.new do |opts|
+  opts.banner = "kernel-replay [options] kernel_file"
+
+  opts.on("-c", "--[no-]check", "Check kernel run results") do |c|
+    $options[:check] = c
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+
+end.parse!
+
+input_file = ARGV[0]
+raise "Invalid file #{input_file}" unless File::file?(input_file)
+
+kernel_file = YAML::load_file(input_file)
+
+directory = File.dirname(input_file)
+Dir.chdir(directory)
+
+p name = kernel_file["name"]
+p arguments = kernel_file["arguments"]
+
+kernel_file["instances"].each { |instance|
+  p instance
+  k = BOAST::KernelReplay::create_kernel(name, instance, arguments)
+  k.build
+  kernel_file["data_sets"].each { |set|
+    puts "\t#{set}:"
+    Dir::new(set).reject { |d| d == ".." || d == "." }.each { |dir|
+      puts "\t\t#{dir}:"
+      args = BOAST::KernelReplay::create_call_arguments(arguments, File.join(set, dir))
+      ret = k.run(*args)
+      puts "\t\t#{ret}"
+      if $options[:check]
+        out_args = BOAST::KernelReplay::create_output_arguments(arguments, File.join(set, dir))
+      end
+    }
+  }
+}
