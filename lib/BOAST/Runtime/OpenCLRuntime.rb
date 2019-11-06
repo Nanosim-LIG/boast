@@ -151,12 +151,13 @@ def self.run(*args)
   unless lws then
     lws = opts[:block_size]
   end
-  event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+  gwo = opts[:global_work_offset]
+  event1 = @queue.enqueue_NDrange_kernel(@kernel, gws, local_work_size: lws, global_work_offset: gwo)
   if opts[:repeat] and opts[:repeat] > 1 then
     (opts[:repeat] - 2).times {
-      @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+      @queue.enqueue_NDrange_kernel(@kernel, gws, local_work_size: lws, global_work_offset: gwo)
     }
-    event2 = @queue.enqueue_NDrange_kernel(@kernel, gws, :local_work_size => lws)
+    event2 = @queue.enqueue_NDrange_kernel(@kernel, gws, local_work_size: lws, global_work_offset: gwo)
   end
   @procedure.parameters.each_index { |i|
     if @procedure.parameters[i].dimension and (@procedure.parameters[i].direction == :inout or @procedure.parameters[i].direction == :out) then
