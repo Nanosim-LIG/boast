@@ -131,10 +131,40 @@ module BOAST
       }
     end
 
-    def self.compare_arguments(arguments, input, output)
-      arguments.each { |arg|
-        
+    def self.compare_array_arguments(arg, input, output, ret, res)
+      case input
+      when String
+        type = UNPACK_TYPE_MAP[arg["type"]]
+        raise "Unsupported type #{arg["type"]}!" unless type
+        input_arr = input.unpack("#{type}*")
+        output_arr = output.unpack("#{type}*")
+        err = input_arr.size.times.collect { |i| (input_arr[i] - output_arr[i]).abs }.max
+      when NArray
+        err = (output - input).abs.max
+      else
+        raise "Unsupported array format #{input.class}!"
+      end
+      if arg["direction"] != "in" || err > 0.0
+        res[arg["name"]] = err
+      end
+    end
+
+    def self.compare_scalar_arguments(arg, input, output, ret, res)
+      err = (input - output).abs
+      res[arg["name"]] = err if ["inout", "out"].include?(arg["direction"]) || err > 0.0
+    end
+
+    def self.compare_arguments(arguments, inputs, outputs, ret)
+      res = {}
+      arguments.each_with_index { |arg, i|
+        array = arg["array"]
+        if array
+          compare_array_arguments(arg, inputs[i], outputs[i], ret, res)
+        else
+          compare_scalar_arguments(arg, inputs[i], outputs[i], ret, res)
+        end
       }
+      return res
     end
 
   end
@@ -147,6 +177,10 @@ OptionParser.new do |opts|
 
   opts.on("-c", "--[no-]check", "Check kernel run results") do |c|
     $options[:check] = c
+  end
+
+  opts.on("-b", "--benchmark=REPETITIONS", "Benckmark kernel") do |b|
+    $options[:benchmark] = b.to_i
   end
 
   opts.on("-h", "--help", "Prints this help") do
@@ -180,6 +214,19 @@ kernel_file["instances"].each { |instance|
       puts "\t\t#{ret}"
       if $options[:check]
         out_args = BOAST::KernelReplay::create_output_arguments(arguments, File.join(set, dir))
+        res = BOAST::KernelReplay::compare_arguments(arguments, args, out_args, ret)
+        puts "\t\t#{res}"
+      end
+      if $options[:benchmark]
+        arguments.each { |arg|
+          if arg["array"] && arg["direction"] != "in" &&  arg["direction"] != "out"
+            warn "\t\tArgument #{arg["name"]} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
+          end
+        }
+        rets = $options[:benchmark].times.collect {
+          k.run(*args)[:duration]
+        }
+        puts "\t\tBest run: #{rets.min} s"
       end
     }
   }
