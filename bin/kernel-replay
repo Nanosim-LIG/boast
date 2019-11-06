@@ -31,9 +31,8 @@ module BOAST
     }
 
     def self.create_arguments(arguments)
-      arguments.collect { |arg|
+      arguments.collect { |name, arg|
         options = {}
-        name = arg["name"]
         array = arg["array"]
         direction = arg["direction"]
         type = TYPE_MAP[arg["type"]]
@@ -53,7 +52,7 @@ module BOAST
 
     def self.create_kernel(name, instance, arguments, returns: nil)
       instance_arguments = arguments.dup
-      instance_arguments.merge! instance["arguments"] if instance["arguments"]
+      instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
       args = BOAST::KernelReplay::create_arguments(instance_arguments)
       procedure = BOAST::Procedure::new( name, args, return: returns )
       str = nil
@@ -63,8 +62,8 @@ module BOAST
       k
     end
 
-    def self.create_array_call_argument(arg, directory)
-      filename = File::join(directory, "#{arg["name"]}.in")
+    def self.create_array_call_argument(name, arg, directory)
+      filename = File::join(directory, "#{name}.in")
       data = File::read(filename, mode: "rb")
       if (type = NARRAY_TYPE_MAP[arg["type"]])
         n_a = NArray::to_na(data, type)
@@ -73,8 +72,8 @@ module BOAST
       end
     end
 
-    def self.create_scalar_call_argument(arg, directory)
-      filename = File::join(directory, "#{arg["name"]}.in")
+    def self.create_scalar_call_argument(name, arg, directory)
+      filename = File::join(directory, "#{name}.in")
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
       else
@@ -82,11 +81,11 @@ module BOAST
       end
     end
 
-    def self.create_array_output_argument(arg, directory)
+    def self.create_array_output_argument(name, arg, directory)
       if arg["direction"] == "in"
-        filename = File::join(directory, "#{arg["name"]}.in")
+        filename = File::join(directory, "#{name}.in")
       else
-        filename = File::join(directory, "#{arg["name"]}.out")
+        filename = File::join(directory, "#{name}.out")
       end
       data = File::read(filename, mode: "rb")
       if (type = NARRAY_TYPE_MAP[arg["type"]])
@@ -96,11 +95,11 @@ module BOAST
       end
     end
 
-    def self.create_scalar_output_argument(arg, directory)
+    def self.create_scalar_output_argument(name, arg, directory)
       if ["inout", "out"].include? arg["direction"]
-        filename = File::join(directory, "#{arg["name"]}.out")
+        filename = File::join(directory, "#{name}.out")
       else
-        filename = File::join(directory, "#{arg["name"]}.in")
+        filename = File::join(directory, "#{name}.in")
       end
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
@@ -109,29 +108,70 @@ module BOAST
       end
     end
 
-    def self.create_call_arguments(arguments, directory)
-      arguments.collect { |arg|
+    def self.create_opencl_enqueue_argument(arg, directory)
+      case arg
+        when Numeric
+          return [arg]
+        when Array
+          return arg
+        when String
+          filename = File::join(directory, arg)
+          if File.exist?(filename)
+            return File::read(filename, mode: "rb").unpack("J*")
+          else
+            return nil
+          end
+        else
+        raise "Unsupported argument class for OpenCL #{arg.class}!"
+      end
+    end
+
+    def self.create_opencl_enqueue_arguments(instance, directory)
+      gws = "global_work_size"
+      gws = instance["global_work_size"] if instance["global_work_size"]
+      lws = "local_work_size"
+      lws = instance["local_work_size"] if instance["local_work_size"]
+      gwo = "global_work_offset"
+      gwo = instance["global_work_offset"] if instance["global_work_offset"]
+      opts = {}
+      opts[:global_work_size] = create_opencl_enqueue_argument(gws, directory)
+      opts[:local_work_size] = create_opencl_enqueue_argument(lws, directory)
+      opts[:global_work_offset] = create_opencl_enqueue_argument(gwo, directory)
+      opts
+    end
+
+    def self.create_call_arguments(instance, arguments, directory)
+      instance_arguments = arguments.dup
+      instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
+      call_args = instance_arguments.collect { |name, arg|
+        next unless arg
         array = arg["array"]
         if array
-          create_array_call_argument(arg, directory)
+          create_array_call_argument(name, arg, directory)
         else
-          create_scalar_call_argument(arg, directory)
+          create_scalar_call_argument(name, arg, directory)
+        end
+      }
+      if instance["language"] == "CL"
+        call_args.push create_opencl_enqueue_arguments(instance, directory)
+      end
+      call_args
+    end
+
+    def self.create_output_arguments(instance, arguments, directory)
+      instance_arguments = arguments.dup
+      instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
+      instance_arguments.collect { |name, arg|
+        array = arg["array"]
+        if array
+          create_array_output_argument(name, arg, directory)
+        else
+          create_scalar_output_argument(name, arg, directory)
         end
       }
     end
 
-    def self.create_output_arguments(arguments, directory)
-      arguments.collect { |arg|
-        array = arg["array"]
-        if array
-          create_array_output_argument(arg, directory)
-        else
-          create_scalar_output_argument(arg, directory)
-        end
-      }
-    end
-
-    def self.compare_array_arguments(arg, input, output, ret, res)
+    def self.compare_array_arguments(name, arg, input, output, ret, res)
       case input
       when String
         type = UNPACK_TYPE_MAP[arg["type"]]
@@ -145,23 +185,25 @@ module BOAST
         raise "Unsupported array format #{input.class}!"
       end
       if arg["direction"] != "in" || err > 0.0
-        res[arg["name"]] = err
+        res[name] = err
       end
     end
 
-    def self.compare_scalar_arguments(arg, input, output, ret, res)
+    def self.compare_scalar_arguments(name, arg, input, output, ret, res)
       err = (input - output).abs
-      res[arg["name"]] = err if ["inout", "out"].include?(arg["direction"]) || err > 0.0
+      res[name] = err if ["inout", "out"].include?(arg["direction"]) || err > 0.0
     end
 
-    def self.compare_arguments(arguments, inputs, outputs, ret)
+    def self.compare_arguments(instance, arguments, inputs, outputs, ret)
       res = {}
-      arguments.each_with_index { |arg, i|
+      instance_arguments = arguments.dup
+      instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
+      instance_arguments.each_with_index { |(name, arg), i|
         array = arg["array"]
         if array
-          compare_array_arguments(arg, inputs[i], outputs[i], ret, res)
+          compare_array_arguments(name, arg, inputs[i], outputs[i], ret, res)
         else
-          compare_scalar_arguments(arg, inputs[i], outputs[i], ret, res)
+          compare_scalar_arguments(name, arg, inputs[i], outputs[i], ret, res)
         end
       }
       return res
@@ -209,18 +251,18 @@ kernel_file["instances"].each { |instance|
     puts "\t#{set}:"
     Dir::new(set).reject { |d| d == ".." || d == "." }.each { |dir|
       puts "\t\t#{dir}:"
-      args = BOAST::KernelReplay::create_call_arguments(arguments, File.join(set, dir))
+      args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
       ret = k.run(*args)
       puts "\t\t#{ret}"
       if $options[:check]
-        out_args = BOAST::KernelReplay::create_output_arguments(arguments, File.join(set, dir))
-        res = BOAST::KernelReplay::compare_arguments(arguments, args, out_args, ret)
+        out_args = BOAST::KernelReplay::create_output_arguments(instance, arguments, File.join(set, dir))
+        res = BOAST::KernelReplay::compare_arguments(instance, arguments, args, out_args, ret)
         puts "\t\t#{res}"
       end
       if $options[:benchmark]
-        arguments.each { |arg|
+        arguments.each { |name, arg|
           if arg["array"] && arg["direction"] != "in" &&  arg["direction"] != "out"
-            warn "\t\tArgument #{arg["name"]} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
+            warn "\t\tArgument #{name} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
           end
         }
         rets = $options[:benchmark].times.collect {

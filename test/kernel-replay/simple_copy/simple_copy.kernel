@@ -1,20 +1,25 @@
 ---
 name: simple_copy
 arguments:
- - name: n
-   type: size
- - name: a
-   type: double
-   array: true
-   direction: in
- - name: b
-   type: double
-   array: true
-   direction: out
+  n:
+    type: size
+  a:
+    type: double
+    array: true
+    direction: in
+  b:
+    type: double
+    array: true
+    direction: out
 instances:
- - language: C
-   file: simple_copy.c
- - language: FORTRAN
-   file: simple_copy.f
+  - language: C
+    file: simple_copy.c
+  - language: FORTRAN
+    file: simple_copy.f
+  - language: CL
+    file: simple_copy.cl
+    arguments:
+      n:
+    global_work_size: n.in
 data_sets:
- - ./data
+  - ./data
