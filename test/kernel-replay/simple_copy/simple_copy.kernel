@@ -21,5 +21,10 @@ instances:
     arguments:
       n:
     global_work_size: n.in
+  - language: CUDA
+    file: simple_copy.cu
+    arguments:
+      n:
+    global_work_size: n.in
 data_sets:
   - ./data

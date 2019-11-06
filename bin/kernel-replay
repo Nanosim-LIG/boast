@@ -126,17 +126,23 @@ module BOAST
       end
     end
 
-    def self.create_opencl_enqueue_arguments(instance, directory)
+    def self.create_gpu_enqueue_arguments(instance, directory)
       gws = "global_work_size"
       gws = instance["global_work_size"] if instance["global_work_size"]
       lws = "local_work_size"
       lws = instance["local_work_size"] if instance["local_work_size"]
       gwo = "global_work_offset"
       gwo = instance["global_work_offset"] if instance["global_work_offset"]
+      bn  = "block_number"
+      bn  = instance["block_number"] if instance["block_number"]
+      bs  = "block_size"
+      bs  = instance["block_size"] if instance["block_size"]
       opts = {}
       opts[:global_work_size] = create_opencl_enqueue_argument(gws, directory)
       opts[:local_work_size] = create_opencl_enqueue_argument(lws, directory)
       opts[:global_work_offset] = create_opencl_enqueue_argument(gwo, directory)
+      opts[:block_number] = create_opencl_enqueue_argument(bn, directory)
+      opts[:block_size] = create_opencl_enqueue_argument(bs, directory)
       opts
     end
 
@@ -152,8 +158,8 @@ module BOAST
           create_scalar_call_argument(name, arg, directory)
         end
       }
-      if instance["language"] == "CL"
-        call_args.push create_opencl_enqueue_arguments(instance, directory)
+      if ["CL", "CUDA"].include? instance["language"]
+        call_args.push create_gpu_enqueue_arguments(instance, directory)
       end
       call_args
     end
@@ -212,13 +218,34 @@ module BOAST
   end
 end
 
-$options = {}
+$options = {
+  fortran: true,
+  c: true,
+  cuda: false,
+  opencl: true
+}
 
 OptionParser.new do |opts|
   opts.banner = "kernel-replay [options] kernel_file"
 
   opts.on("-c", "--[no-]check", "Check kernel run results") do |c|
     $options[:check] = c
+  end
+
+  opts.on("--[no-]cuda", "Enable/disable CUDA") do |c|
+    $options[:cuda] = c
+  end
+
+  opts.on("--[no-]fortran", "Enable/disable FORTRAN") do |c|
+    $options[:fortran] = c
+  end
+
+  opts.on("--[no-]c", "Enable/disable C") do |c|
+    $options[:c] = c
+  end
+
+  opts.on("--[no-]opencl", "Enable/disable OpenCL") do |c|
+    $options[:opencl] = c
   end
 
   opts.on("-b", "--benchmark=REPETITIONS", "Benckmark kernel") do |b|
@@ -244,31 +271,45 @@ p name = kernel_file["name"]
 p arguments = kernel_file["arguments"]
 
 kernel_file["instances"].each { |instance|
+  case instance["language"]
+  when "CUDA"
+    next unless $options[:cuda]
+  when "CL"
+    next unless $options[:opencl]
+  when "C"
+    next unless $options[:c]
+  when "FORTRAN"
+    next unless $options[:fortran]
+  end
   p instance
   k = BOAST::KernelReplay::create_kernel(name, instance, arguments)
   k.build
   kernel_file["data_sets"].each { |set|
     puts "\t#{set}:"
     Dir::new(set).reject { |d| d == ".." || d == "." }.each { |dir|
-      puts "\t\t#{dir}:"
-      args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
-      ret = k.run(*args)
-      puts "\t\t#{ret}"
-      if $options[:check]
-        out_args = BOAST::KernelReplay::create_output_arguments(instance, arguments, File.join(set, dir))
-        res = BOAST::KernelReplay::compare_arguments(instance, arguments, args, out_args, ret)
-        puts "\t\t#{res}"
-      end
-      if $options[:benchmark]
-        arguments.each { |name, arg|
-          if arg["array"] && arg["direction"] != "in" &&  arg["direction"] != "out"
-            warn "\t\tArgument #{name} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
-          end
-        }
-        rets = $options[:benchmark].times.collect {
-          k.run(*args)[:duration]
-        }
-        puts "\t\tBest run: #{rets.min} s"
+      begin
+        puts "\t\t#{dir}:"
+        args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
+        ret = k.run(*args)
+        puts "\t\t#{ret}"
+        if $options[:check]
+          out_args = BOAST::KernelReplay::create_output_arguments(instance, arguments, File.join(set, dir))
+          res = BOAST::KernelReplay::compare_arguments(instance, arguments, args, out_args, ret)
+          puts "\t\t#{res}"
+        end
+        if $options[:benchmark]
+          arguments.each { |name, arg|
+            if arg["array"] && arg["direction"] != "in" &&  arg["direction"] != "out"
+              warn "\t\tArgument #{name} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
+            end
+          }
+          rets = $options[:benchmark].times.collect {
+            k.run(*args)[:duration]
+          }
+          puts "\t\tBest run: #{rets.min} s"
+        end
+      rescue RuntimeError => e
+        puts e
       end
     }
   }
