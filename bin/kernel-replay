@@ -13,7 +13,8 @@ module BOAST
     TYPE_MAP = {
       "double" => BOAST::Real::new(size: 8),
       "float" => BOAST::Real::new(size: 4),
-      "size" => BOAST::Sizet::new(signed: false)
+      "size" => BOAST::Sizet::new(signed: false),
+      "uint" => BOAST::Int::new(size: 4, signed: false)
     }
 
     NARRAY_TYPE_MAP = {
@@ -27,7 +28,9 @@ module BOAST
     UNPACK_TYPE_MAP = {
       "double" => "D",
       "float" => "F",
+      "uint" => "L",
       "size" => "J"
+
     }
 
     def self.create_arguments(arguments)
