@@ -289,7 +289,7 @@ kernel_file["instances"].each { |instance|
   k.build
   kernel_file["data_sets"].each { |set|
     puts "\t#{set}:"
-    Dir::new(set).reject { |d| d == ".." || d == "." }.each { |dir|
+    Dir::new(set).reject { |d| d == ".." || d == "." || !Dir.exist?(File::join(set, d)) }.each { |dir|
       begin
         puts "\t\t#{dir}:"
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
