@@ -24,6 +24,7 @@ module BOAST
     attr_accessor :kernels
     attr_accessor :cost_function
     attr_accessor :includes
+    attr_accessor :globals
 
     # Creates a new CKernel object. BOAST output is redirected to the CKernel. If the chain_code state is set the current BOAST output, as returned by {BOAST.get_output}, is used.
     # @param [Hash] options contains named options
@@ -59,7 +60,10 @@ module BOAST
       end
       @includes = []
       @includes = [options[:includes]].flatten if options[:includes]
+      @globals = []
+      @globals = [options[:globals]].flatten if options[:globals]
 
+      raise "Globals are unsupported in FORTRAN and OpenCL!" if [FORTRAN, CL].include?(@lang) && @globals != []
       case @lang
       when CL
         extend OpenCLRuntime

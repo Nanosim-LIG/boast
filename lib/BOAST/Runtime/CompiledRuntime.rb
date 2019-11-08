@@ -235,11 +235,13 @@ EOF
 VALUE #{module_name} = Qnil;
 
 static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
+static VALUE method_set_globals(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self);
 
 void Init_#{module_name}();
 void Init_#{module_name}() {
   #{module_name} = rb_define_module("#{module_name}");
   rb_define_method(#{module_name}, "__run", method_run, -1);
+  rb_define_method(#{module_name}, "__set_globals", method_set_globals, -1);
 }
 
 static VALUE _boast_check_get_options(int _boast_argc, VALUE *_boast_argv);
@@ -345,6 +347,17 @@ EOF
       pars.push BOAST.CStruct("_boast_timer", :type_name => "_boast_timer_struct", :members => [BOAST.Int(:dummy)]) if @probes.include?(TimerProbe)
       pars.push BOAST.CStruct("_boast_synchro", :type_name => "_boast_synchro_struct", :members => [BOAST.Int(:dummy)]) unless executable?
       @param_struct = BOAST.CStruct("_boast_params", :type_name => "_boast_#{@procedure.name}_params", :members => pars)
+    end
+
+    def define_globals
+    end
+
+    def create_set_globals
+      get_output.print <<EOF
+static VALUE method_set_globals(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {
+  return Qnil;
+}
+EOF
     end
 
     def fill_decl_module_params
@@ -712,6 +725,10 @@ EOF
 
       param_struct.type.define
 
+      define_globals
+
+      create_set_globals
+
       create_wrapper
 
       get_output.puts "static VALUE method_run(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {"
@@ -910,6 +927,13 @@ EOF
 
     end
 
+    def define_set_globals_method
+      define_singleton_method(:set_globals) { |*args, **options, &block|
+        raise "Wrong number of globals for #{@procedure.name} (#{args.length} for #{@globals.size})" if args.length != @globals.size
+        __set_globals(*args, options, &block)
+      }
+    end
+
     public
 
     def build(options={})
@@ -959,6 +983,7 @@ EOF
       eval "self.extend(#{module_name})"
 
       define_run_method
+      define_set_globals_method
 
       return self
     end

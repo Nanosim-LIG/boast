@@ -15,6 +15,33 @@ end
 
 class TestProcedure < Minitest::Test
 
+  def test_globals
+    c = Int :c
+    a = Int :a, :dim => Dim(10), local: true
+    b = Int :b, :dim => Dim(10), :dir => :out
+    i = Int :i
+    p = Procedure("copy_glob", [b]) {
+      decl i
+      pr For( i, 1, 10 ) {
+        pr b[i] === a[i] + c
+      }
+    }
+    [C].each { |l|
+      set_lang(l)
+      k = CKernel::new(globals: [a, c])
+      decl a, c;
+      pr p;
+      k.procedure = p
+      k.build
+      ah = NArray::int(10).random!(15)
+      bh = NArray::int(10).random!(15)
+      ch = 3
+      k.set_globals(ah, ch)
+      k.run(bh)
+      assert_equal(0, (bh-(ah + 3)).abs.max)
+    }
+  end
+
   def test_size_t
     a = Int(:a, :dim => Dim(1), :size => 8, :dir => :inout)
     b = Sizet(:b)
