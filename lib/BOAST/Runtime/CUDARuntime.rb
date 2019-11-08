@@ -59,10 +59,22 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaMalloc( (void **) &#{par}, _boast_array_size);
-    cudaMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
+    cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s!", "#{param}");
+    err = cudaMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+  } else if (TYPE(_boast_rb_ptr) == T_STRING) {
+    size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
+    cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s!", "#{param}");
+    err = cudaMemcpy(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
   } else {
-    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
+    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
 EOF
     end
@@ -155,6 +167,16 @@ EOF
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
     cudaMemcpy((void *) _boast_n_ary->ptr, #{par}, _boast_array_size, cudaMemcpyDeviceToHost);
+EOF
+      end
+      get_output.print <<EOF
+    cudaFree( (void *) #{par});
+  } else if (TYPE(_boast_rb_ptr) == T_STRING) {
+EOF
+      if param.direction == :out or param.direction == :inout then
+        get_output.print <<EOF
+    size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
+    cudaMemcpy((void *) RSTRING_PTR(_boast_rb_ptr), #{par}, _boast_array_size, cudaMemcpyDeviceToHost);
 EOF
       end
       get_output.print <<EOF
