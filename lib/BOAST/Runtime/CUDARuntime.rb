@@ -50,7 +50,7 @@ extern "C" {
 EOF
     end
 
-    def copy_array_param_from_ruby(par, param, ruby_param )
+    def copy_array_param_from_ruby(par, param, ruby_param)
       rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
       (rb_ptr === ruby_param).pr
       get_output.print <<EOF
@@ -76,6 +76,60 @@ EOF
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
+EOF
+    end
+
+    def define_globals
+      @globals.each { |g|
+        get_output.print "extern __device__ "
+        decl g
+      }
+    end
+
+    def copy_array_global_from_ruby(par, param, ruby_param)
+      rb_ptr = Variable::new("_boast_rb_ptr", CustomType, :type_name => "VALUE")
+      (rb_ptr === ruby_param).pr
+      get_output.print <<EOF
+  if ( IsNArray(_boast_rb_ptr) ) {
+    struct NARRAY *_boast_n_ary;
+    size_t _boast_array_size;
+    Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
+    _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
+    cudaError_t err = cudaMemcpyToSymbol(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, 0, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+  } else if (TYPE(_boast_rb_ptr) == T_STRING) {
+    size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
+    cudaError_t err = cudaMemcpyToSymbol(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, 0, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+  } else {
+    rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
+  }
+EOF
+    end
+
+    def copy_scalar_global_from_ruby(str_par, param, ruby_param )
+      str_par_tmp = str_par.copy("_boast_tmp_#{str_par}")
+      decl str_par_tmp
+      case param.type
+      when Int
+        if param.type.size == 4
+          (str_par_tmp === FuncCall::new("NUM2INT", ruby_param)).pr
+        elsif param.type.size == 8
+          (str_par_tmp === FuncCall::new("NUM2LONG", ruby_param)).pr
+        end
+      when Real
+        (str_par_tmp === FuncCall::new("NUM2DBL", ruby_param)).pr
+      when Sizet
+        (str_par_tmp === Ternary::new(FuncCall::new("sizeof", "size_t") == 4, FuncCall::new("NUM2INT", ruby_param), FuncCall::new("NUM2LONG", ruby_param))).pr
+      else
+        raise "Unsupported type as kernel argument:#{param.type}!"
+      end
+      get_output.print <<EOF
+  cudaError_t err = cudaMemcpyToSymbol(&#{str_par}, (void *)&#{str_par_tmp}, sizeof(#{str_par}), 0, cudaMemcpyHostToDevice);
+  if (err != cudaSuccess)
+    rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
 EOF
     end
 

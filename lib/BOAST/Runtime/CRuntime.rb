@@ -47,6 +47,8 @@ module BOAST
 EOF
     end
 
+    alias copy_scalar_global_from_ruby copy_scalar_param_from_ruby
+
     def create_set_globals
       get_output.print <<EOF
 static VALUE method_set_globals(int _boast_argc, VALUE *_boast_argv, VALUE _boast_self) {
@@ -59,7 +61,7 @@ EOF
         if param.dimension? or param.vector? or param.vector_scalar? then
           copy_array_global_from_ruby(param, param, argv[i])
         else
-          copy_scalar_param_from_ruby(param, param, argv[i])
+          copy_scalar_global_from_ruby(param, param, argv[i])
         end
       }
       get_output.print <<EOF
