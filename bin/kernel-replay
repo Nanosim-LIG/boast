@@ -255,6 +255,10 @@ OptionParser.new do |opts|
     $options[:benchmark] = b.to_i
   end
 
+  opts.on("-a", "--[no-]inspect-arguments", "Print arguments before and after call") do |c|
+    $options[:print_args] = c
+  end
+
   opts.on("-h", "--help", "Prints this help") do
     puts opts
     exit
@@ -293,7 +297,9 @@ kernel_file["instances"].each { |instance|
       begin
         puts "\t\t#{dir}:"
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
+        p args if $options[:print_args]
         ret = k.run(*args)
+        p args if $options[:print_args]
         puts "\t\t#{ret}"
         if $options[:check]
           out_args = BOAST::KernelReplay::create_output_arguments(instance, arguments, File.join(set, dir))
