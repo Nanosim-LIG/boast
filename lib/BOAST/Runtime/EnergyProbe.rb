@@ -29,8 +29,8 @@ static int _boast_powercap_init(uint64_t **energy_0, uint64_t **energy_1, char *
   *files = malloc(1);
   *names = malloc(1);
   for(nproc = 0; ; ++nproc){
-    sprintf(path,"/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d",nproc);
-    sprintf(buf,"%s/energy_uj",path);
+    snprintf(path, 128, "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d",nproc);
+    snprintf(buf, 128, "%s/energy_uj",path);
     f = fopen(buf, "rt");
     if(!f)
       break;
@@ -44,8 +44,8 @@ static int _boast_powercap_init(uint64_t **energy_0, uint64_t **energy_1, char *
       (*files)[nsensors-1] = malloc(128);
       (*names)[nsensors-1] = malloc( 16);
       s = (*names)[nsensors-1];
-      sprintf((*files)[nsensors-1],"%s",buf);
-      sprintf(buf, "%s/name", path);
+      snprintf((*files)[nsensors-1], 128,"%s",buf);
+      snprintf(buf, 128, "%s/name", path);
       f = fopen(buf, "r");
       fread_ret = fread(buf, 1, sizeof(buf), f);
       fclose(f);
@@ -53,10 +53,10 @@ static int _boast_powercap_init(uint64_t **energy_0, uint64_t **energy_1, char *
         rb_raise(rb_eArgError, "Energy probe read error!");
       /* last character read is a line break */
       buf[fread_ret-1] = 0;
-      sprintf(s, "%d.%s", nproc, buf);
+      snprintf(s, 16, "%d.%s", nproc, buf);
 
-      sprintf(path,"/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d/intel-rapl:%d:%d",nproc,nproc,i++);
-      sprintf(buf,"%s/energy_uj",path);
+      snprintf(path, 128, "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:%d/intel-rapl:%d:%d",nproc,nproc,i++);
+      snprintf(buf, 128, "%s/energy_uj",path);
       f = fopen(buf, "rt");
     } while(f);
   }
