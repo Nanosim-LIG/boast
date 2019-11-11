@@ -147,7 +147,7 @@ module BOAST
 
     def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files)
       file target => target_depends do
-        link_string = "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
+        link_string = "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")}#{@lang == CUDA ? " #{link_depend}" : ""} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
         puts link_string if get_verbose
         status, stdout, stderr = systemu link_string
         if get_verbose

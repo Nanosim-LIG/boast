@@ -157,6 +157,8 @@ module BOAST
       rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cu' do |t|
         cuda_call_string = "#{cuda_compiler} #{cudaflags} -c -o #{t.name} #{t.source}"
         runner.call(t, cuda_call_string)
+        cuda_call_string = "#{cuda_compiler} #{cudaflags} -dlink -o #{File::join(File::dirname(t.name), "link-#{File::basename(t.name)}")} #{t.name}"
+        runner.call(t, cuda_call_string)
       end
     end
 

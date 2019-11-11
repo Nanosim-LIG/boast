@@ -18,6 +18,11 @@ module BOAST
     def fill_module_header
       fill_module_header_old
       get_output.puts "#include <cuda_runtime.h>"
+      @globals.each { |g|
+        get_output.write <<EOF
+cudaError_t _boast_send_to_symbol_#{g}(void *p, size_t s);
+EOF
+      }
     end
 
     def fill_library_header
@@ -48,6 +53,15 @@ extern "C" {
   }
 }
 EOF
+      @globals.each { |g|
+        get_output.write <<EOF
+extern "C" {
+   cudaError_t _boast_send_to_symbol_#{g}(void *p, size_t s) {
+     return cudaMemcpyToSymbol(#{g}, p, s);
+   }
+}
+EOF
+      }
     end
 
     def copy_array_param_from_ruby(par, param, ruby_param)
@@ -61,18 +75,18 @@ EOF
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
     cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s (%s)!", "#{param}", cudaGetErrorName(err));
     err = cudaMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
   } else if (TYPE(_boast_rb_ptr) == T_STRING) {
     size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
     cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s (%s)!", "#{param}", cudaGetErrorName(err));
     err = cudaMemcpy(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
@@ -80,10 +94,6 @@ EOF
     end
 
     def define_globals
-      @globals.each { |g|
-        get_output.print "extern __device__ "
-        decl g
-      }
     end
 
     def copy_array_global_from_ruby(par, param, ruby_param)
@@ -95,14 +105,16 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaError_t err = cudaMemcpyToSymbol(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, 0, cudaMemcpyHostToDevice);
+    cudaError_t err;
+    err = _boast_send_to_symbol_#{param}((void *) _boast_n_ary->ptr, _boast_array_size);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
   } else if (TYPE(_boast_rb_ptr) == T_STRING) {
     size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
-    cudaError_t err = cudaMemcpyToSymbol(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, 0, cudaMemcpyHostToDevice);
+    cudaError_t err;
+    err = _boast_send_to_symbol_#{param}((void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size);
     if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
@@ -127,9 +139,12 @@ EOF
         raise "Unsupported type as kernel argument:#{param.type}!"
       end
       get_output.print <<EOF
-  cudaError_t err = cudaMemcpyToSymbol(&#{str_par}, (void *)&#{str_par_tmp}, sizeof(#{str_par}), 0, cudaMemcpyHostToDevice);
-  if (err != cudaSuccess)
-    rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s!", "#{param}");
+  {
+    cudaError_t err;
+    err = _boast_send_to_symbol_#{param}((void *)&#{str_par_tmp}, sizeof(#{str_par_tmp}));
+    if (err != cudaSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+  }
 EOF
     end
 
@@ -195,6 +210,15 @@ EOF
     end
 
     def create_wrapper
+    end
+
+    def link_depend
+      File::join(File::dirname(library_object), "link-#{File::basename(library_object)}")
+    end
+
+    def cleanup(kernel_files)
+      super
+      File::unlink(link_depend)
     end
 
     def create_procedure_call_parameters

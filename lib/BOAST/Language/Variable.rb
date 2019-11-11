@@ -175,6 +175,7 @@ module BOAST
     attr_reader :type
     attr_reader :dimension
     attr_reader :local
+    attr_reader :global
     attr_reader :texture
     attr_reader :sampler
     attr_reader :restrict
@@ -205,6 +206,10 @@ module BOAST
 
     def local?
       @local
+    end
+
+    def global?
+      @global
     end
 
     def restrict?
@@ -266,6 +271,7 @@ module BOAST
     # @option properties [Boolean] :reference specifies that this variable is passed by reference.
     # @option properties [Symbol] :allocate specify that the variable is to be allocated and where. Can only be *:heap* or *:stack* for now.
     # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
+    # @option properties [Boolean] :global indicates that the variable is global (C CUDA)
     # @option properties [Boolean] :texture for OpenCL and CUDA. In OpenCL also specifies that a sampler has to be generated to access the array variable.
     # @option properties [Integer] :align specifies the alignment the variable will be declared/allocated with if allocated or is supposed to have if it is coming from another context (in bytes).
     # @option properties [Boolean] :replace_constant specifies that for scalar constants this variable should be replaced by its constant value. For constant arrays, the value of the array will be replaced if the index can be determined at evaluation.
@@ -278,6 +284,7 @@ module BOAST
       @constant = properties[:constant] or @constant = properties[:const]
       @dimension = properties[:dimension] or @dimension = properties[:dim]
       @local = properties[:local] or @local = properties[:shared]
+      @global = properties[:global]
 
       @texture = properties[:texture]
       @allocate = properties[:allocate]
@@ -453,7 +460,9 @@ module BOAST
     end
 
     def __global?
-      return ( lang == CL && @direction && dimension? && !(@properties[:register] || @properties[:private] || local?) )
+      return ( lang == CL && @direction && dimension? && !(@properties[:register] || @properties[:private] || local?) ) ||
+             ( lang == CUDA && global? ) ||
+             ( lang == C && global? )
     end
 
     def __local?
@@ -469,7 +478,7 @@ module BOAST
     end
 
     def __pointer_array?(device = false)
-      return ( dimension? && !constant? && !( allocate? && @allocate != :heap ) && (!local? || (local? && device)) )
+      return ( dimension? && !constant? && !( allocate? && @allocate != :heap ) && (!local? || (local? && device)) && (!global?))
     end
 
     def __pointer?(device = false)
@@ -481,7 +490,7 @@ module BOAST
     end
 
     def __dimension?(device = false)
-      return ( dimension? && ((local? && !device) || ( ( allocate? && @allocate != :heap ) && !constant?)) )
+      return ( dimension? && ((local? && !device) || (global? && !device) || ( ( allocate? && @allocate != :heap ) && !constant?)) )
     end
 
     def __align?
@@ -496,7 +505,14 @@ module BOAST
       return decl_texture_s if texture?
       s = ""
       s << "const " if __const?
-      s << "__global " if __global?
+      if __global?
+        case lang
+        when CL
+          s << "__global "
+        when CUDA
+          s << "__device__ "
+        end
+      end
       s << "__local " if __local?
       s << "__shared__ " if __shared?(device)
       if lang == C && __register? && !dimension?
