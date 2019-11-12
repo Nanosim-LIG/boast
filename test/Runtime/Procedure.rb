@@ -16,8 +16,8 @@ end
 class TestProcedure < Minitest::Test
 
   def test_globals
-    c = Int :c
-    a = Int :a, :dim => Dim(10), local: true
+    c = Int :c, global: true
+    a = Int :a, :dim => Dim(10), global: true
     b = Int :b, :dim => Dim(10), :dir => :out
     i = Int :i
     p = Procedure("copy_glob", [b]) {
@@ -26,11 +26,11 @@ class TestProcedure < Minitest::Test
         pr b[i] === a[i] + c
       }
     }
-    [C].each { |l|
+    [C, CUDA].each { |l|
       set_lang(l)
       k = CKernel::new(globals: [a, c])
-      decl a, c;
-      pr p;
+      decl a, c
+      pr p
       k.procedure = p
       k.build
       ah = NArray::int(10).random!(15)

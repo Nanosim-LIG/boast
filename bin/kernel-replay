@@ -101,7 +101,9 @@ module BOAST
     end
 
     def self.create_array_call_argument(name, arg, directory)
-      filename = File::join(directory, "#{name}.in")
+      fname = name
+      fname = arg["file"] if arg["file"]
+      filename = File::join(directory, "#{fname}.in")
       data = File::read(filename, mode: "rb")
       if (type = NARRAY_TYPE_MAP[arg["type"]])
         n_a = NArray::to_na(data, type)
@@ -111,7 +113,9 @@ module BOAST
     end
 
     def self.create_scalar_call_argument(name, arg, directory)
-      filename = File::join(directory, "#{name}.in")
+      fname = name
+      fname = arg["file"] if arg["file"]
+      filename = File::join(directory, "#{fname}.in")
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
       else
@@ -120,10 +124,12 @@ module BOAST
     end
 
     def self.create_array_output_argument(name, arg, directory)
+      fname = name
+      fname = arg["file"] if arg["file"]
       if arg["direction"] == "in"
-        filename = File::join(directory, "#{name}.in")
+        filename = File::join(directory, "#{fname}.in")
       else
-        filename = File::join(directory, "#{name}.out")
+        filename = File::join(directory, "#{fname}.out")
       end
       data = File::read(filename, mode: "rb")
       if (type = NARRAY_TYPE_MAP[arg["type"]])
@@ -134,10 +140,12 @@ module BOAST
     end
 
     def self.create_scalar_output_argument(name, arg, directory)
+      fname = name
+      fname = arg["file"] if arg["file"]
       if ["inout", "out"].include? arg["direction"]
-        filename = File::join(directory, "#{name}.out")
+        filename = File::join(directory, "#{fname}.out")
       else
-        filename = File::join(directory, "#{name}.in")
+        filename = File::join(directory, "#{fname}.in")
       end
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
@@ -361,8 +369,8 @@ kernel_file["instances"].each { |instance|
         puts "\t\t#{dir}:"
         unless ["CL", "FORTRAN"].include?(instance["language"])
           globs = BOAST::KernelReplay::create_global_arguments(instance, globals, File.join(set, dir))
-          k.set_globals(*globs) if globs != []
           p globs if $options[:print_args]
+          k.set_globals(*globs) if globs != []
         end
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
         p args if $options[:print_args]

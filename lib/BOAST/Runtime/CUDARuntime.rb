@@ -123,7 +123,7 @@ EOF
 
     def copy_scalar_global_from_ruby(str_par, param, ruby_param )
       str_par_tmp = str_par.copy("_boast_tmp_#{str_par}")
-      decl str_par_tmp
+      BOAST.decl str_par_tmp
       case param.type
       when Int
         if param.type.size == 4
