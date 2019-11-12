@@ -1,0 +1,19 @@
+---
+name: simple_copy
+globals:
+  a:
+    type: double
+    array: true
+arguments:
+  b:
+    type: double
+    array: true
+    direction: out
+instances:
+  - language: C
+    file: simple_copy_glob.c
+  - language: CUDA
+    file: simple_copy_glob.cu
+    global_work_size: n.in
+data_sets:
+  - ./data

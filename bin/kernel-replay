@@ -53,14 +53,37 @@ module BOAST
       }
     end
 
-    def self.create_kernel(name, instance, arguments, returns: nil)
-      instance_arguments = arguments.dup
+    def self.create_globals(globals)
+      globals.collect { |name, arg|
+        options = {}
+        array = arg["array"]
+        type = TYPE_MAP[arg["type"]]
+        raise "Unknown type #{arg["type"]}!" unless type
+        options.merge! type.to_hash
+        options[:dim] = BOAST::Dimension::new() if array
+        BOAST::Variable( name, type.class, **options)
+      }
+    end
+
+    def self.create_kernel(name, instance, arguments, globals, returns: nil)
+      if arguments
+        instance_arguments = arguments.dup
+      else
+        instance_arguments = {}
+      end
       instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
+      if globals
+        instance_globals = globals.dup
+      else
+        instance_globals = {}
+      end
+      instance_globals.merge!(instance["globals"]).compact! if instance["globals"]
+      globs = BOAST::KernelReplay::create_globals(instance_globals)
       args = BOAST::KernelReplay::create_arguments(instance_arguments)
       procedure = BOAST::Procedure::new( name, args, return: returns )
       str = nil
       File.open(instance["file"], "r") { |f| str = StringIO::new(f.read) }
-      k = BOAST::CKernel::new(code: str, lang: BOAST::const_get(instance["language"]))
+      k = BOAST::CKernel::new(code: str, lang: BOAST::const_get(instance["language"]), globals: globs)
       k.procedure = procedure
       k
     end
@@ -150,7 +173,11 @@ module BOAST
     end
 
     def self.create_call_arguments(instance, arguments, directory)
-      instance_arguments = arguments.dup
+      if arguments
+        instance_arguments = arguments.dup
+      else
+        instance_arguments = {}
+      end
       instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
       call_args = instance_arguments.collect { |name, arg|
         next unless arg
@@ -167,8 +194,31 @@ module BOAST
       call_args
     end
 
+    def self.create_global_arguments(instance, globals, directory)
+      if globals
+        instance_globals = globals.dup
+      else
+        instance_globals = {}
+      end
+      instance_globals.merge!(instance["globals"]).compact! if instance["globals"]
+      glob_args = instance_globals.collect { |name, arg|
+        next unless arg
+        array = arg["array"]
+        if array
+          create_array_call_argument(name, arg, directory)
+        else
+          create_scalar_call_argument(name, arg, directory)
+        end
+      }
+      glob_args
+    end
+
     def self.create_output_arguments(instance, arguments, directory)
-      instance_arguments = arguments.dup
+      if arguments
+        instance_arguments = arguments.dup
+      else
+        instance_arguments = {}
+      end
       instance_arguments.merge!(instance["arguments"]).compact! if instance["arguments"]
       instance_arguments.collect { |name, arg|
         array = arg["array"]
@@ -275,6 +325,7 @@ directory = File.dirname(input_file)
 Dir.chdir(directory)
 
 p name = kernel_file["name"]
+p globals = kernel_file["globals"]
 p arguments = kernel_file["arguments"]
 
 kernel_file["instances"].each { |instance|
@@ -289,13 +340,18 @@ kernel_file["instances"].each { |instance|
     next unless $options[:fortran]
   end
   p instance
-  k = BOAST::KernelReplay::create_kernel(name, instance, arguments)
+  k = BOAST::KernelReplay::create_kernel(name, instance, arguments, globals)
   k.build
   kernel_file["data_sets"].each { |set|
     puts "\t#{set}:"
     Dir::new(set).reject { |d| d == ".." || d == "." || !Dir.exist?(File::join(set, d)) }.each { |dir|
       begin
         puts "\t\t#{dir}:"
+        unless ["CL", "FORTRAN"].include?(instance["language"])
+          globs = BOAST::KernelReplay::create_global_arguments(instance, globals, File.join(set, dir))
+          p globs if $options[:print_args]
+          k.set_globals(*globs) if globs != []
+        end
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
         p args if $options[:print_args]
         ret = k.run(*args)

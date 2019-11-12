@@ -9,7 +9,7 @@ module BOAST
     def define_globals
       @globals.each { |g|
         get_output.print "extern "
-        decl g
+        BOAST.decl g
       }
     end
 
