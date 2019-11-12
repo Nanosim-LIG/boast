@@ -4,6 +4,7 @@ globals:
   a:
     type: double
     array: true
+    size: 1024
 arguments:
   b:
     type: double

@@ -14,7 +14,8 @@ module BOAST
       "double" => BOAST::Real::new(size: 8),
       "float" => BOAST::Real::new(size: 4),
       "size" => BOAST::Sizet::new(signed: false),
-      "uint" => BOAST::Int::new(size: 4, signed: false)
+      "uint" => BOAST::Int::new(size: 4, signed: false),
+      "int" => BOAST::Int::new(size: 4, signed: true)
     }
 
     NARRAY_TYPE_MAP = {
@@ -29,8 +30,16 @@ module BOAST
       "double" => "D",
       "float" => "F",
       "uint" => "L",
+      "int" => "l",
       "size" => "J"
+    }
 
+    TYPE_SIZE_MAP = {
+      "double" => 8,
+      "float" => 4,
+      "size" => 8,
+      "uint" => 4,
+      "int" => 4
     }
 
     def self.create_arguments(arguments)
@@ -54,13 +63,16 @@ module BOAST
     end
 
     def self.create_globals(globals)
-      globals.collect { |name, arg|
-        options = {}
+      globals.each_with_index.collect { |(name, arg), i|
+        options = {global: true}
         array = arg["array"]
         type = TYPE_MAP[arg["type"]]
         raise "Unknown type #{arg["type"]}!" unless type
         options.merge! type.to_hash
-        options[:dim] = BOAST::Dimension::new() if array
+        if array
+          size = arg["size"]
+          options[:dim] = BOAST::Dimension::new(size)
+        end
         BOAST::Variable( name, type.class, **options)
       }
     end
@@ -349,8 +361,8 @@ kernel_file["instances"].each { |instance|
         puts "\t\t#{dir}:"
         unless ["CL", "FORTRAN"].include?(instance["language"])
           globs = BOAST::KernelReplay::create_global_arguments(instance, globals, File.join(set, dir))
-          p globs if $options[:print_args]
           k.set_globals(*globs) if globs != []
+          p globs if $options[:print_args]
         end
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
         p args if $options[:print_args]
