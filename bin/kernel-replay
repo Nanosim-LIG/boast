@@ -3,6 +3,7 @@ require 'optparse'
 require 'yaml'
 require 'narray_ffi'
 require 'BOAST'
+require 'pp'
 
 BOAST.set_array_start(0)
 BOAST.set_default_int_size(8)
@@ -344,9 +345,17 @@ kernel_file = YAML::load_file(input_file)
 directory = File.dirname(input_file)
 Dir.chdir(directory)
 
-p name = kernel_file["name"]
-p globals = kernel_file["globals"]
-p arguments = kernel_file["arguments"]
+puts name = kernel_file["name"]
+if kernel_file["globals"]
+  puts "globals:"
+  pp globals = kernel_file["globals"]
+else
+  globals = {}
+end
+if kernel_file["arguments"]
+  puts "arguments:"
+  pp arguments = kernel_file["arguments"]
+end
 
 kernel_file["instances"].each { |instance|
   case instance["language"]
@@ -359,7 +368,7 @@ kernel_file["instances"].each { |instance|
   when "FORTRAN"
     next unless $options[:fortran]
   end
-  p instance
+  pp instance
   k = BOAST::KernelReplay::create_kernel(name, instance, arguments, globals)
   k.build
   kernel_file["data_sets"].each { |set|
@@ -369,29 +378,35 @@ kernel_file["instances"].each { |instance|
         puts "\t\t#{dir}:"
         unless ["CL", "FORTRAN"].include?(instance["language"])
           globs = BOAST::KernelReplay::create_global_arguments(instance, globals, File.join(set, dir))
-          p globs if $options[:print_args]
+          if $options[:print_args] && globs != []
+            pp({ "globals" => globs })
+          end
           k.set_globals(*globs) if globs != []
         end
         args = BOAST::KernelReplay::create_call_arguments(instance, arguments, File.join(set, dir))
-        p args if $options[:print_args]
+        if $options[:print_args]
+          pp({ "in" => args })
+        end
         ret = k.run(*args)
-        p args if $options[:print_args]
-        puts "\t\t#{ret}"
+        if $options[:print_args]
+          pp({ "out" => args })
+        end
+        puts "\t\t\t#{ret[:duration]} s"
         if $options[:check]
           out_args = BOAST::KernelReplay::create_output_arguments(instance, arguments, File.join(set, dir))
           res = BOAST::KernelReplay::compare_arguments(instance, arguments, args, out_args, ret)
-          puts "\t\t#{res}"
+          puts "\t\t\t#{res}"
         end
         if $options[:benchmark]
           arguments.each { |name, arg|
             if arg["array"] && arg["direction"] != "in" &&  arg["direction"] != "out"
-              warn "\t\tArgument #{name} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
+              warn "\t\t\tArgument #{name} is #{arg["direction"] == "inout" ? "" : "potentially "}inout!"
             end
           }
           rets = $options[:benchmark].times.collect {
             k.run(*args)[:duration]
           }
-          puts "\t\tBest run: #{rets.min} s"
+          puts "\t\t\tBest run: #{rets.min} s"
         end
       rescue RuntimeError => e
         puts e
