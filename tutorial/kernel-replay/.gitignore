@@ -1,0 +1,13 @@
+*.out
+*.bbl
+*.blg
+*.aux
+*.log
+*.nav
+*.pdf.mk
+*.snm
+*.toc
+*.vrb
+*.swp
+_minted-Talk-kernel-replay
+Talk-kernel-replay.pdf

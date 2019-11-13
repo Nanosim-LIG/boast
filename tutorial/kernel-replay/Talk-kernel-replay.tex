@@ -1,0 +1,460 @@
+\documentclass{beamer}
+\usepackage{etex}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{verbatim}
+\usepackage{beamerthemesplit}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{algorithm}
+\usepackage{listings}
+\usepackage{figlatex}
+\usepackage{algorithmic}
+\usepackage{multirow}
+\usepackage{alltt}
+\usepackage{minted}
+
+\beamertemplatetransparentcovereddynamic
+
+%\setbeamertemplate{background canvas}[vertical shading][bottom=red!10,top=blue!10]
+%\usetheme{Warsaw}
+
+\usepackage{./style/beamercolorthemeprogressbar}
+\usepackage{./style/beamerfontthemeprogressbar}
+\usepackage{./style/beamerouterthemeprogressbar}
+\usepackage{./style/beamerinnerthemeprogressbar}
+
+\setbeamertemplate{navigation symbols}{}
+\beamertemplatetransparentcovereddynamic
+
+\graphicspath{{./figures/}}
+
+\title{BOAST - Kernel Replay}
+\subtitle{Portable Kernel Benchmarking and Validation}
+\author[B. V.]{\textbf{Brice~Videau}~\inst{1}}
+\institute[ANL]{\inst{1} Argonne National Laboratory}
+
+\date{November 13, 2019}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Introduction}
+
+\subsection{Context}
+
+\begin{frame}
+  \frametitle{Scientific Application Portability}
+
+  \begin{block}{\footnotesize Limited Portability}
+    \begin{itemize}
+      \item \scriptsize Huge codes (more than 100 000 lines), Written in FORTRAN or C++
+      \item \scriptsize Collaborative efforts
+      \item \scriptsize Use many different programming paradigms (OpenMP, OpenCL, CUDA, ...)
+    \end{itemize}
+  \end{block}
+
+  \begin{columns}
+
+  \column{0.45\linewidth}
+  \begin{block}{\footnotesize But Based on \emph{Computing Kernels}}
+    \begin{itemize}
+      \item \scriptsize Well defined parts of a program
+      \item \scriptsize Compute intensive
+      \item \scriptsize Prime target for optimization
+    \end{itemize}
+  \end{block}
+
+  \column{0.58\linewidth}
+  \begin{block}{\footnotesize Kernels Should Be Written}
+    \begin{itemize}
+      \item \scriptsize In a \emph{portable} manner
+      \item \scriptsize In a way that raises developer \emph{productivity}
+      \item \scriptsize To present good \emph{performance}
+    \end{itemize}
+  \end{block}
+
+  \end{columns}
+
+\end{frame}
+
+\subsection{Objective}
+
+\begin{frame}
+  \frametitle{Replaying Computing Kernels}
+
+  It would greatly improve productivity if we could extract and then replay
+computing kernels in different environments:
+  \begin{itemize}
+    \item Cut time to solution (compile and execute only the relevant part of the application),
+    \item Compare performance and accuracy,
+    \item Create database of kernel for meta-studies,
+    \item Ease porting and optimizing kernel by easily comparing different versions.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Extracting Computing Kernels From Applications}
+
+  Obtaining self-contained version of computing kernels, requires
+capturing only the necessary information:
+  \begin{itemize}
+    \item Language and source code used,
+    \item Specific compilation flags (maybe),
+    \item Global variables (if there are used...),
+    \item List of parameters, their types, and their intent,
+    \item One or more set of values for the parameters and global variables.
+  \end{itemize}
+\end{frame}
+
+\section{Kernel Dump Format}
+
+\begin{frame}[fragile]
+\frametitle{Extensible Human Readable}
+
+  \begin{columns}
+  \column{0.30\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{yaml}
+arguments:
+  n:
+    type: size
+  a:
+    type: double
+    array: true
+    direction: in
+  b:
+    type: double
+    array: true
+    direction: out
+instances:
+  - language: C
+    file: simple_copy.c
+  - language: FORTRAN
+    file: simple_copy.f
+  - language: CL
+    file: simple_copy.cl
+    arguments:
+      n:
+    global_work_size: n.in
+  - language: CUDA
+    file: simple_copy.cu
+    arguments:
+      n:
+    global_work_size: n.in
+data_sets:
+  - ./data
+  \end{minted}
+  \column{0.65\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{C}
+void simple_copy(size_t n, const double *a, double *b) {
+  for(size_t i = 0; i < n; i++) {
+    b[i] = a[i];
+  }
+}
+  \end{minted}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{FORTRAN}
+SUBROUTINE simple_copy(n, a, b)
+  integer(kind=8) :: n
+  real(kind=8), dimension(*), intent(in) :: a
+  real(kind=8), dimension(*), intent(out) :: b
+  integer(kind=8) :: i
+  
+  do i = 1, n
+    b(i) = a(i)
+  end do
+END SUBROUTINE simple_copy
+  \end{minted}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{C}
+kernel
+void simple_copy(global const double *a, global double *b) {
+  size_t i = get_global_id(0);
+  b[i] = a[i];
+}
+  \end{minted}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{CUDA}
+__global__ void simple_copy(const double *a, double *b) {
+  size_t i = threadIdx.x + blockDim.x * blockIdx.x;
+  b[i] = a[i];
+}
+  \end{minted}
+     
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Binary Serialization of arguments}
+  Can be done either manually (C, FORTRAN, CUDA) or automatically (OpenCL).
+  \begin{columns}
+  \column{0.45\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+    linenos
+  ]{C}
+#define dump_buffer(var, size) {\
+  FILE *f = fopen(#var ".in", "wb");\
+  fwrite((void*)var, 1, size, f);\
+  fclose(f);\
+}
+
+#define dump_out_buffer(var, size) {\
+  FILE *f = fopen(#var ".out", "wb");\
+  fwrite((void*)var, 1, size, f);\
+  fclose(f);\
+}
+
+#define dump_scalar(var) {\
+  FILE *f = fopen(#var ".in", "wb");\
+  fwrite((void*)&var, 1, sizeof(var), f);\
+  fclose(f);\
+}
+  \end{minted}
+  \column{0.5\linewidth}
+  \begin{minted}[
+    frame=single
+  ]{bash}
+simple_copy# find data/
+data/
+data/set1
+data/set1/b.out
+data/set1/n.in
+data/set1/a.in
+data/set1/b.in
+  \end{minted}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Replay tool}
+  The tool is called \emph{kernel-replay}. It can easily be extended:
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single
+  ]{bash}
+simple_copy# kernel-replay --help
+kernel-replay [options] kernel_file
+    -c, --[no-]check                 Check kernel run results
+    -b, --benchmark=REPETITIONS      Benckmark kernel
+    -a, --[no-]inspect-arguments     Print arguments before and after call
+        --[no-]cuda                  Enable/disable CUDA
+        --[no-]fortran               Enable/disable FORTRAN
+        --[no-]c                     Enable/disable C
+        --[no-]opencl                Enable/disable OpenCL
+    -h, --help                       Prints this help
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single
+  ]{shell}
+simple_copy# kernel-replay simple_copy.kernel -c -b 5000
+simple_copy
+arguments:
+{"n"=>{"type"=>"size"},
+ "a"=>{"type"=>"double", "array"=>true, "direction"=>"in"},
+ "b"=>{"type"=>"double", "array"=>true, "direction"=>"out"}}
+{"language"=>"C", "file"=>"simple_copy.c"}
+	./data:
+		set1:
+			6.27e-07 s
+			{"b"=>0.0}
+			Best run: 4.7200000000000004e-07 s
+{"language"=>"FORTRAN", "file"=>"simple_copy.f"}
+	./data:
+		set1:
+			8.01e-07 s
+			{"b"=>0.0}
+			Best run: 4.5300000000000005e-07 s
+{"language"=>"CL",
+ "file"=>"simple_copy.cl",
+ "arguments"=>{"n"=>nil},
+ "global_work_size"=>"n.in"}
+Warning OpenCL 2.1 loader detected!
+	./data:
+		set1:
+			4.583e-06 s
+			{"b"=>0.0}
+			Best run: 3.0e-06 s
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{More Complex Example}
+  \vspace{-0.6em}
+  \begin{columns}
+  \column{0.30\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+  ]{yaml}
+name: GPU_kernel_1_1_1_1
+globals:
+  exp_cheby_coefs:
+    type: double
+    array: true
+    size: 120004
+    file: h_exp_cheby_coefs
+  cheby_coefs:
+    type: double
+    array: true
+    size: 3000100
+    file: h_chebyshev_coefs
+arguments:
+  Kab_gl:
+    type: uint
+    array: true
+    direction: in
+  Kcd_gl:
+    type: uint
+    array: true
+    direction: in
+  ppair_ab_offset_gl:
+    type: uint
+    array: true
+    direction: in
+  ppair_cd_offset_gl:
+    type: uint
+    array: true
+    direction: in
+  Ax_gl:
+    type: double
+  \end{minted}
+  \column{0.25\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+  ]{yaml}
+    array: true
+    direction: in
+  Ay_gl:
+    type: double
+    array: true
+    direction: in
+  Az_gl:
+    type: double
+    array: true
+    direction: in
+  Cx_gl:
+    type: double
+    array: true
+    direction: in
+  Cy_gl:
+    type: double
+    array: true
+    direction: in
+  Cz_gl:
+    type: double
+    array: true
+    direction: in
+  ABx_gl:
+    type: double
+    array: true
+    direction: in
+  ABy_gl:
+    type: double
+    array: true
+    direction: in
+  \end{minted}
+  \column{0.25\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+  ]{yaml}
+  ABz_gl:
+    type: double
+    array: true
+    direction: in
+  CDx_gl:
+    type: double
+    array: true
+    direction: in
+  CDy_gl:
+    type: double
+    array: true
+    direction: in
+  CDz_gl:
+    type: double
+    array: true
+    direction: in
+  P_gl:
+    type: double
+    array: true
+    direction: in
+  Q_gl:
+    type: double
+    array: true
+    direction: in
+  zeta_gl:
+    type: double
+    array: true
+    direction: in
+  eta_gl:
+    type: double
+  \end{minted}
+  \column{0.31\linewidth}
+  \begin{minted}[
+    fontsize=\tiny,
+    frame=single,
+  ]{yaml}
+    array: true
+    direction: in
+  UP_gl:
+    type: double
+    array: true
+    direction: in
+  UQ_gl:
+    type: double
+    array: true
+    direction: in
+  fz_gl:
+    type: double
+    array: true
+    direction: in
+  fe_gl:
+    type: double
+    array: true
+    direction: in
+  n_blocks_cd:
+    type: uint
+  efficiency_edge:
+    type: uint
+  Target:
+    type: double
+    array: true
+    direction: out
+instances:
+  - language: CUDA
+    file: GPU_HGP_kernels.cu
+data_sets:
+  - ./data
+  \end{minted}
+  \end{columns}
+\end{frame}
+
+\end{document}
