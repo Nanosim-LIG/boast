@@ -5,6 +5,11 @@ module BOAST
 
     attr_reader :context
     attr_reader :queue
+    attr_accessor :il
+
+    def il?
+      @il
+    end
 
     def select_cl_platforms(options)
       platforms = OpenCL::get_platforms
@@ -52,20 +57,24 @@ module BOAST
         device = select_cl_device(options)
         @context = OpenCL::create_context([device])
       end
-      program = @context.create_program_with_source([@code.string])
+      if il?
+        program = @context.create_program_with_il(@code.string)
+      else
+        program = @context.create_program_with_source([@code.string])
+      end
       begin
         program.build(:options => options[:CLFLAGS])
       rescue OpenCL::Error => e
         puts e.to_s
         puts program.build_status
         puts program.build_log
-        if options[:VERBOSE] or get_verbose then
+        if (options[:VERBOSE] or get_verbose) and !@il then
           puts @code.string
         end
         raise "OpenCL Failed to build #{@procedure.name}"
       end
       if options[:VERBOSE] or get_verbose then
-        program.build_log.each {|dev,log|
+        program.build_log.each { |dev,log|
           puts "#{device.name}: #{log}"
         }
       end

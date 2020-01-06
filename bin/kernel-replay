@@ -106,6 +106,7 @@ module BOAST
       str = nil
       File.open(instance["file"], "r") { |f| str = StringIO::new(f.read) }
       k = BOAST::CKernel::new(code: str, lang: BOAST::const_get(instance["language"]), globals: globs)
+      k.il = true if instance["language"] == "CL" && instance["il"] == true
       k.procedure = procedure
       k
     end
