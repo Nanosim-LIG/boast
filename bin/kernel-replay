@@ -15,8 +15,11 @@ module BOAST
       "double" => BOAST::Real::new(size: 8),
       "float" => BOAST::Real::new(size: 4),
       "size" => BOAST::Sizet::new(signed: false),
+      "int64_t" => BOAST::Int::new(size: 8, signed: true),
       "uint" => BOAST::Int::new(size: 4, signed: false),
-      "int" => BOAST::Int::new(size: 4, signed: true)
+      "int" => BOAST::Int::new(size: 4, signed: true),
+      "short" => BOAST::Int::new(size: 2, signed: true),
+      "char" => BOAST::Int::new(size: 1, signed: true)
     }
 
     NARRAY_TYPE_MAP = {
@@ -30,17 +33,23 @@ module BOAST
     UNPACK_TYPE_MAP = {
       "double" => "D",
       "float" => "F",
+      "size" => "J",
+      "int64_t" => "q",
       "uint" => "L",
       "int" => "l",
-      "size" => "J"
+      "short" => "s",
+      "char" => "c"
     }
 
     TYPE_SIZE_MAP = {
       "double" => 8,
       "float" => 4,
       "size" => 8,
+      "int64_t" => 8,
       "uint" => 4,
-      "int" => 4
+      "int" => 4,
+      "short" => 2,
+      "char" => 1
     }
 
     def self.create_arguments(arguments)
