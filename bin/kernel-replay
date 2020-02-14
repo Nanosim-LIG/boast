@@ -63,7 +63,7 @@ module BOAST
             type = TYPE_MAP["char"]
           else
             if arg["size"]
-              type = BOAST::CStruct::new(type_name: arg["type"], members: [ BOAST::Int(:a, size: 1, dim: [BOAST::Dim(arg["size"])], local: true ) ] )
+              type = BOAST::CStruct::new(type_name: arg["type"], members: [ BOAST::Int(:dummy, size: 1, dim: [BOAST::Dim(arg["size"])], local: true ) ] )
             else
               raise "Unknown type #{arg["type"]}!"
             end
@@ -139,8 +139,13 @@ module BOAST
       filename = File::join(directory, "#{fname}.in")
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
+      elsif arg["size"]
+        c = Class.new(FFI::Struct) do
+          layout :dummy, [:uint8, arg["size"]]
+        end
+        c.new(FFI::MemoryPointer.from_string(File::read(filename, mode: "rb")))
       else
-        "Unsupported Scalar type: #{arg["type"]}!"
+        raise "Unsupported Scalar type: #{arg["type"]}!"
       end
     end
 
@@ -170,8 +175,13 @@ module BOAST
       end
       if (type = UNPACK_TYPE_MAP[arg["type"]])
         File::read(filename, mode: "rb").unpack("#{type}").first
+      elsif arg["size"]
+        c = Class.new(FFI::Struct) do
+          layout :dummy, [:uint8, arg["size"]]
+        end
+        c.new(FFI::MemoryPointer.from_string(File::read(filename, mode: "rb")))
       else
-        "Unsupported Scalar type: #{arg["type"]}!"
+        raise "Unsupported Scalar type: #{arg["type"]}!"
       end
     end
 
@@ -184,7 +194,9 @@ module BOAST
         when String
           filename = File::join(directory, arg)
           if File.exist?(filename)
-            return File::read(filename, mode: "rb").unpack("J*")
+            r = File::read(filename, mode: "rb").unpack("J*")
+            return nil if r == []
+            r
           else
             return nil
           end
@@ -275,7 +287,10 @@ module BOAST
       case input
       when String
         type = UNPACK_TYPE_MAP[arg["type"]]
-        raise "Unsupported type #{arg["type"]}!" unless type
+        if type.nil?
+          warn "Unsupported type #{arg["type"]}, using byte comparison!"
+          type = "c"
+        end
         input_arr = input.unpack("#{type}*")
         output_arr = output.unpack("#{type}*")
         err = input_arr.size.times.collect { |i| (input_arr[i] - output_arr[i]).abs }.max
@@ -290,8 +305,10 @@ module BOAST
     end
 
     def self.compare_scalar_arguments(name, arg, input, output, ret, res)
-      err = (input - output).abs
-      res[name] = err if ["inout", "out"].include?(arg["direction"]) || err > 0.0
+      if input.respond_to?(:-)
+        err = (input - output).abs
+        res[name] = err if ["inout", "out"].include?(arg["direction"]) || err > 0.0
+      end
     end
 
     def self.compare_arguments(instance, arguments, inputs, outputs, ret)
