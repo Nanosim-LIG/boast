@@ -8,7 +8,6 @@ Gem::Specification.new do |s|
   s.description = "BOAST aims at providing a framework to metaprogram, benchmark and validate computing kernels"
   s.files = Dir['BOAST.gemspec', 'LICENSE', 'README.md', 'lib/**/*', 'bin/kernel-replay']
   s.executables << 'kernel-replay'
-  s.has_rdoc = false
   s.license = 'BSD-2-Clause'
   s.required_ruby_version = '>= 2.0.0'
   s.add_dependency 'narray', '~> 0.6.0', '>=0.6.0.8'
