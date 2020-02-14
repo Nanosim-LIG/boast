@@ -96,8 +96,13 @@ module BOAST
         param = @context.create_image_2D( OpenCL::ImageFormat::new( OpenCL::ChannelOrder::R, OpenCL::ChannelType::UNORM_INT8 ), arg.size * arg.element_size, 1, :flags => flags )
         @queue.enqueue_write_image( param, arg, :blocking => true )
       else
-        param = @context.create_buffer( arg.size * arg.element_size, :flags => flags )
-        @queue.enqueue_write_buffer( param, arg, :blocking => true )
+        if arg.kind_of?(String)
+          p = FFI::MemoryPointer.from_string(arg)
+          param = @context.create_buffer( p.size, flags: OpenCL::Mem::COPY_HOST_PTR, host_ptr: p )
+        else
+          param = @context.create_buffer( arg.size * arg.element_size, :flags => flags )
+          @queue.enqueue_write_buffer( param, arg, :blocking => true )
+        end
       end
       return param
     end
