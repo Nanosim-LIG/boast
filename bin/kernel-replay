@@ -58,7 +58,17 @@ module BOAST
         array = arg["array"]
         direction = arg["direction"]
         type = TYPE_MAP[arg["type"]]
-        raise "Unknown type #{arg["type"]}!" unless type
+        if type.nil?
+          if array
+            type = TYPE_MAP["char"]
+          else
+            if arg["size"]
+              type = BOAST::CStruct::new(type_name: arg["type"], members: [ BOAST::Int(:a, size: 1, dim: [BOAST::Dim(arg["size"])], local: true ) ] )
+            else
+              raise "Unknown type #{arg["type"]}!"
+            end
+          end
+        end
         options.merge! type.to_hash
         options[:dim] = BOAST::Dimension::new() if array
         if direction
