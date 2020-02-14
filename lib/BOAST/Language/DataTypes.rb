@@ -452,6 +452,10 @@ module BOAST
       }
     end
 
+    def to_hash
+      { type_name: @name, members: @members_array }
+    end
+
     def decl
       return decl_c if [C, CL, CUDA].include?( lang )
       return decl_fortran if lang == FORTRAN
