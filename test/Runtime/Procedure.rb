@@ -32,7 +32,14 @@ class TestProcedure < Minitest::Test
       decl a, c
       pr p
       k.procedure = p
-      k.build
+      begin
+        k.build
+      rescue RuntimeError => e
+        if l == CUDA && e.to_s.match("compilation failed")
+          skip "Missing CUDA on the platform!"
+        end
+        raise e
+      end
       ah = NArray::int(10).random!(15)
       bh = NArray::int(10).random!(15)
       ch = 3
