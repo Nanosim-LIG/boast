@@ -104,10 +104,10 @@ module BOAST
     end
 
     # @private
-    def method_missing(meth, *args, &block)
+    def method_missing(meth, *args, **options, &block)
      if meth.to_s == "run" then
        build
-       run(*args, &block)
+       run(*args, **options, &block)
      else
        super
      end

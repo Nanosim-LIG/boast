@@ -56,7 +56,7 @@ module BOAST
       }
       kernels.each_index { |i|
         threads << Thread::new(i) { |j|
-          ret = kernels[j][0].run(*args[j])
+          ret = kernels[j][0].run(*args[j][0..-2],**args[j][-1])
           semaphore.synchronize {
             returns[j] = ret
           }
