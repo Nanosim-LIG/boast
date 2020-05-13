@@ -118,7 +118,6 @@ module BOAST
         raise IntrinsicsError, "Unsupported data size for int vector on X86: #{data_type.size*8}!" unless [1,2,4,8].include?( data_type.size )
         return s << "#{data_type.total_size*8>64 ? "i" : ""}"
       when Real
-        raise IntrinsicsError, "Unsupported vector size for real vector on X86: #{data_type.total_size*8}!" if 64 == data_type.total_size*8 && data_type.size == 4
         return s if data_type.size == 4
         return s << "d" if data_type.size == 8
         raise IntrinsicsError, "Unsupported data size for real vector on X86: #{data_type.size*8}!"
