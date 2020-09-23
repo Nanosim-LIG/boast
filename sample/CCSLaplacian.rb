@@ -1,5 +1,6 @@
 [ '../lib', 'lib' '.' ].each { |d| $:.unshift(d) if File::directory?(d) }
 require 'BOAST'
+require 'BOAST/Optimization/CCSOptimizer'
 include BOAST
 require 'narray'
 require 'opencl_ruby_ffi'
@@ -282,7 +283,8 @@ opt_space = OptimizationSpace::new( :x_component_number => [1,2,4,8,16],
                                     :load_overlap       => [true, false] )
 check = false
 
-optimizer = BruteForceOptimizer::new(opt_space, :randomize => true)
+#optimizer = BruteForceOptimizer::new(opt_space, :randomize => true)
+optimizer = CCSOptimizer::new(CCS::RandomTuner, opt_space, budget: 200)
 
 devs = OpenCL::platforms.first.devices
 c = OpenCL::create_context( devs )
