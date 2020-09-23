@@ -20,7 +20,7 @@ class TestOptimizationSpace < Minitest::Test
     opt_space = OptimizationSpace::new( :param => 1..30, :opt => [1,3] )
     optimizer = BruteForceOptimizer::new( opt_space )
     points = optimizer.each.to_a
-    assert_equal((1..30).length*[1,3].length, points.length)
+    assert_equal((1..30).size*[1,3].length, points.length)
     assert_equal(points.length, points.uniq.length)
   end
 
@@ -28,7 +28,7 @@ class TestOptimizationSpace < Minitest::Test
     opt_space = OptimizationSpace::new( :param => 1..30, :opt => [1,3] )
     optimizer = BruteForceOptimizer::new( opt_space )
     points = optimizer.points
-    assert_equal((1..30).length*[1,3].length, points.length)
+    assert_equal((1..30).size*[1,3].length, points.length)
     assert_equal(points.length, points.uniq.length)
   end
 
