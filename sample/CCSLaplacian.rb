@@ -275,20 +275,27 @@ sizes.each { |width, height|
 
 set_lang(CL)
 
-opt_space = OptimizationSpace::new( :x_component_number => [1,2,4,8,16],
-                                    :vector_length      => [1,2,4,8,16],
-                                    :y_component_number => 1..4,
-                                    :temporary_size     => [2,4],
-                                    :vector_recompute   => [true, false],
-                                    :load_overlap       => [true, false] )
-check = false
-
-#optimizer = BruteForceOptimizer::new(opt_space, :randomize => true)
-optimizer = CCSOptimizer::new(CCS::RandomTuner, opt_space, budget: 200)
-
 devs = OpenCL::platforms.first.devices
 c = OpenCL::create_context( devs )
+max_work_group_size = devs.first.max_work_group_size
+preferred_work_group_size_multiple = 32 # devs.first.preferred_work_group_size_multiple
+possible_lws = (Math.log2(max_work_group_size).to_i + 1).times.collect { |i| 2**i }
 
+opt_space = OptimizationSpace::new( x_component_number: [1,2,4,8,16],
+                                    vector_length:      [1,2,4,8,16],
+                                    y_component_number: 1..4,
+                                    temporary_size:     [2,4],
+                                    vector_recompute:   [true, false],
+                                    load_overlap:       [true, false],
+                                    lws_x:              possible_lws,
+                                    thread_number:      possible_lws )
+check = true
+
+#optimizer = BruteForceOptimizer::new(opt_space, :randomize => true)
+optimizer = CCSOptimizer::new(CCS::RandomTuner, opt_space, budget: 200,
+                              forbidden_clauses: [
+    ":lws_x > :thread_number"
+  ])
 
 puts optimizer.optimize { |opt|
   id = opt.to_s            
@@ -297,6 +304,8 @@ puts optimizer.optimize { |opt|
   puts k
   k.build( :CLCONTEXT => c )
   results = []
+  lws_x = opt[:lws_x]
+  lws_y = opt[:thread_number] / lws_x
   sizes.each_index { |indx|
     GC.start
     width, height = sizes[indx]
@@ -305,7 +314,10 @@ puts optimizer.optimize { |opt|
     output_buff = k.context.create_buffer(width*height*3, :flags => [OpenCL::Mem::WRITE_ONLY])
     time_per_pixel=[]
     (0..3).each {
-      stats = k.run(input_buff, output_buff, width, height, :global_work_size => [rndup((width*3/opt[:x_component_number].to_f).ceil,32), (height/opt[:y_component_number].to_f).ceil, 1], :local_work_size => [32, 1, 1])
+      stats = k.run(input_buff, output_buff, width, height,
+                    global_work_size: [
+                      rndup((width*3/opt[:x_component_number].to_f).ceil, lws_x),
+                      rndup((height/opt[:y_component_number].to_f).ceil, lws_y), 1], :local_work_size => [lws_x, lws_y, 1])
       time_per_pixel.push( stats[:duration]/((width-2) * (height-2) ) )
     }
     #Fix for ARM counter looping every few minutes
@@ -328,42 +340,3 @@ puts optimizer.optimize { |opt|
   results.reduce(:+) / results.length
 }
 
-exit
-
-opt_space.each_random { |opt|
-  id = opt.to_s            
-  puts id
-  k = laplacian(opt)
-  puts k
-  sizes.each_index { |indx|
-    width, height = sizes[indx]
-    puts "#{width} x #{height} :"
-    output = NArray.byte(width*3,height).random!(256)
-    durations=[]
-    (0..3).each {
-      stats = k.run(inputs[indx], output, width, height, :global_work_size => [rndup((width*3/opt[:x_component_number].to_f).ceil,32), (height/opt[:y_component_number].to_f).ceil, 1], :local_work_size => [32, 1, 1])
-      durations.push stats[:duration]
-    }
-    #Fix for ARM counter looping every few minutes
-    durations.reject!{ |d| d < 0 }
-    puts "#{durations.min} s"
-
-    if check then 
-      diff = ( refs[indx] - output[3..-4,1..-2] ).abs
-      i = 0
-      diff.each { |elem|
-        #puts elem
-        i += 1
-        raise "Warning: residue too big: #{elem} #{i%3},#{(i / 3 ) % (width-2)},#{i / 3 / (width - 2)}" if elem > 0
-      }
-    end
-    results[indx].push( [id, durations.min] )
-  }
-}
-puts "Best candidates:"
-results.each_index { |indx|
-  width, height = sizes[indx]
-  puts "#{width} x #{height}"
-  results[indx].sort! { |x,y| x[1] <=> y[1] }
-  puts results[indx][0]
-}
