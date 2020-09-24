@@ -4,25 +4,24 @@ module BOAST
   class CCSOptimizer < Optimizer
     attr_reader :ccs_tuner
     attr_reader :budget
-    def initialize(ccs_tuner_klass, search_space, budget: nil, seed: nil, name: "")
+    def initialize(ccs_tuner_klass, search_space, budget: nil, seed: nil, name: "", forbidden_clauses: [])
       cs = CCS::ConfigurationSpace::new(name: "#{name}cs")
       search_space.parameters.each { |p|
         n = p.name
         values = p.values
-        n = n.inspect if n.kind_of? Symbol
-        n = n.to_s
         if values.kind_of? Range
-          h = CCS::DiscreteHyperparameter::new(name: n.to_s, values: values.to_a)
+          h = CCS::DiscreteHyperparameter::new(name: n, values: values.to_a)
         else
           vs = values.to_a
           if vs.all? { |e| e.kind_of?(Numeric) }
-            h = CCS::DiscreteHyperparameter::new(name: n.to_s, values: vs.sort)
+            h = CCS::DiscreteHyperparameter::new(name: n, values: vs.sort)
           else
-            h = CCS::CategoricalHyperparameter::new(name: n.to_s, values: vs)
+            h = CCS::CategoricalHyperparameter::new(name: n, values: vs)
           end
         end
         cs.add_hyperparameter(h)
       }
+      cs.add_forbidden_clauses(forbidden_clauses)
       os = CCS::ObjectiveSpace::new(name: "#{name}os")
       h = CCS::NumericalHyperparameter::new(name: "#{name}objective")
       e = CCS::Variable::new(hyperparameter: h)
@@ -33,6 +32,7 @@ module BOAST
       @budget = budget
       @seed = seed
       @search_space = search_space
+      @forbidden_clauses = forbidden_clauses
     end
 
     def optimize(&block)
@@ -43,7 +43,6 @@ module BOAST
       os = t.objective_space
       while (config = t.ask.first)
         conf = config.to_h
-        conf = conf.transform_keys { |k| k.match(/^:/) ? eval(k) : k }
         res = block.call(conf)
         e = CCS::Evaluation::new(objective_space: os, configuration: config, values: [res])
         t.tell([e])
@@ -52,7 +51,6 @@ module BOAST
       end
       best = t.optimums.first
       conf = best.configuration.to_h
-      conf = conf.transform_keys { |k| k.match(/^:/) ? eval(k) : k }
       [conf, best.values.first]
     end
 
@@ -61,7 +59,7 @@ module BOAST
     end
 
     def log
-      @ccs_tuner.history.collect { |e| [e.configuration.to_h.transform_keys { |k| k.match(/^:/) ? eval(k) : k }, e.values.first] }
+      @ccs_tuner.history.collect { |e| [e.configuration.to_h, e.values.first] }
     end
   end
 end
