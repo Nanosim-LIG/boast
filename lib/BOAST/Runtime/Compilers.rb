@@ -162,6 +162,22 @@ module BOAST
       end
     end
 
+    def setup_hip_compiler(options, runner, probes)
+      hip_compiler = options[:HIPCC]
+      hipflags = options[:HIPFLAGS]
+      hipflags += "'-fPIC','-D_FORCE_INLINES'"
+
+      rule ".#{RbConfig::CONFIG["OBJEXT"]}" => '.cpp' do |t|
+        hip_call_string = "#{hip_compiler} #{hipflags} -c -o #{t.name} #{t.source}"
+        runner.call(t, hip_call_string)
+        hip_call_string = "#{hip_compiler} #{hipflags} -dlink -o #{File::join(File::dirname(t.name), "link-#{File::basename(t.name)}")} #{t.name}"
+        runner.call(t, hip_call_string)
+      end
+    end
+
+
+
+
     def setup_linker_mppa(options, runner, probes)
       objext = RbConfig::CONFIG["OBJEXT"]
       ldflags = options[:LDFLAGS]
@@ -251,6 +267,8 @@ module BOAST
       setup_cxx_compiler(options, includes, runner, probes)
       setup_fortran_compiler(options, runner, probes)
       setup_cuda_compiler(options, runner, probes)
+      setup_hip_compiler(options, runner, probes)
+
       
       setup_linker_mppa(options, runner, probes) if @architecture == MPPA
 

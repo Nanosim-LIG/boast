@@ -194,7 +194,7 @@ module BOAST
         @procedure.parameters.collect { |param|
           res.push read_param(param, d, suffix, intent)
         }
-        if @lang == CUDA or @lang == CL then
+        if @lang == CUDA or @lang == CL or @lang == HIP then
           res.push get_gpu_dim(d)
         end
         res_h[d] =  res
@@ -212,7 +212,7 @@ module BOAST
         @procedure.parameters.each_with_index { |param, i|
           write_param( param, vals[i], d.to_s, suffix, intent )
         }
-        if @lang == CUDA or @lang == CL then
+        if @lang == CUDA or @lang == CL or @lang == HIP then
           write_gpu_dim( vals.last, d.to_s )
         end
       }
