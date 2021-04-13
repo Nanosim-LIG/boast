@@ -14,6 +14,7 @@ module BOAST
       return { C => get_c_strings,
                CL => get_cl_strings,
                CUDA => get_cuda_strings,
+	       HIP => get_hip_strings,
                FORTRAN => get_fortran_strings }
     end
 
