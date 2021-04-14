@@ -65,7 +65,7 @@ module BOAST
             end
             @operator = ">=" if step < 0
           rescue
-            $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA].include?( lang ) and debug?
+            $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA, HIP].include?( lang ) and debug?
           end
         }
       else
@@ -87,6 +87,7 @@ module BOAST
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
+    alias get_hip_strings get_c_strings
 
     eval token_string_generator( * %w{for i b e s o})
     eval token_string_generator( * %w{end})

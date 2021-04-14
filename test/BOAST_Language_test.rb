@@ -27,6 +27,8 @@ class TestLanguage < Minitest::Test
     assert_subprocess_output( "int32_t a;\n", "", &block )
     set_lang(CUDA)
     assert_subprocess_output( "int a;\n", "", &block )
+    set_lang(HIP)
+    assert_subprocess_output( "int a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int a;\n", "", &block )
   end
@@ -40,6 +42,8 @@ class TestLanguage < Minitest::Test
       assert_subprocess_output( "int64_t a;\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "long long a;\n", "", &block )
+      set_lang(HIP)
+      assert_subprocess_output( "long long a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "long a;\n", "", &block )
     }
@@ -49,14 +53,14 @@ class TestLanguage < Minitest::Test
     block = lambda { decl Intptrt(:a) }
     set_lang(FORTRAN)
     assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
-    [C, CUDA, CL].each { |l|
+    [C, CUDA, CL, HIP].each { |l|
       set_lang l
       assert_subprocess_output( "intptr_t a;\n", "", &block )
     }
     block = lambda { decl Intptrt(:a, signed: false) }
     set_lang(FORTRAN)
     assert_subprocess_output( "integer(kind=4) :: a\n", "", &block )
-    [C, CUDA, CL].each { |l|
+    [C, CUDA, CL, HIP].each { |l|
       set_lang l
       assert_subprocess_output( "uintptr_t a;\n", "", &block )
     }
@@ -64,7 +68,7 @@ class TestLanguage < Minitest::Test
 
   def test_decl_pointer
     block = lambda { decl Pointer(:a ) }
-    [C, CUDA, CL].each { |l|
+    [C, CUDA, CL, HIP].each { |l|
       set_lang l
       assert_subprocess_output( "void * a;\n", "", &block )
     }
@@ -72,7 +76,7 @@ class TestLanguage < Minitest::Test
     assert_raises("Pointers are unsupported in Fortran!", &block )
     push_env(:default_real_size => 8) {
       block = lambda { decl Pointer(:a, type: Real ) }
-      [C, CUDA, CL].each { |l|
+      [C, CUDA, CL, HIP].each { |l|
         set_lang l
         assert_subprocess_output( "double * a;\n", "", &block )
       }
@@ -89,6 +93,8 @@ class TestLanguage < Minitest::Test
     assert_subprocess_output( "4.7\n", "", &block )
     set_lang(CUDA)
     assert_subprocess_output( "4.7\n", "", &block )
+    set_lang(HIP)
+    assert_subprocess_output( "4.7\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "4.7\n", "", &block )
   end
@@ -101,6 +107,8 @@ class TestLanguage < Minitest::Test
       set_lang(C)
       assert_subprocess_output( "4.7f\n", "", &block )
       set_lang(CUDA)
+      assert_subprocess_output( "4.7f\n", "", &block )
+      set_lang(HIP)
       assert_subprocess_output( "4.7f\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "4.7f\n", "", &block )

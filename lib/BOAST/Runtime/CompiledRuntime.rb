@@ -38,6 +38,7 @@ module BOAST
     @@extensions = {
       C => ".c",
       CUDA => ".cu",
+      HIP => ".cpp",
       FORTRAN => ".f90"
     }
 
@@ -147,7 +148,7 @@ module BOAST
 
     def create_targets( linker, ldshared, ldshared_flags, ldflags, kernel_files)
       file target => target_depends do
-        link_string = "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")}#{@lang == CUDA ? " #{link_depend}" : ""} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
+        link_string = "#{linker} #{ldshared} -o #{target} #{target_depends.join(" ")}#{(@lang == CUDA || @lang == HIP) ? " #{link_depend}" : ""} #{(kernel_files.collect {|f| f.path}).join(" ")} #{ldshared_flags} #{ldflags}"
         puts link_string if get_verbose
         status, stdout, stderr = systemu link_string
         if get_verbose
@@ -902,7 +903,7 @@ EOF
         config = BOAST::get_run_config
         config.update(options)
         res = nil
-        if get_lang != CUDA and config[:PAPI] then
+        if get_lang != CUDA and get_lang != HIP and config[:PAPI] then
           require 'PAPI'
           PAPI.init
           if config[:coexecute] then
@@ -943,7 +944,7 @@ EOF
       @probes = []
       if compiler_options[:probes] then
         @probes = compiler_options[:probes]
-      elsif get_lang != CUDA then
+      elsif (get_lang != CUDA and get_lang != HIP) then
         @probes = [TimerProbe, PAPIProbe]
         @probes.push EnergyProbe if EnergyProbe
         @probes.push AffinityProbe if AffinityProbe

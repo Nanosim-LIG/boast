@@ -10,7 +10,9 @@ module BOAST
     :CXX => 'g++',
     :CXXFLAGS => '-O2 -Wall',
     :NVCC => 'nvcc',
+    :HIPCC => 'hipcc',
     :NVCCFLAGS => '-O2',
+    :HIPFLAGS => '-O2',
     :LDFLAGS => '',
     :CLFLAGS => '',
     :CLVENDOR => nil,
@@ -35,7 +37,8 @@ module BOAST
     "icpc" => "-openmp",
     "frt" => "-Kopenmp",
     "fcc" => "-Kopenmp",
-    "FCC" => "-Kopenmp"
+    "FCC" => "-Kopenmp",
+    "hipcc" => "-fopenmp"
   }
 
   @@run_options = [

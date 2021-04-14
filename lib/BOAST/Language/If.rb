@@ -50,6 +50,8 @@ module BOAST
 
     alias get_cl_strings get_c_strings
     alias get_cuda_strings get_c_strings
+    alias get_hip_strings get_c_strings
+
 
     eval token_string_generator( * %w{if cond} )
     eval token_string_generator( * %w{elsif cond} )
