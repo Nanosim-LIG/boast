@@ -15,12 +15,16 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "int32_t * a;\n", "", &block )
     set_lang(CUDA)
     assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(HIP)
+    assert_subprocess_output( "int * a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int * a;\n", "", &block )
     push_env(:use_vla => true) {
       set_lang(C)
       assert_subprocess_output( "int32_t a[n1][11];\n", "", &block )
       set_lang(CUDA)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(HIP)
       assert_subprocess_output( "int * a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "int * a;\n", "", &block )
@@ -38,12 +42,16 @@ class TestArray < Minitest::Test
       assert_subprocess_output( "int32_t * a;\n", "", &block )
       set_lang(CUDA)
       assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(HIP)
+      assert_subprocess_output( "int * a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "int * a;\n", "", &block )
       push_env(:use_vla => true) {
         set_lang(C)
         assert_subprocess_output( "int32_t a[][n1];\n", "", &block )
         set_lang(CUDA)
+        assert_subprocess_output( "int * a;\n", "", &block )
+	set_lang(HIP)
         assert_subprocess_output( "int * a;\n", "", &block )
         set_lang(CL)
         assert_subprocess_output( "int * a;\n", "", &block )
@@ -60,12 +68,16 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "int32_t * a;\n", "", &block )
     set_lang(CUDA)
     assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(HIP)
+    assert_subprocess_output( "int * a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int * a;\n", "", &block )
     push_env(:use_vla => true) {
       set_lang(C)
       assert_subprocess_output( "int32_t a[][11];\n", "", &block )
       set_lang(CUDA)
+      assert_subprocess_output( "int * a;\n", "", &block )
+      set_lang(HIP)
       assert_subprocess_output( "int * a;\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "int * a;\n", "", &block )
@@ -81,6 +93,8 @@ class TestArray < Minitest::Test
     assert_subprocess_output( "int32_t * a;\n", "", &block )
     set_lang(CUDA)
     assert_subprocess_output( "int * a;\n", "", &block )
+    set_lang(HIP)
+    assert_subprocess_output( "int * a;\n", "", &block )
     set_lang(CL)
     assert_subprocess_output( "int * a;\n", "", &block )
   end
@@ -91,7 +105,7 @@ class TestArray < Minitest::Test
     block = lambda { pr arr[6,7] }
     set_lang(FORTRAN)
     assert_subprocess_output( "a(6, 7)\n", "", &block )
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
     }
@@ -99,6 +113,8 @@ class TestArray < Minitest::Test
       set_lang(C)
       assert_subprocess_output( "a[7 - (1)][6 - (5)];\n", "", &block )
       set_lang(CUDA)
+      assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
+      set_lang(HIP)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
       set_lang(CL)
       assert_subprocess_output( "a[6 - (5) + (11) * (7 - (1))];\n", "", &block )
@@ -111,7 +127,7 @@ class TestArray < Minitest::Test
     block = lambda { pr arr[6,7] }
     set_lang(FORTRAN)
     assert_subprocess_output( "a(6, 7)\n", "", &block )
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( "a[6 - (1) + (n1) * (7 - (1))];\n", "", &block )
     }
@@ -121,6 +137,8 @@ class TestArray < Minitest::Test
       set_lang(CL)
       assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
       set_lang(CUDA)
+      assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
+      set_lang(HIP)
       assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
     }
   end
@@ -132,7 +150,7 @@ class TestArray < Minitest::Test
       block = lambda { pr arr[6,7] }
       set_lang(FORTRAN)
       assert_subprocess_output( "a(6, 8)\n", "", &block )
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( "a[6 + (n1) * (7)];\n", "", &block )
       }
@@ -150,6 +168,8 @@ class TestArray < Minitest::Test
     set_lang(CL)
     assert_subprocess_output( "__local int a[(n1)*(11)];\n", "", &block )
     set_lang(CUDA)
+    assert_subprocess_output( "__shared__ int a[(n1)*(11)];\n", "", &block )
+    set_lang(HIP)
     assert_subprocess_output( "__shared__ int a[(n1)*(11)];\n", "", &block )
   end
 
@@ -202,6 +222,8 @@ EOF
     set_lang(CL)
     assert_subprocess_output( "int a[(n1)*(11)] __attribute((aligned(32)));\n", "", &block )
     set_lang(CUDA)
+    assert_subprocess_output( "int a[(n1)*(11)];\n", "", &block )
+    set_lang(HIP)
     assert_subprocess_output( "int a[(n1)*(11)];\n", "", &block )
   end
 
