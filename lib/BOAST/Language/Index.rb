@@ -107,7 +107,7 @@ module BOAST
           end
         end
         return to_s_fortran(source, vector_index) if lang == FORTRAN
-        return to_s_c(source, vector_index) if [C, CL, CUDA,HIP].include?( lang )
+        return to_s_c(source, vector_index) if CLANGS.include?( lang )
       ensure
         @indexes.push vector_index if poped
       end
@@ -117,7 +117,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end

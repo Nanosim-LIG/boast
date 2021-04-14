@@ -58,7 +58,7 @@ module BOAST
 
     def close
       return close_fortran if lang==FORTRAN
-      return close_c if [C, CL, CUDA, HIP].include?( lang )
+      return close_c if CLANGS.include?( lang )
     end
 
     # Returns a {CKernel} with the Procedure as entry point.
@@ -82,16 +82,16 @@ module BOAST
 
     def decl
       return decl_fortran if lang==FORTRAN
-      return decl_c if [C, CL, CUDA, HIP].include?( lang )
+      return decl_c if CLANGS.include?( lang )
     end
 
     def open
       return open_fortran if lang==FORTRAN
-      return open_c if [C, CL, CUDA, HIP].include?( lang )
+      return open_c if CLANGS.include?( lang )
     end
 
     def to_s
-      return decl_c_s if [C, CL, CUDA, HIP].include?( lang )
+      return decl_c_s if CLANGS.include?( lang )
       return to_s_fortran if lang==FORTRAN
     end
 
@@ -138,7 +138,6 @@ module BOAST
             s << "__launch_bounds__(#{wgs[0]}*#{wgs[1]}*#{wgs[2]}) "
           end
         end
-
       elsif lang == HIP then
         if @properties[:local] then
           s << "static __device__ "
@@ -314,13 +313,10 @@ module BOAST
       end
       trailer = ""
       trailer << "_" if lang == FORTRAN
-      trailer << "_wrapper" if lang == CUDA
-      trailer << "_wrapper" if lang == HIP 
+      trailer << "_wrapper" if lang == CUDA || lang == HIP
       if @properties[:return] then
         s << "#{@properties[:return].type.decl} "
-      elsif lang == CUDA
-        s << "unsigned long long int "
-      elsif lang == HIP
+      elsif lang == CUDA || lang == HIP
         s << "unsigned long long int "
       else
         s << "void "

@@ -42,7 +42,7 @@ module BOAST
       
     def to_s
       return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA, HIP].include?( lang )
+      return to_s_c if CLANGS.include?( lang )
     end
 
     def to_s_fortran
@@ -63,7 +63,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end

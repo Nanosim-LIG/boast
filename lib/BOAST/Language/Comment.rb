@@ -13,7 +13,7 @@ module BOAST
 
     def to_s
       return to_s_fortran if get_lang == FORTRAN
-      return to_s_c if [C,CL,CUDA,HIP].include?(get_lang)
+      return to_s_c if CLANGS.include?(get_lang)
     end
 
     def pr

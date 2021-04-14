@@ -468,7 +468,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -521,7 +521,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -617,7 +617,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -681,7 +681,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -750,7 +750,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -810,7 +810,7 @@ module BOAST
         s=""
         s << indent
         s << ss
-        s << ";" if [C, CL, CUDA, HIP].include?( lang )
+        s << ";" if CLANGS.include?( lang )
         output.puts s
       end
       return self
@@ -859,11 +859,11 @@ module BOAST
         instruction = intrinsics(:FMADD,@return_type.type)
       rescue
       end
-      return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA, HIP].include?(lang) ) )
+      return (@operand3 + @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or GPULANGS.include?(lang) )
       op1 = convert_operand(@operand1.to_var)
       op2 = convert_operand(@operand2.to_var)
       op3 = convert_operand(@operand3.to_var)
-      if [CL, CUDA, HIP].include?(lang)
+      if GPULANGS.include?(lang)
         ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
         case architecture
@@ -886,7 +886,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -934,11 +934,11 @@ module BOAST
         instruction = intrinsics(:FNMADD,@return_type.type)
       rescue
       end
-      return (@operand3 - @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or ( [CL, CUDA, HIP].include?(lang) ) )
+      return (@operand3 - @operand1 * @operand2).to_var unless lang != FORTRAN and @return_type and ( instruction or GPULANGS.include?(lang) )
       op1 = convert_operand(@operand1.to_var)
       op2 = convert_operand(@operand2.to_var)
       op3 = convert_operand(@operand3.to_var)
-      if [CL, CUDA, HIP].include?(lang)
+      if GPULANGS.include?(lang)
         op1 = convert_operand((-@operand1).to_var)
         ret_name = "fma( #{op1}, #{op2}, #{op3} )"
       else
@@ -962,7 +962,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -989,14 +989,14 @@ module BOAST
 
     def to_s
       return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA, HIP].include?( lang )
+      return to_s_c if CLANGS.include?( lang )
     end
 
     def pr
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -1075,14 +1075,14 @@ module BOAST
 
     def to_s
       return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA, HIP].include?( lang )
+      return to_s_c if CLANGS.include?( lang )
     end
 
     def pr
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end

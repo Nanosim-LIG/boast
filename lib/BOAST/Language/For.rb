@@ -65,7 +65,7 @@ module BOAST
             end
             @operator = ">=" if step < 0
           rescue
-            $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if [C, CL, CUDA, HIP].include?( lang ) and debug?
+            $stderr.puts "Warning could not determine sign of step (#{@step}) assuming positive" if CLANGS.include?( lang ) and debug?
           end
         }
       else

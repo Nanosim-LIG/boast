@@ -102,7 +102,7 @@ module BOAST
 
     def to_s
       return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA, HIP].include?( lang )
+      return to_s_c if CLANGS.include?( lang )
     end
 
     private
@@ -343,7 +343,7 @@ module BOAST
         s = @constant.to_s + @type.suffix
         return s
       end
-      if @scalar_output or @reference and [C, CL, CUDA, HIP].include?( lang ) and not decl_module? then
+      if @scalar_output or @reference and CLANGS.include?( lang ) and not decl_module? then
         return "(*#{name})"
       end
       return @name
@@ -358,12 +358,12 @@ module BOAST
     end
 
     def dereference
-      return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [C, CL, CUDA, HIP].include?( lang )
+      return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if CLANGS.include?( lang )
       return Index::new(self, *(@dimension.collect { |d| d.start } ) ) if lang == FORTRAN
     end
 
     def struct_reference(x)
-      return x.copy(name+"."+x.name) if [C, CL, CUDA, HIP].include?( lang )
+      return x.copy(name+"."+x.name) if CLANGS.include?( lang )
       return x.copy(name+"%"+x.name) if lang == FORTRAN
     end
 
@@ -419,7 +419,7 @@ module BOAST
 
     def decl
       return decl_fortran if lang == FORTRAN
-      return decl_c if [C, CL, CUDA, HIP].include?( lang )
+      return decl_c if CLANGS.include?( lang )
     end
 
     def align
@@ -510,9 +510,7 @@ module BOAST
         case lang
         when CL
           s << "__global "
-        when CUDA
-          s << "__device__ "
-        when HIP
+        when CUDA, HIP
           s << "__device__ "
         end
       end
@@ -556,7 +554,7 @@ module BOAST
     end
 
     def decl_texture_s
-      raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA, HIP].include?( lang )
+      raise LanguageError, "Unsupported language #{lang} for texture!" unless GPULANGS.include?( lang )
       raise "Write is unsupported for textures!" unless (constant? || @direction == :in)
       dim_number = 1
       if dimension? then
@@ -667,7 +665,7 @@ module BOAST
 
     def finalize
        s = ""
-       s << ";" if [C, CL, CUDA, HIP].include?( lang )
+       s << ";" if CLANGS.include?( lang )
        s << "\n"
        return s
     end

@@ -70,7 +70,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -128,7 +128,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA, HIP].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end

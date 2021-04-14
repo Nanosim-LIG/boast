@@ -51,13 +51,14 @@ module BOAST
     end
   
     def get_global_size(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_global_size", dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_GRIDDIM.#{d}*CUDA_BLOCKDIM.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_GRIDDIM.#{d}*HIP_BLOCKDIM.#{d}"
@@ -67,13 +68,14 @@ module BOAST
     end
 
     def get_global_id(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_global_id",dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_THREADIDX.#{d}+CUDA_BLOCKIDX.#{d}*CUDA_BLOCKDIM.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_THREADIDX.#{d}+HIP_BLOCKIDX.#{d}*HIP_BLOCKDIM.#{d}"
@@ -83,13 +85,14 @@ module BOAST
     end
 
     def get_local_size(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_local_size",dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_BLOCKDIM.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_BLOCKDIM.#{d}"
@@ -99,13 +102,14 @@ module BOAST
     end
 
     def get_local_id(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_local_id",dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_THREADIDX.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_THREADIDX.#{d}"
@@ -115,13 +119,14 @@ module BOAST
     end
   
     def get_num_groups(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_num_groups",dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_GRIDDIM.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_GRIDDIM.#{d}"
@@ -131,13 +136,14 @@ module BOAST
     end
 
     def get_group_id(dim)
-      if lang == CL then
+      case lang
+      when CL
         return FuncCall::new("get_group_id",dim, :return => Sizet)
-      elsif lang == CUDA then
+      when CUDA
         d = OCL_CUDA_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "CUDA_BLOCKIDX.#{d}"
-      elsif lang == HIP then
+      when HIP
         d = OCL_HIP_DIM_ASSOC[dim]
         raise "Unsupported dimension!" unless d
         return eval "HIP_BLOCKIDX.#{d}"
