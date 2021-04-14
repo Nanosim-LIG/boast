@@ -57,9 +57,9 @@ module BOAST
     def decl
       return "integer(kind=#{get_default_int_size})" if lang == FORTRAN
       unless @signed then
-        return "size_t" if [C, CL, CUDA].include?( lang )
+        return "size_t" if CLANGS.include?( lang )
       else
-        return "ptrdiff_t" if [C, CL, CUDA].include?( lang )
+        return "ptrdiff_t" if CLANGS.include?( lang )
       end
     end
 
@@ -110,9 +110,9 @@ module BOAST
     def decl
       return "integer(kind=#{get_default_int_size})" if lang == FORTRAN
       unless @signed then
-        return "uintptr_t" if [C, CL, CUDA].include?( lang )
+        return "uintptr_t" if CLANGS.include?( lang )
       else
-        return "intptr_t" if [C, CL, CUDA].include?( lang )
+        return "intptr_t" if CLANGS.include?( lang )
       end
     end
 
@@ -150,7 +150,7 @@ module BOAST
 
     def decl
       raise "Void is unsupported in Fortran!" if lang == FORTRAN
-      return "void" if [C, CL, CUDA].include?( lang )
+      return "void" if CLANGS.include?( lang )
     end
 
     def decl_ffi
@@ -200,7 +200,7 @@ module BOAST
     def decl
 #      return "#{@type.decl}, pointer" if lang == FORTRAN
       raise "Pointers are unsupported in Fortran!" if lang == FORTRAN
-      return "#{@type.decl} *" if [C, CL, CUDA].include?( lang )
+      return "#{@type.decl} *" if CLANGS.include?( lang )
     end
 
     def decl_ffi
@@ -270,7 +270,7 @@ module BOAST
     def decl
       return "real(kind=#{@size})" if lang == FORTRAN
       if vector? && !meta_vector?
-        if [CL, CUDA].include?( lang ) then
+        if GPULANGS.include?( lang ) then
           return "float#{@vector_length}" if @size == 4
           return "double#{@vector_length}" if @size == 8
         elsif lang == C then
@@ -294,7 +294,7 @@ module BOAST
 
     def suffix
       s = ""
-      if [C, CL, CUDA].include?( lang ) then
+      if CLANGS.include?( lang ) then
         s << "f" if @size == 4
       elsif lang == FORTRAN then
         s << "_wp" if @size == 8
@@ -379,7 +379,7 @@ module BOAST
         s =""
         unless @signed then
           s << "u"
-          s << "nsigned " if lang == CUDA && !@vector_length
+          s << "nsigned " if (lang == CUDA || lang == HIP) && !@vector_length
         end
         case @size
         when 1
@@ -389,7 +389,7 @@ module BOAST
         when 4
           s << "int"
         when 8
-          if lang == CUDA
+          if (lang == CUDA || lang == HIP)
             case @vector_length
             when 1, nil
               s << "long long"
@@ -457,19 +457,19 @@ module BOAST
     end
 
     def decl
-      return decl_c if [C, CL, CUDA].include?( lang )
+      return decl_c if CLANGS.include?( lang )
       return decl_fortran if lang == FORTRAN
     end
 
     def define
-      return define_c if [C, CL, CUDA].include?( lang )
+      return define_c if CLANGS.include?( lang )
       return define_fortran if lang == FORTRAN
     end
 
     private
 
     def decl_c
-      return "struct #{@name}" if [C, CL, CUDA].include?( lang )
+      return "struct #{@name}" if CLANGS.include?( lang )
     end
 
     def decl_fortran
@@ -510,7 +510,7 @@ module BOAST
 
     def finalize
        s = ""
-       s << ";" if [C, CL, CUDA].include?( lang )
+       s << ";" if CLANGS.include?( lang )
        s << "\n"
        return s
     end
@@ -534,7 +534,7 @@ module BOAST
     end
 
     def decl
-      return "#{@name}" if [C, CL, CUDA].include?( lang )
+      return "#{@name}" if CLANGS.include?( lang )
     end
 
   end

@@ -15,7 +15,7 @@ class TestFuncCall < Minitest::Test
       assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b)
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b);
@@ -54,7 +54,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b)
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b);
@@ -76,7 +76,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b) + min(b, a)
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 c = min(a, b) + min(b, a);

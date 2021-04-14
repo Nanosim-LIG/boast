@@ -70,6 +70,10 @@ module BOAST
       when CUDA
         extend CUDARuntime
         @probes = []
+      when HIP
+        raise "HIP runtime is not supported yet!"
+        extend HIPRuntime
+        @probes = []
       when FORTRAN
         extend FORTRANRuntime
         extend FFIRuntime if ffi?
@@ -132,6 +136,8 @@ module BOAST
     # @option options [Boolean] :OPENMP activate OpenMP support. Correct flag should be set for your compiler in $XDG_CONFIG_HOME/.config/BOAST/openmp_flags or $HOME/.config/BOAST/openmp_flags.
     # @option options [String] :NVCC cuda compiler
     # @option options [String] :NVCCFLAGS cuda compiler flags
+    # @option options [String] :HIPCC HIP compiler
+    # @option options [String] :HIPFLAGS HIP compiler flags
     # @option options [String] :CLFLAGS opencl compiation flags
     # @option options [String] :CLVENDOR restrict selected OpenCL platforms to the ones which vendor match the option
     # @option options [String] :CLPLATFORM restrict selected OpenCL platforms to the ones which name match the option
@@ -143,10 +149,10 @@ module BOAST
     # Runs the computing kernel using the given arguments.
     # @param args the arguments corresponding to the list of parameters of the #procedure attribute
     # @param [Hash] options contains runtime options.
-    # @option options [Array] :global_work_size only considered for CUDA and OpenCL kernels. See corresponding OpenCL documentation
-    # @option options [Array] :local_work_size only considered for CUDA and OpenCL kernels. See corresponding OpenCL documentation
-    # @option options [Array] :block_number only considered for CUDA and OpenCL kernels. See corresponding CUDA documentation
-    # @option options [Array] :block_size only considered for CUDA and OpenCL kernels. See corresponding CUDA documentation
+    # @option options [Array] :global_work_size only considered for HIP, CUDA and OpenCL kernels. See corresponding OpenCL documentation
+    # @option options [Array] :local_work_size only considered for HIP, CUDA and OpenCL kernels. See corresponding OpenCL documentation
+    # @option options [Array] :block_number only considered for HIP, CUDA and OpenCL kernels. See corresponding HIP/CUDA documentation
+    # @option options [Array] :block_size only considered for HIP, CUDA and OpenCL kernels. See corresponding HIP/CUDA documentation
     # @option options [Array] :PAPI list of PAPI counters to monitor. ( ex: ['PAPI_L1_DCM', 'PAPI_L2_DCM'], see PAPI documentation.
     # @return [Hash] contains at least the *:duration* entry which is the runtime of the kernel in seconds. If the kernel is a function then the *:return* field will contain the returned value. For :inout or :out scalars the *:reference_return* field will be a Hash with each parameter name associated to the corresponding value. If *:PAPI* options was given will contain a *:PAPI* entry with the corresponding counters value.
   end

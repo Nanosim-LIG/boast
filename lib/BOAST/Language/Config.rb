@@ -3,12 +3,15 @@ require 'yaml'
 
 module BOAST
 
-  LANGUAGES = ['FORTRAN', 'C', 'CL', 'CUDA']
+  LANGUAGES = ['FORTRAN', 'C', 'CL', 'CUDA', 'HIP']
   ARCHITECTURES = ['X86', 'ARM', 'MPPA', 'SPARC', 'PPC']
 
   LANGUAGES.each_with_index { |l, i|
     const_set(l, i)
   }
+
+  CLANGS = [C, CL, CUDA, HIP]
+  GPULANGS = [CL, CUDA, HIP]
 
   ARCHITECTURES.each_with_index { |a, i|
     const_set(a, i)
@@ -143,9 +146,9 @@ module BOAST
   end
 
   undef_method :use_vla?
-  # @return the boolean evaluation of the *use_vla* state. false if lang is CL or CUDA.
+  # @return the boolean evaluation of the *use_vla* state. false if lang is CL or CUDA or HIP.
   def use_vla?
-    return false if [CL,CUDA].include?(lang)
+    return false if GPULANGS.include?(lang)
     return use_vla_old?
   end
 

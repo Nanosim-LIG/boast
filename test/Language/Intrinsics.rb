@@ -57,7 +57,7 @@ EOF
 a = max( a, b )
 a = min( a, 1.0 )
 EOF
-      [ C, CL, CUDA ].each { |l|
+      [ C, CL, CUDA, HIP ].each { |l|
         set_lang( l )
         assert_subprocess_output( <<EOF, "", &block )
 a = max( a, b );
@@ -89,7 +89,7 @@ a = max( a, b );
 a = min( a, (float4)( 1.0f ) );
 a = min( a, 1.0f );
 EOF
-      [ CUDA ].each { |l|
+      [ CUDA, HIP ].each { |l|
         set_lang( l )
         assert_subprocess_output( <<EOF, "", &block )
 a = max( a, b );
@@ -112,6 +112,12 @@ sqrt( a )
 sqrt( c )
 EOF
       set_lang( CUDA )
+      assert_subprocess_output( <<EOF, "", &block )
+sqrtf( b );
+sqrtf( a );
+sqrt( c );
+EOF
+      set_lang( HIP )
       assert_subprocess_output( <<EOF, "", &block )
 sqrtf( b );
 sqrtf( a );
@@ -147,6 +153,12 @@ sin( a )
 sin( c )
 EOF
       set_lang( CUDA )
+      assert_subprocess_output( <<EOF, "", &block )
+sinf( b );
+sinf( a );
+sin( c );
+EOF
+      set_lang( HIP )
       assert_subprocess_output( <<EOF, "", &block )
 sinf( b );
 sinf( a );

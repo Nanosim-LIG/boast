@@ -102,7 +102,7 @@ module BOAST
 
     def to_s
       return to_s_fortran if lang == FORTRAN
-      return to_s_c if [C, CL, CUDA].include?( lang )
+      return to_s_c if CLANGS.include?( lang )
     end
 
     private
@@ -152,7 +152,7 @@ module BOAST
     def method_missing(m, *a, &b)
       if @type.kind_of?(CStruct) and @type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
-      elsif vector? and m.to_s[0] == 's' and lang != CUDA then
+      elsif vector? and m.to_s[0] == 's' and lang != CUDA and lang != HIP then
         required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(@type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
@@ -270,8 +270,8 @@ module BOAST
     # @option properties [Boolean] :restrict specifies that the compiler can assume no aliasing to this array.
     # @option properties [Boolean] :reference specifies that this variable is passed by reference.
     # @option properties [Symbol] :allocate specify that the variable is to be allocated and where. Can only be *:heap* or *:stack* for now.
-    # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
-    # @option properties [Boolean] :global indicates that the variable is global (C CUDA)
+    # @option properties [Boolean] :local indicates that the variable is to be allocated on the __local space of OpenCL devices or __shared__ space of CUDA / HIP devices. In C or FORTRAN this has the same effect as *:allocate* => *:stack*.
+    # @option properties [Boolean] :global indicates that the variable is global (C CUDA HIP)
     # @option properties [Boolean] :texture for OpenCL and CUDA. In OpenCL also specifies that a sampler has to be generated to access the array variable.
     # @option properties [Integer] :align specifies the alignment the variable will be declared/allocated with if allocated or is supposed to have if it is coming from another context (in bytes).
     # @option properties [Boolean] :replace_constant specifies that for scalar constants this variable should be replaced by its constant value. For constant arrays, the value of the array will be replaced if the index can be determined at evaluation.
@@ -343,7 +343,7 @@ module BOAST
         s = @constant.to_s + @type.suffix
         return s
       end
-      if @scalar_output or @reference and [C, CL, CUDA].include?( lang ) and not decl_module? then
+      if @scalar_output or @reference and CLANGS.include?( lang ) and not decl_module? then
         return "(*#{name})"
       end
       return @name
@@ -358,12 +358,12 @@ module BOAST
     end
 
     def dereference
-      return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if [C, CL, CUDA].include?( lang )
+      return copy("*(#{name})", :dimension => nil, :dim => nil, :direction => nil, :dir => nil) if CLANGS.include?( lang )
       return Index::new(self, *(@dimension.collect { |d| d.start } ) ) if lang == FORTRAN
     end
 
     def struct_reference(x)
-      return x.copy(name+"."+x.name) if [C, CL, CUDA].include?( lang )
+      return x.copy(name+"."+x.name) if CLANGS.include?( lang )
       return x.copy(name+"%"+x.name) if lang == FORTRAN
     end
 
@@ -419,7 +419,7 @@ module BOAST
 
     def decl
       return decl_fortran if lang == FORTRAN
-      return decl_c if [C, CL, CUDA].include?( lang )
+      return decl_c if CLANGS.include?( lang )
     end
 
     def align
@@ -462,6 +462,7 @@ module BOAST
     def __global?
       return ( lang == CL && @direction && dimension? && !(@properties[:register] || @properties[:private] || local?) ) ||
              ( lang == CUDA && global? ) ||
+	     ( lang == HIP && global? ) ||
              ( lang == C && global? )
     end
 
@@ -470,7 +471,7 @@ module BOAST
     end
 
     def __shared?(device = false)
-      return ( lang == CUDA && local? && !device )
+      return ( (lang == CUDA || lang == HIP) && local? && !device )
     end
 
     def __vla_array?
@@ -509,7 +510,7 @@ module BOAST
         case lang
         when CL
           s << "__global "
-        when CUDA
+        when CUDA, HIP
           s << "__device__ "
         end
       end
@@ -543,7 +544,7 @@ module BOAST
           s << ")]"
         end
       end
-      if __align? && lang != CUDA then
+      if __align? && lang != CUDA  && lang != HIP  then
         a = ( align? ? alignment : 1 )
         a = ( a >= default_align ? a : default_align )
         s << " __attribute((aligned(#{a})))"
@@ -553,7 +554,7 @@ module BOAST
     end
 
     def decl_texture_s
-      raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA].include?( lang )
+      raise LanguageError, "Unsupported language #{lang} for texture!" unless GPULANGS.include?( lang )
       raise "Write is unsupported for textures!" unless (constant? || @direction == :in)
       dim_number = 1
       if dimension? then
@@ -664,7 +665,7 @@ module BOAST
 
     def finalize
        s = ""
-       s << ";" if [C, CL, CUDA].include?( lang )
+       s << ";" if CLANGS.include?( lang )
        s << "\n"
        return s
     end

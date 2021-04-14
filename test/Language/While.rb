@@ -18,7 +18,7 @@ do while (i < n)
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 while (i < n) {
@@ -45,7 +45,7 @@ do while (i < n)
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |lg|
+      [C, CL, CUDA, HIP].each { |lg|
         set_lang(lg)
         assert_subprocess_output( <<EOF, "", &block )
 while (i < n) {
@@ -75,7 +75,7 @@ do while (i < n)
   a(i) = (i) * (#{y})
 end do
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           y = rand(100)
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
@@ -109,7 +109,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block3 )
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block1 )
 while (i < n) {

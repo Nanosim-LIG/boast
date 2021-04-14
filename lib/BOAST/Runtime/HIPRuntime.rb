@@ -1,7 +1,7 @@
 module BOAST
 
   # @private
-  module CUDARuntime
+  module HIPRuntime
     include CRuntime
 
     private
@@ -17,40 +17,40 @@ module BOAST
 
     def fill_module_header
       fill_module_header_old
-      get_output.puts "#include <cuda_runtime.h>"
+      get_output.puts "#include \"hip/hip_runtime.h\" "
       @globals.each { |g|
         get_output.write <<EOF
-cudaError_t _boast_send_to_symbol_#{g}(void *p, size_t s);
+hipError_t  _boast_send_to_symbol_#{g}(void *p, size_t s);
 EOF
       }
     end
 
     def fill_library_header
       fill_library_header_old
-      get_output.puts "#include <cuda.h>"
+      get_output.puts "#include \"hip/hip_runtime.h\" "
     end
 
     def fill_library_source
       fill_library_source_old
       get_output.write <<EOF
 extern "C" {
-  #{@procedure.send(:boast_header_s,CUDA)}{
+  #{@procedure.send(:boast_header_s,HIP)}{
     int _boast_i;
     dim3 dimBlock(_boast_block_size[0], _boast_block_size[1], _boast_block_size[2]);
     dim3 dimGrid(_boast_block_number[0], _boast_block_number[1], _boast_block_number[2]);
-    cudaEvent_t __start, __stop;
+    hipEvent_t __start, __stop;
     float __time;
-    cudaEventCreate(&__start);
-    cudaEventCreate(&__stop);
-    cudaEventRecord(__start, 0);
+    hipEventCreate(&__start);
+    hipEventCreate(&__stop);
+    hipEventRecord(__start, 0);
     for( _boast_i = 0; _boast_i < _boast_repeat; _boast_i ++) {
-      #{@procedure.name}<<<dimGrid,dimBlock>>>(#{@procedure.parameters.join(", ")});
+      hipLaunchKernelGGL(#{@procedure.name},dimGrid,dimBlock,0,0,#{@procedure.parameters.join(", ")});
     }
-    cudaEventRecord(__stop, 0);
-    cudaEventSynchronize(__stop);
-    cudaEventElapsedTime(&__time, __start, __stop);
-    cudaEventDestroy(__start);
-    cudaEventDestroy(__stop);
+    hipEventRecord(__stop, 0);
+    hipEventSynchronize(__stop);
+    hipEventElapsedTime(&__time, __start, __stop);
+    hipEventDestroy(__start);
+    hipEventDestroy(__stop);
     return (unsigned long long int)((double)__time*(double)1e6);
   }
 }
@@ -58,8 +58,8 @@ EOF
       @globals.each { |g|
         get_output.write <<EOF
 extern "C" {
-   cudaError_t _boast_send_to_symbol_#{g}(void *p, size_t s) {
-     return cudaMemcpyToSymbol(#{g}, p, s);
+   hipError_t _boast_send_to_symbol_#{g}(void *p, size_t s) {
+     return hipMemcpyToSymbol(HIP_SYMBOL(#{g}, p, s);
    }
 }
 EOF
@@ -75,20 +75,20 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s (%s)!", "#{param}", cudaGetErrorName(err));
-    err = cudaMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+    hipError_t err = hipMalloc( (void **) &#{par}, _boast_array_size);
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not allocate hip memory for: %s (%s)!", "#{param}", hipGetErrorName(err));
+    err = hipMemcpy(#{par}, (void *) _boast_n_ary->ptr, _boast_array_size, hipMemcpyHostToDevice);
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", hipGetErrorName(err));
   } else if (TYPE(_boast_rb_ptr) == T_STRING) {
     size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
-    cudaError_t err = cudaMalloc( (void **) &#{par}, _boast_array_size);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not allocate cuda memory for: %s (%s)!", "#{param}", cudaGetErrorName(err));
-    err = cudaMemcpy(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+    hipError_t err = hipMalloc( (void **) &#{par}, _boast_array_size);
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not allocate hip memory for: %s (%s)!", "#{param}", hipGetErrorName(err));
+    err = hipMemcpy(#{par}, (void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size, hipMemcpyHostToDevice);
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", hipGetErrorName(err));
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
@@ -107,16 +107,16 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaError_t err;
+    hipError_t err;
     err = _boast_send_to_symbol_#{param}((void *) _boast_n_ary->ptr, _boast_array_size);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", hipGetErrorName(err));
   } else if (TYPE(_boast_rb_ptr) == T_STRING) {
     size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
-    cudaError_t err;
+    hipError_t err;
     err = _boast_send_to_symbol_#{param}((void *)RSTRING_PTR(_boast_rb_ptr), _boast_array_size);
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", hipGetErrorName(err));
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting NArray or String!", "#{param}");
   }
@@ -142,10 +142,10 @@ EOF
       end
       get_output.print <<EOF
   {
-    cudaError_t err;
+    hipError_t err;
     err = _boast_send_to_symbol_#{param}((void *)&#{str_par_tmp}, sizeof(#{str_par_tmp}));
-    if (err != cudaSuccess)
-      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", cudaGetErrorName(err));
+    if (err != hipSuccess)
+      rb_raise(rb_eRuntimeError, "Could not copy memory to device for: %s (%s)!", "#{param}", hipGetErrorName(err));
   }
 EOF
     end
@@ -246,21 +246,21 @@ EOF
     size_t _boast_array_size;
     Data_Get_Struct(_boast_rb_ptr, struct NARRAY, _boast_n_ary);
     _boast_array_size = _boast_n_ary->total * na_sizeof[_boast_n_ary->type];
-    cudaMemcpy((void *) _boast_n_ary->ptr, #{par}, _boast_array_size, cudaMemcpyDeviceToHost);
+    hipMemcpy((void *) _boast_n_ary->ptr, #{par}, _boast_array_size, hipMemcpyDeviceToHost);
 EOF
       end
       get_output.print <<EOF
-    cudaFree( (void *) #{par});
+    hipFree( (void *) #{par});
   } else if (TYPE(_boast_rb_ptr) == T_STRING) {
 EOF
       if param.direction == :out or param.direction == :inout then
         get_output.print <<EOF
     size_t _boast_array_size = RSTRING_LEN(_boast_rb_ptr);
-    cudaMemcpy((void *) RSTRING_PTR(_boast_rb_ptr), #{par}, _boast_array_size, cudaMemcpyDeviceToHost);
+    hipMemcpy((void *) RSTRING_PTR(_boast_rb_ptr), #{par}, _boast_array_size, hipMemcpyDeviceToHost);
 EOF
       end
       get_output.print <<EOF
-    cudaFree( (void *) #{par});
+    hipFree( (void *) #{par});
   } else {
     rb_raise(rb_eArgError, "Wrong type of argument for %s, expecting array!", "#{param}");
   }

@@ -18,7 +18,7 @@ do i = 1, n, 1
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n; i += 1) {
@@ -44,7 +44,7 @@ for (int32_t i = 1; i <= n; i += 1) {
   a[i - (1)] = i;
 }
 EOF
-      [CL, CUDA].each { |l|
+      [CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 for (int i = 1; i <= n; i += 1) {
@@ -71,7 +71,7 @@ do i = 1, n, 1
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |lg|
+      [C, CL, CUDA, HIP].each { |lg|
         set_lang(lg)
         assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n; i += 1) {
@@ -96,7 +96,7 @@ do i = 5, 0, -1
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 for (i = 5; i >= 0; i += -1) {
@@ -126,7 +126,7 @@ do i = 1, n, 1
   a(i) = (i) * (#{y})
 end do
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           y = rand(100)
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
@@ -160,7 +160,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &block3 )
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block1 )
 for (i = 1; i <= n; i += 1) {
@@ -190,7 +190,7 @@ a(1) = 1
 a(2) = 2
 a(3) = 3
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = 1;
@@ -214,7 +214,7 @@ do i = 1, 3, 1
   a(i) = i
 end do
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= 3; i += 1) {
@@ -236,7 +236,7 @@ a(1) = 1
 a(2) = 2
 a(3) = 3
 EOF
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = 1;
@@ -262,7 +262,7 @@ do i = 1 + ((n + 0) / (2)) * (2), n, 1
   a(i) = i
 end do
 EOF
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n - (1); i += 2) {
@@ -288,7 +288,7 @@ a(1) = 1
 a(2) = 2
 a(3) = 3
 EOF
-    [C, CL, CUDA].each { |lg|
+    [C, CL, CUDA, HIP].each { |lg|
       set_lang(lg)
       assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = 1;
@@ -315,7 +315,7 @@ do i = 1 + ((n + 0) / (2)) * (2), n, 1
   a(i) = i
 end do
 EOF
-    [C, CL, CUDA].each { |lg|
+    [C, CL, CUDA, HIP].each { |lg|
       set_lang(lg)
       assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n - (1); i += 2) {
@@ -340,7 +340,7 @@ a(1) = (1) * (2)
 a(2) = (2) * (2)
 a(3) = (3) * (2)
 EOF
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( <<EOF, "", &block )
 a[1 - (1)] = (1) * (2);
@@ -366,7 +366,7 @@ do i = 1 + ((n + 0) / (2)) * (2), n, 1
   a(i) = (i) * (3)
 end do
 EOF
-    [C, CL, CUDA].each { |l|
+    [C, CL, CUDA, HIP].each { |l|
       set_lang(l)
       assert_subprocess_output( <<EOF, "", &block )
 for (i = 1; i <= n - (1); i += 2) {

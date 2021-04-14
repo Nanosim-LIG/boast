@@ -46,7 +46,7 @@ module BOAST
 
       if [FORTRAN, CL].include?(lang) then
         return @return_type.copy( "sqrt( #{@operand} )", DISCARD_OPTIONS )
-      elsif lang == CUDA or ( sqrt_instruction.nil? and rsqrt_instruction.nil? ) then
+      elsif lang == CUDA or lang == HIP or ( sqrt_instruction.nil? and rsqrt_instruction.nil? ) then
         raise IntrinsicsError, "Vector square root unsupported on ARM architecture!" if architecture == ARM and @return_type.type.vector_length > 1
         if @return_type.type.size <= 4 then
           return @return_type.copy( "sqrtf( #{@operand} )", DISCARD_OPTIONS )
@@ -70,7 +70,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -108,7 +108,7 @@ module BOAST
 
       if [FORTRAN, CL].include?(lang) then
         return @return_type.copy( "#{get_name[lang]}( #{@operand} )", DISCARD_OPTIONS )
-      elsif lang == CUDA or instruction.nil? then
+      elsif lang == CUDA or lang == HIP or instruction.nil? then
         raise IntrinsicsError, "Vector #{get_name[lang]} root unsupported on ARM architecture!" if architecture == ARM and @return_type.type.vector_length > 1
         if @return_type.type.size <= 4 then
           return @return_type.copy( "#{get_name[lang]}f( #{@operand} )", DISCARD_OPTIONS )
@@ -128,7 +128,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end
@@ -145,7 +145,7 @@ module BOAST
     end
 
     def get_name
-      return { C => "#{name}", CUDA => "#{name}", CL => "#{name}", FORTRAN => "#{name}" }
+      return { C => "#{name}", CUDA => "#{name}", HIP => "#{name}", CL => "#{name}", FORTRAN => "#{name}" }
     end
 
   end

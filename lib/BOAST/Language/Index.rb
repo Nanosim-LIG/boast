@@ -10,7 +10,7 @@ module BOAST
       var = to_var
       if var.type.kind_of?(CStruct) and var.type.members[m.to_s] then
         return struct_reference(type.members[m.to_s])
-      elsif var.vector? and m.to_s[0] == 's' and lang != CUDA then
+      elsif var.vector? and m.to_s[0] == 's' and lang != CUDA and lang != HIP then
         required_set = m.to_s[1..-1].chars.to_a
         existing_set = [*('0'..'9'),*('a'..'z')].first(var.type.vector_length)
         if required_set.length == required_set.uniq.length and (required_set - existing_set).empty? then
@@ -107,7 +107,7 @@ module BOAST
           end
         end
         return to_s_fortran(source, vector_index) if lang == FORTRAN
-        return to_s_c(source, vector_index) if [C, CL, CUDA].include?( lang )
+        return to_s_c(source, vector_index) if CLANGS.include?( lang )
       ensure
         @indexes.push vector_index if poped
       end
@@ -117,7 +117,7 @@ module BOAST
       s=""
       s << indent
       s << to_s
-      s << ";" if [C, CL, CUDA].include?( lang )
+      s << ";" if CLANGS.include?( lang )
       output.puts s
       return self
     end

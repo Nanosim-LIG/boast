@@ -31,7 +31,7 @@ if (i < n) then
   a(i) = i
 end if
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
@@ -59,7 +59,7 @@ else
   a(i) =  -(i)
 end if
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
@@ -91,7 +91,7 @@ else
   a(i) =  -(i)
 end if
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 if (i < n) {
@@ -127,7 +127,7 @@ else
   a(i) = ( -(i)) * (#{y})
 end if
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           y = rand(100)
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
@@ -161,7 +161,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &close_block )
 end if
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &opn_block )
 if (i < n) {
@@ -207,7 +207,7 @@ EOF
       assert_subprocess_output( <<EOF, "", &close_block )
 end if
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &opn_block )
 if (i < n) {

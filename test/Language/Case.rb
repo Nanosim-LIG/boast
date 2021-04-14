@@ -28,7 +28,7 @@ select case ((n) * (2))
     a(i) = i
 end select
 EOF
-      [C, CL, CUDA].each { |l|
+      [C, CL, CUDA, HIP].each { |l|
         set_lang(l)
         assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
@@ -58,7 +58,7 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
@@ -91,7 +91,7 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
@@ -126,7 +126,7 @@ select case ((n) * (2))
     a(i) = 0
 end select
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "", &block )
 switch ((n) * (2)) {
@@ -180,7 +180,7 @@ EOF
         assert_subprocess_output( <<EOF, "" ) { close c }
 end select
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "" ) { opn c }
 switch ((n) * (2)) {
@@ -244,7 +244,7 @@ EOF
         assert_subprocess_output( <<EOF, "" ) { close c }
 end select
 EOF
-        [C, CL, CUDA].each { |l|
+        [C, CL, CUDA, HIP].each { |l|
           set_lang(l)
           assert_subprocess_output( <<EOF, "" ) { opn c }
 switch ((n) * (2)) {

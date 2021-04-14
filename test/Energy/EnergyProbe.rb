@@ -45,10 +45,12 @@ class TestProcedure < Minitest::Test
     r = k.run(n, ah, bh, ch)
     t0 = r[:duration]
     e0 = r[:energy]
+    refute_nil(e0)
     8.times { k.run(n, ah, bh, ch) }
     r = k.run(n, ah, bh, ch)
     t1 = r[:duration]
     e1 = r[:energy]
+    refute_nil(e1)
     e0.each {|name, x|
       energy0 = e0[name.to_sym]
       energy1 = e1[name.to_sym]
