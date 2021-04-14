@@ -49,6 +49,8 @@ extern "C" {
     hipEventRecord(__stop, 0);
     hipEventSynchronize(__stop);
     hipEventElapsedTime(&__time, __start, __stop);
+    hipEventDestroy(__start);
+    hipEventDestroy(__stop);
     return (unsigned long long int)((double)__time*(double)1e6);
   }
 }

@@ -49,6 +49,8 @@ extern "C" {
     cudaEventRecord(__stop, 0);
     cudaEventSynchronize(__stop);
     cudaEventElapsedTime(&__time, __start, __stop);
+    cudaEventDestroy(__start);
+    cudaEventDestroy(__stop);
     return (unsigned long long int)((double)__time*(double)1e6);
   }
 }
