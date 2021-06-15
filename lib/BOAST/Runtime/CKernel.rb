@@ -71,7 +71,6 @@ module BOAST
         extend CUDARuntime
         @probes = []
       when HIP
-        raise "HIP runtime is not supported yet!"
         extend HIPRuntime
         @probes = []
       when FORTRAN
