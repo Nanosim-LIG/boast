@@ -149,7 +149,7 @@ module BOAST
     end
 
     def to_s_texture(source)
-      raise LanguageError, "Unsupported language #{lang} for texture!" unless [CL, CUDA, HIP].include?( lang )
+      raise LanguageError, "Unsupported language #{lang} for texture!" unless GPULANGS.include?( lang )
       raise "Write is unsupported for textures!" unless ( source.constant or source.direction == :in )
       dim_number = 1
       if source.dimension then
