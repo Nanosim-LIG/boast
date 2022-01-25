@@ -2,7 +2,7 @@
 #change tag
 gem install --user-install io-console -v 0.5.9
 gem install --user-install rake
-gem install --user-install cztop iruby
+gem install --user-install iruby
 `gem environment |grep "USER INSTALLATION DIRECTORY" | cut -d: -f2`/bin/iruby register --force
 gem build BOAST.gemspec
 gem install --user-install BOAST-2.1.0.gem
