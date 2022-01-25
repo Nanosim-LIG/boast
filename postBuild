@@ -1,4 +1,5 @@
 #!/bin/bash
+#change tag
 gem install --user-install io-console -v 0.5.9
 gem install --user-install cztop iruby
 `gem environment |grep "USER INSTALLATION DIRECTORY" | cut -d: -f2`/bin/iruby register --force
